@@ -34,6 +34,12 @@ canvas {
   box-shadow: 0 3px 0 #e09a2f;
 }
 #weather-box { margin-left: auto; }
+#btn-mute {
+  pointer-events: auto; cursor: pointer; font-family: inherit;
+  transition: transform .12s;
+}
+#btn-mute:hover { transform: scale(1.1); }
+#btn-mute:active { transform: scale(.95); }
 
 /* ---------- 物品栏 ---------- */
 #inventory {

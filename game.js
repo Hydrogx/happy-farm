@@ -77,6 +77,8 @@ const G = {
   decor: [],
   customers: [],
   customerTimer: 18,
+  ambientT: 6,          // 环境动物叫声计时
+  lastStep: 0,          // 脚步动画相位
   particles: [],
   fishing: null,              // {phase:'wait'|'bite', timer, bx, by}
   modalOpen: null,
@@ -102,26 +104,105 @@ const PENS = {
   cow:     { x: 840, y: 780, w: 260, h: 170, home: { x: 975, y: 880, r: 85 } },
 };
 
-// ---------------- 音效（WebAudio 小蜂鸣） ----------------
-let AC = null;
-function beep(freq, dur = 0.1, type = 'sine', vol = 0.15, delay = 0) {
+// ---------------- 音效引擎（WebAudio 全合成，无外部音频文件） ----------------
+let AC = null, master = null, noiseBuf = null;
+let muted = false;
+try { muted = localStorage.getItem('farm-muted') === '1'; } catch (e) {}
+
+// 懒初始化 AudioContext（浏览器要求用户手势后才能出声）
+function audioInit() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return true; }
   try {
-    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
-    const o = AC.createOscillator(), g = AC.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(vol, AC.currentTime + delay);
-    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + delay + dur);
-    o.connect(g); g.connect(AC.destination);
-    o.start(AC.currentTime + delay); o.stop(AC.currentTime + delay + dur);
-  } catch (e) { /* 静音环境忽略 */ }
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain();
+    master.gain.value = muted ? 0 : 1;
+    master.connect(AC.destination);
+    // 预生成白噪声缓冲（水声/脚步声/风声都用它）
+    const len = Math.floor(AC.sampleRate * 1.2);
+    noiseBuf = AC.createBuffer(1, len, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return true;
+  } catch (e) { return false; }
 }
+function setMuted(m) {
+  muted = m;
+  try { localStorage.setItem('farm-muted', m ? '1' : '0'); } catch (e) {}
+  if (master) master.gain.value = m ? 0 : 1;
+  const b = $('btn-mute');
+  if (b) b.textContent = m ? '🔇' : '🔊';
+}
+// 纯音：f 起始频率, f2 滑到, t 秒, type 波形, v 音量, when 延迟(秒)
+function tone(f, f2, t, type, v, when = 0) {
+  if (!audioInit() || muted) return;
+  const t0 = AC.currentTime + when;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f, t0);
+  if (f2 && f2 !== f) o.frequency.exponentialRampToValueAtTime(Math.max(1, f2), t0 + t);
+  g.gain.setValueAtTime(v, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + t);
+  o.connect(g); g.connect(master);
+  o.start(t0); o.stop(t0 + t + 0.03);
+}
+// 噪声：t 秒, v 音量, filterFreq 低通频率, q 共鸣, when 延迟
+function noise(t, v, filterFreq = 2000, q = 1, when = 0) {
+  if (!audioInit() || muted) return;
+  const t0 = AC.currentTime + when;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filterFreq; f.Q.value = q;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(v, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + t);
+  s.connect(f); f.connect(g); g.connect(master);
+  s.start(t0); s.stop(t0 + t + 0.03);
+}
+
 const sfx = {
-  pickup: () => { beep(880, .08); beep(1320, .1, 'sine', .12, .07); },
-  coin:   () => { beep(990, .07); beep(1490, .12, 'sine', .14, .08); },
-  error:  () => beep(180, .2, 'square', .08),
-  splash: () => beep(300, .15, 'triangle', .12),
-  success:() => { beep(660, .08); beep(880, .08, 'sine', .13, .08); beep(1100, .14, 'sine', .13, .16); },
-  pop:    () => beep(520, .06, 'triangle', .1),
+  // ---- UI ----
+  click:  () => tone(900, 700, 0.05, 'triangle', 0.08),
+  open:   () => tone(520, 660, 0.07, 'triangle', 0.1),
+  close:  () => tone(480, 380, 0.07, 'triangle', 0.09),
+  // ---- 走路（左右脚交替） ----
+  step:   (alt) => noise(0.05, 0.045, alt ? 950 : 700, 1),
+  // ---- 农场动作 ----
+  till:   () => { noise(0.12, 0.16, 480); tone(120, 80, 0.12, 'triangle', 0.12); },
+  plant:  () => { tone(600, 920, 0.09, 'sine', 0.12); noise(0.04, 0.05, 3200); },
+  water:  () => { noise(0.28, 0.14, 1700, 1); tone(520, 300, 0.22, 'sine', 0.05); },
+  harvest:() => { tone(660, 660, 0.07, 'triangle', 0.12); tone(880, 880, 0.07, 'triangle', 0.12, 0.07); tone(1108, 1108, 0.13, 'triangle', 0.12, 0.14); },
+  shake:  () => { noise(0.06, 0.11, 2600); noise(0.06, 0.11, 2600, 1, 0.09); noise(0.09, 0.11, 2600, 1, 0.18); },
+  pickup: () => { tone(880, 880, 0.06, 'sine', 0.12); tone(1318, 1318, 0.09, 'sine', 0.1, 0.06); },
+  sparkle:() => { tone(1200, 1600, 0.08, 'sine', 0.05); tone(1600, 2100, 0.1, 'sine', 0.04, 0.07); },
+  // ---- 动物 ----
+  shear:  () => { tone(1800, 1400, 0.05, 'square', 0.055); tone(1800, 1400, 0.05, 'square', 0.055, 0.09); },
+  milk:   () => { tone(400, 820, 0.18, 'sine', 0.12); tone(920, 920, 0.08, 'sine', 0.1, 0.16); },
+  cluck:  () => { tone(700, 500, 0.06, 'square', 0.06); tone(620, 420, 0.07, 'square', 0.06, 0.08); },
+  moo:    () => { tone(165, 110, 0.5, 'sawtooth', 0.09); tone(82, 60, 0.5, 'triangle', 0.05); },
+  baa:    () => { for (let i = 0; i < 5; i++) tone(620 + Math.sin(i * 2.2) * 120, 620, 0.09, 'square', 0.045, i * 0.09); },
+  pet:    () => { tone(700, 1050, 0.1, 'sine', 0.1); tone(1050, 1400, 0.12, 'sine', 0.09, 0.09); },
+  // ---- 商店 / 烹饪 ----
+  coin:   () => { tone(988, 988, 0.06, 'square', 0.07); tone(1319, 1319, 0.1, 'square', 0.07, 0.06); },
+  buy:    () => { sfx.coin(); tone(1976, 1976, 0.12, 'sine', 0.06, 0.14); },
+  cook:   () => { noise(0.4, 0.09, 4200, 1); tone(880, 880, 0.1, 'triangle', 0.1, 0.35); tone(1175, 1175, 0.16, 'triangle', 0.1, 0.45); },
+  equip:  () => { tone(520, 780, 0.08, 'triangle', 0.1); tone(1040, 1040, 0.12, 'sine', 0.08, 0.08); },
+  error:  () => tone(180, 150, 0.18, 'square', 0.07),
+  // ---- 客人 ----
+  bell:   () => { tone(880, 880, 0.18, 'sine', 0.11); tone(659, 659, 0.26, 'sine', 0.11, 0.2); },
+  happy:  () => { tone(523, 523, 0.08, 'triangle', 0.1); tone(659, 659, 0.08, 'triangle', 0.1, 0.08); tone(784, 784, 0.08, 'triangle', 0.1, 0.16); tone(1047, 1047, 0.17, 'triangle', 0.1, 0.24); },
+  sad:    () => { tone(440, 440, 0.12, 'triangle', 0.08); tone(330, 330, 0.22, 'triangle', 0.08, 0.12); },
+  // ---- 钓鱼 ----
+  cast:   () => { noise(0.2, 0.09, 1200, 1); tone(300, 620, 0.18, 'sine', 0.06); },
+  bite:   () => { tone(1175, 1175, 0.07, 'square', 0.09); tone(1175, 1175, 0.07, 'square', 0.09, 0.1); tone(1568, 1568, 0.11, 'square', 0.09, 0.2); },
+  catchf: () => { sfx.happy(); noise(0.2, 0.11, 1500, 1, 0.1); },
+  escape: () => tone(500, 240, 0.3, 'sine', 0.09),
+  splash: () => noise(0.2, 0.13, 1600),
+  // ---- 时间 / 天气 ----
+  morning:() => { tone(523, 523, 0.1, 'triangle', 0.09); tone(659, 659, 0.1, 'triangle', 0.09, 0.1); tone(784, 784, 0.22, 'triangle', 0.09, 0.2); },
+  night:  () => { tone(784, 784, 0.2, 'sine', 0.07); tone(659, 659, 0.2, 'sine', 0.07, 0.2); tone(523, 523, 0.38, 'sine', 0.07, 0.4); },
+  rain:   () => { noise(0.6, 0.07, 900, 1); noise(0.6, 0.05, 700, 1, 0.15); },
+  // ---- 通用 ----
+  success:() => sfx.happy(),
+  pop:    () => tone(520, 640, 0.06, 'triangle', 0.1),
 };
 
 // ---------------- 输入 ----------------
@@ -274,8 +355,9 @@ function toggleModal(id) {
   openModal(id);
 }
 document.querySelectorAll('.close-modal').forEach(b =>
-  b.addEventListener('click', () => closeModal(b.dataset.close)));
-$('btn-help').addEventListener('click', () => toggleModal('help-modal'));
+  b.addEventListener('click', () => { sfx.close(); closeModal(b.dataset.close); }));
+$('btn-help').addEventListener('click', () => { sfx.open(); toggleModal('help-modal'); });
+$('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); });
 
 // ---------------- 商店 ----------------
 let shopTab = 'seeds';
@@ -301,7 +383,7 @@ function renderShop() {
   if (shopTab === 'seeds') {
     for (const id of ['seed_carrot', 'seed_tomato', 'seed_corn']) {
       mkCard(ITEMS[id].icon, ITEMS[id].name, ITEMS[id].price, () => {
-        G.coins -= ITEMS[id].price; addItem(id); sfx.coin(); toast(`买到 ${ITEMS[id].name}！`); renderShop(); renderHUD();
+        G.coins -= ITEMS[id].price; addItem(id); sfx.buy(); toast(`买到 ${ITEMS[id].name}！`); renderShop(); renderHUD();
       });
     }
   } else if (shopTab === 'clothes') {
@@ -310,7 +392,7 @@ function renderShop() {
         if (o.price === 0) continue;
         const owned = G.owned[cat].includes(key);
         mkCard(o.icon, o.name, o.price, () => {
-          G.coins -= o.price; G.owned[cat].push(key); sfx.success();
+          G.coins -= o.price; G.owned[cat].push(key); sfx.buy();
           toast(`买到 ${o.name}！去衣柜换上吧 👕`); renderShop(); renderHUD();
         }, owned);
       }
@@ -320,7 +402,7 @@ function renderShop() {
       const owned = G.petHatsOwned.includes(key);
       mkCard(o.icon, o.name, o.price, () => {
         G.coins -= o.price; G.petHatsOwned.push(key);
-        G.pet.hat = key; G.pet.happy = 3; sfx.success();
+        G.pet.hat = key; G.pet.happy = 3; sfx.buy();
         spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
         toast(`小${G.pet.type === 'dog' ? '狗' : '猫'}戴上啦，好开心！`);
         renderShop(); renderHUD();
@@ -331,6 +413,7 @@ function renderShop() {
 document.querySelectorAll('#shop-modal .tab-btn').forEach(b =>
   b.addEventListener('click', () => {
     shopTab = b.dataset.tab;
+    sfx.click();
     document.querySelectorAll('#shop-modal .tab-btn').forEach(x => x.classList.toggle('selected', x === b));
     renderShop();
   }));
@@ -353,7 +436,7 @@ function renderWardrobe() {
     b.disabled = wearing;
     b.onclick = () => {
       G.player.outfit[wTab] = key;
-      sfx.pop(); spawnParticles(G.player.x, G.player.y - 30, '✨', 5);
+      sfx.equip(); spawnParticles(G.player.x, G.player.y - 30, '✨', 5);
       toast(`换上 ${o.name}！`);
       renderWardrobe();
     };
@@ -376,7 +459,7 @@ function renderWardrobe() {
       b.textContent = wearing ? '戴着呢 ✓' : '给宠物戴';
       b.disabled = wearing;
       b.onclick = () => {
-        G.pet.hat = key; G.pet.happy = 3; sfx.pop();
+        G.pet.hat = key; G.pet.happy = 3; sfx.equip();
         spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
         renderWardrobe();
       };
@@ -388,6 +471,7 @@ function renderWardrobe() {
 document.querySelectorAll('#wardrobe-modal .tab-btn').forEach(b =>
   b.addEventListener('click', () => {
     wTab = b.dataset.wtab;
+    sfx.click();
     document.querySelectorAll('#wardrobe-modal .tab-btn').forEach(x => x.classList.toggle('selected', x === b));
     renderWardrobe();
   }));
@@ -410,7 +494,7 @@ function renderCook() {
     b.onclick = () => {
       consumeItems(r.needs);
       addItem(r.id);
-      sfx.success();
+      sfx.cook();
       spawnParticles(G.player.x, G.player.y - 30, '✨', 6);
       toast(`香喷喷的${out.name}做好啦！`);
       renderCook();
@@ -548,6 +632,7 @@ function doInteract() {
         coinBurst(c.x, c.y - 30, gain);
         spawnParticles(c.x, c.y - 25, '💖', 6);
         c.state = 'leave'; c.happy = true;
+        sfx.happy();
         toast(`客人好开心！+${gain} 金币`);
       } else {
         sfx.error();
@@ -557,28 +642,28 @@ function doInteract() {
     }
     case 'shear':
       t.a.wool = 0; t.a.woolT = 0;
-      addItem('wool'); sfx.pickup();
+      addItem('wool'); sfx.shear();
       spawnParticles(t.a.x, t.a.y - 20, '✨', 5);
       toast('剪到一团软软的羊毛！');
       break;
     case 'milk':
       t.a.milkReady = false; t.a.milkT = 0;
-      addItem('milk'); sfx.pickup();
+      addItem('milk'); sfx.milk();
       spawnParticles(t.a.x, t.a.y - 20, '🥛', 4);
       toast('挤到新鲜牛奶！');
       break;
     case 'petChicken': case 'petSheep': case 'petCow':
-      spawnParticles(t.a.x, t.a.y - 20, '💖', 3); sfx.pop();
+      spawnParticles(t.a.x, t.a.y - 20, '💖', 3); sfx.pet();
       break;
     case 'till':
-      t.pl.state = 'tilled'; sfx.pop();
+      t.pl.state = 'tilled'; sfx.till();
       spawnParticles(t.pl.x, t.pl.y, '🟫', 3);
       break;
     case 'plant': {
       const seed = Object.keys(G.inventory).find(id => ITEMS[id].seed);
       if (seed && removeItem(seed)) {
         t.pl.state = 'seed'; t.pl.crop = ITEMS[seed].seed; t.pl.stage = 0; t.pl.timer = 0;
-        sfx.pop();
+        sfx.plant();
       }
       break;
     }
@@ -586,13 +671,13 @@ function doInteract() {
       sfx.error(); toast('没有种子啦，去商店买一些吧 🛒');
       break;
     case 'water':
-      t.pl.watered = true; sfx.splash();
+      t.pl.watered = true; sfx.water();
       spawnParticles(t.pl.x, t.pl.y - 6, '💧', 4);
       break;
     case 'harvest':
       addItem(t.pl.crop, 2);
       spawnParticles(t.pl.x, t.pl.y - 10, '✨', 6);
-      sfx.pickup();
+      sfx.harvest();
       toast(`收获 2 个${ITEMS[t.pl.crop].name}！`);
       t.pl.state = 'tilled'; t.pl.crop = null; t.pl.watered = false;
       break;
@@ -601,13 +686,13 @@ function doInteract() {
       const fx = t.tr.x + rand(-30, 30), fy = t.tr.y + rand(-5, 15);
       G.groundItems.push({ id: t.tr.type, x: fx, y: fy, phase: rand(0, 6) });
       spawnParticles(t.tr.x, t.tr.y - 40, '🍃', 4);
-      sfx.pop();
+      sfx.shake();
       break;
     }
-    case 'cook': renderCook(); openModal('cook-modal'); break;
-    case 'wardrobe': renderWardrobe(); openModal('wardrobe-modal'); break;
-    case 'sell': renderSell(); openModal('sell-modal'); break;
-    case 'shop': renderShop(); openModal('shop-modal'); break;
+    case 'cook': renderCook(); sfx.open(); openModal('cook-modal'); break;
+    case 'wardrobe': renderWardrobe(); sfx.open(); openModal('wardrobe-modal'); break;
+    case 'sell': renderSell(); sfx.open(); openModal('sell-modal'); break;
+    case 'shop': renderShop(); sfx.open(); openModal('shop-modal'); break;
     case 'fish': startFishing(); break;
   }
 }
@@ -618,7 +703,7 @@ function startFishing() {
   const ang = Math.atan2(pond.y - p.y, pond.x - p.x);
   const bx = p.x + Math.cos(ang) * 70, by = p.y + Math.sin(ang) * 45;
   G.fishing = { phase: 'wait', timer: rand(2, G.weather === 'rain' ? 4 : 7), bx, by };
-  sfx.splash();
+  sfx.cast();
   toast('等待小鱼上钩…');
 }
 function reelIn() {
@@ -626,13 +711,13 @@ function reelIn() {
   if (f.phase === 'bite') {
     const big = Math.random() < (G.weather === 'rain' ? 0.4 : 0.15);
     addItem(big ? 'bigfish' : 'fish');
-    sfx.success();
+    sfx.catchf();
     spawnParticles(f.bx, f.by, '💦', 6);
     spawnParticles(f.bx, f.by - 10, big ? '🐠' : '🐟', 1);
     toast(big ? '哇！钓到一条大鱼！🐠' : '钓到一条小鱼！🐟');
     G.pet.happy = 2;
   } else {
-    sfx.pop(); toast('收起鱼竿啦');
+    sfx.splash(); toast('收起鱼竿啦');
   }
   G.fishing = null;
 }
@@ -647,7 +732,7 @@ function spawnCustomer() {
     color: pick(CUSTOMER_COLORS), hair: pick(CUSTOMER_HAIRS),
   });
   toast('🔔 有客人来买东西啦！');
-  sfx.pop();
+  sfx.bell();
 }
 
 // ---------------- 更新逻辑 ----------------
@@ -687,6 +772,9 @@ function update(dt) {
       p.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
       p.moving = true;
       p.walkPhase += dt * 11;
+      // 脚步声（左右脚交替）
+      const stepIdx = Math.floor(p.walkPhase / Math.PI);
+      if (stepIdx !== G.lastStep) { G.lastStep = stepIdx; sfx.step(stepIdx % 2); }
     }
   }
   if (p.actionT > 0) p.actionT -= dt;
@@ -759,13 +847,14 @@ function update(dt) {
         a.eggT = rand(35, 60);
         G.groundItems.push({ id: 'egg', x: a.x + rand(-15, 15), y: a.y + rand(5, 15), phase: rand(0, 6) });
         spawnParticles(a.x, a.y - 15, '🎵', 1);
+        sfx.cluck();
       }
     } else if (a.type === 'sheep' && a.wool < 1) {
       a.woolT += dt;
-      if (a.woolT > 80) { a.wool = 1; spawnParticles(a.x, a.y - 20, '✨', 4); }
+      if (a.woolT > 80) { a.wool = 1; spawnParticles(a.x, a.y - 20, '✨', 4); sfx.sparkle(); }
     } else if (a.type === 'cow' && !a.milkReady) {
       a.milkT += dt;
-      if (a.milkT > 60) { a.milkReady = true; spawnParticles(a.x, a.y - 20, '🥛', 2); }
+      if (a.milkT > 60) { a.milkReady = true; spawnParticles(a.x, a.y - 20, '🥛', 2); sfx.sparkle(); }
     }
   }
 
@@ -822,6 +911,7 @@ function update(dt) {
       if (c.waitT <= 0) {
         c.state = 'leave';
         spawnParticles(c.x, c.y - 30, '💦', 3);
+        sfx.sad();
         toast('客人等太久走掉了…');
       }
     }
@@ -833,9 +923,10 @@ function update(dt) {
     f.timer -= dt;
     if (f.phase === 'wait' && f.timer <= 0) {
       f.phase = 'bite'; f.timer = 1.1;
-      sfx.pop();
+      sfx.bite();
     } else if (f.phase === 'bite' && f.timer <= 0) {
       G.fishing = null;
+      sfx.escape();
       toast('小鱼跑掉了…再试一次！');
     }
   }
@@ -848,6 +939,18 @@ function update(dt) {
     pt.y += pt.vy * dt;
     pt.vy += 120 * dt;
     if (pt.life <= 0) G.particles.splice(i, 1);
+  }
+
+  // --- 环境音：偶尔听到动物的叫声（更生动） ---
+  if (G.started && !G.modalOpen) {
+    G.ambientT -= dt;
+    if (G.ambientT <= 0) {
+      G.ambientT = rand(9, 22);
+      const a = pick(G.animals);
+      if (a.type === 'chicken') sfx.cluck();
+      else if (a.type === 'sheep') sfx.baa();
+      else sfx.moo();
+    }
   }
 
   // --- 相机 ---
@@ -874,6 +977,7 @@ function update(dt) {
 function startSleep() {
   G.sleepFade = 0.01;
   G.sleepDawn = false;
+  sfx.night();
   toast('🌙 天黑啦，睡觉觉…');
 }
 function nextDay() {
@@ -889,6 +993,7 @@ function nextDay() {
     pl.watered = G.weather === 'rain';
   }
   renderHUD();
+  if (G.weather === 'rain') sfx.rain(); else sfx.morning();
   toast(`☀️ 第 ${G.day} 天开始啦！${G.weather === 'rain' ? '今天下雨，不用浇水～' : ''}`, 2500);
 }
 
@@ -1101,10 +1206,12 @@ function loop(ts) {
 let chosenGender = 'boy', chosenPet = 'dog';
 function setupChooser(idA, idB, cb) {
   $(idA).addEventListener('click', () => {
-    $(idA).classList.add('selected'); $(idB).classList.remove('selected'); cb(idA.includes('boy') || idA.includes('dog') ? 0 : 1);
+    $(idA).classList.add('selected'); $(idB).classList.remove('selected');
+    sfx.click(); cb(idA.includes('boy') || idA.includes('dog') ? 0 : 1);
   });
   $(idB).addEventListener('click', () => {
-    $(idB).classList.add('selected'); $(idA).classList.remove('selected'); cb(1);
+    $(idB).classList.add('selected'); $(idA).classList.remove('selected');
+    sfx.click(); cb(1);
   });
 }
 setupChooser('choose-boy', 'choose-girl', (i) => { chosenGender = i === 0 ? 'boy' : 'girl'; });
@@ -1121,6 +1228,7 @@ $('btn-start').addEventListener('click', () => {
 
 // 启动
 initWorld();
+setMuted(muted);   // 同步静音按钮图标
 renderInventory();
 renderHUD();
 requestAnimationFrame(loop);
