@@ -85,12 +85,12 @@ const G = {
   sleepDawn: false,
 };
 
-// 场景交互点
+// 场景交互点（房子区搬到商店旁边，果树在房子左侧）
 const ZONES = {
-  house:    { x: 210, y: 440 },
-  kitchen:  { x: 330, y: 540, r: 55 },
-  wardrobe: { x: 90,  y: 540, r: 55 },
-  bin:      { x: 350, y: 440, r: 55 },
+  house:    { x: 1020, y: 220 },
+  kitchen:  { x: 1120, y: 400, r: 55 },
+  wardrobe: { x: 930,  y: 370, r: 55 },
+  bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 70 },
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
 };
@@ -191,14 +191,14 @@ function initWorld() {
   for (let r = 0; r < 3; r++)
     for (let c = 0; c < 4; c++)
       G.plots.push({ x: 520 + c * 46, y: 620 + r * 46, state: 'grass', crop: null, stage: 0, watered: false, timer: 0 });
-  // 果树（5 种水果各一：苹果/橘子/梨/桃 + 草莓丛）
+  // 果树（5 种水果各一，集中在房子左侧）
   const mkTree = (type, x, y) => ({ type, x, y, fruits: 3, timer: 0, phase: rand(0, 6) });
   G.trees = [
-    mkTree('apple', 700, 300),
-    mkTree('orange', 890, 320),
-    mkTree('pear', 760, 470),
-    mkTree('peach', 960, 440),
-    mkTree('strawberry', 1060, 330),
+    mkTree('apple', 220, 180),
+    mkTree('orange', 400, 210),
+    mkTree('pear', 280, 360),
+    mkTree('peach', 470, 380),
+    mkTree('strawberry', 600, 250),
   ];
   // 动物（各自住在自己的棚舍里）
   const mk = (type, x, y) => ({
@@ -213,16 +213,16 @@ function initWorld() {
     mk('sheep', 600, 870), mk('sheep', 690, 900),
     mk('cow', 970, 870),
   ];
-  // 装饰（避开建筑/田地/池塘/棚舍）
+  // 装饰（避开建筑/田地/池塘/棚舍/果树）
   const avoid = [
-    { x: 120, y: 300, w: 220, h: 320 },   // 房子区域
+    { x: 890, y: 90, w: 330, h: 460 },    // 房子区（近商店）
     { x: 470, y: 570, w: 240, h: 190 },   // 田地
     { x: 1120, y: 660, w: 360, h: 280 },  // 池塘
     { x: 1180, y: 190, w: 240, h: 180 },  // 摊位
     { x: 190, y: 690, w: 240, h: 170 },   // 鸡棚
     { x: 510, y: 780, w: 260, h: 180 },   // 羊棚
     { x: 830, y: 770, w: 280, h: 190 },   // 牛棚
-    { x: 660, y: 240, w: 450, h: 260 },   // 果园区
+    { x: 160, y: 120, w: 500, h: 320 },   // 果树区（房子左侧）
   ];
   const okSpot = (x, y) => !avoid.some(a => x > a.x - 20 && x < a.x + a.w + 20 && y > a.y - 20 && y < a.y + a.h + 20);
   for (let i = 0; i < 60; i++) {
@@ -934,7 +934,7 @@ function render() {
   drawables.push({ y: PENS.chicken.y + PENS.chicken.h, draw: () => drawFenceFront(ctx, PENS.chicken.x, PENS.chicken.y + PENS.chicken.h, PENS.chicken.w) });
   drawables.push({ y: PENS.sheep.y + PENS.sheep.h, draw: () => drawFenceFront(ctx, PENS.sheep.x, PENS.sheep.y + PENS.sheep.h, PENS.sheep.w) });
   drawables.push({ y: PENS.cow.y + PENS.cow.h, draw: () => drawFenceFront(ctx, PENS.cow.x, PENS.cow.y + PENS.cow.h, PENS.cow.w) });
-  drawables.push({ y: 496, draw: () => drawHouse(ctx, 150, 440, t) });
+  drawables.push({ y: ZONES.house.y + 56, draw: () => drawHouse(ctx, ZONES.house.x, ZONES.house.y, t) });
   drawables.push({ y: ZONES.stall.y + 40, draw: () => drawStall(ctx, ZONES.stall.x - 45, ZONES.stall.y - 20, t) });
   drawables.push({ y: ZONES.kitchen.y + 12, draw: () => drawKitchenProp(ctx, ZONES.kitchen.x, ZONES.kitchen.y, t) });
   drawables.push({ y: ZONES.wardrobe.y + 14, draw: () => drawWardrobeProp(ctx, ZONES.wardrobe.x, ZONES.wardrobe.y, t) });
