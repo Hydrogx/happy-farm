@@ -237,16 +237,18 @@ function drawPlayer(ctx, x, y, o) {
   ctx.fillStyle = skin;
   ellipse(ctx, 0, -27, 11, 10.5); ctx.fill();
 
-  // --- 头发（男/女不同） ---
+  // --- 头发（男/女不同，整体上移，给眼睛留出空隙） ---
   ctx.fillStyle = o.gender === 'boy' ? '#5a3a1e' : '#6b4226';
   if (o.gender === 'boy') {
+    // 顶部头发：盖住头顶并略微凸出
     ctx.beginPath();
-    ctx.ellipse(0, -31, 11, 7, 0, Math.PI, Math.PI * 2);
+    ctx.ellipse(0, -34.5, 11, 6.5, 0, Math.PI, Math.PI * 2);
     ctx.fill();
-    rr(ctx, -11, -32, 22, 5, 2); ctx.fill();
+    // 刘海：下沿到 -32.5，和眼睛（-30.2 起）留出空隙
+    rr(ctx, -11, -35.5, 22, 3, 2); ctx.fill();
   } else {
     ctx.beginPath();
-    ctx.ellipse(0, -31, 11.5, 7.5, 0, Math.PI, Math.PI * 2);
+    ctx.ellipse(0, -34, 11.5, 7, 0, Math.PI, Math.PI * 2);
     ctx.fill();
     ellipse(ctx, -12, -24, 4, 7); ctx.fill();
     ellipse(ctx, 12, -24, 4, 7); ctx.fill();
