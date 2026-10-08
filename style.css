@@ -39,6 +39,7 @@ canvas {
 #inventory {
   position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 6px; pointer-events: none;
+  max-width: 94%; flex-wrap: wrap; justify-content: center;
 }
 .inv-slot {
   width: 52px; height: 52px;

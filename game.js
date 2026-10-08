@@ -268,7 +268,11 @@ function renderInventory() {
 // 弹窗管理
 function openModal(id) { G.modalOpen = id; $(id).classList.remove('hidden'); }
 function closeModal(id) { G.modalOpen = null; $(id).classList.add('hidden'); }
-function toggleModal(id) { G.modalOpen === id ? closeModal(id) : openModal(id); }
+function toggleModal(id) {
+  if (G.modalOpen === id) { closeModal(id); return; }
+  if (G.modalOpen) return;   // 已经有别的窗口开着，不叠加（否则关掉一个后状态会错乱）
+  openModal(id);
+}
 document.querySelectorAll('.close-modal').forEach(b =>
   b.addEventListener('click', () => closeModal(b.dataset.close)));
 $('btn-help').addEventListener('click', () => toggleModal('help-modal'));
@@ -509,11 +513,13 @@ function nearestInteract() {
     const d = dist(p.x, p.y, z.x, z.y);
     if (d < z.r && d < bestD) { bestD = d; best = { kind, label }; }
   }
-  // 7. 池塘钓鱼
+  // 7. 池塘钓鱼：附近没有别的可交互对象时，才提示钓鱼
+  //    （捡蛋、挤奶、种地这些操作优先，避免在岸边抢走交互）
   const pond = ZONES.pond;
-  if (Math.abs(p.x - pond.x) < pond.w / 2 + 40 && Math.abs(p.y - pond.y) < pond.h / 2 + 40) {
-    const d = dist(p.x, p.y, pond.x, pond.y) - pond.w / 2;
-    if (d < bestD) { best = { kind: 'fish', label: '🎣 钓鱼' }; }
+  if (!best &&
+      Math.abs(p.x - pond.x) < pond.w / 2 + 40 &&
+      Math.abs(p.y - pond.y) < pond.h / 2 + 40) {
+    best = { kind: 'fish', label: '🎣 钓鱼' };
   }
   return best;
 }
@@ -684,6 +690,22 @@ function update(dt) {
     }
   }
   if (p.actionT > 0) p.actionT -= dt;
+
+  // 池塘不能踩水：走到水边会被轻轻推回岸上
+  {
+    const pc = ZONES.pond;
+    const ex = (p.x - pc.x) / (pc.w / 2 + 8);
+    const ey = (p.y - pc.y) / (pc.h / 2 + 8);
+    const eD = ex * ex + ey * ey;
+    if (eD < 1) {
+      if (eD < 0.0001) p.x = pc.x + pc.w / 2 + 20;      // 极端情况：从中心推出去
+      else {
+        const k = 1.02 / Math.sqrt(eD);                 // 多推一点点，避免刚好卡在岸边抖动
+        p.x = pc.x + (p.x - pc.x) * k;
+        p.y = pc.y + (p.y - pc.y) * k;
+      }
+    }
+  }
 
   // 交互键
   if (interactQueued) {
