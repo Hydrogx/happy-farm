@@ -1,0 +1,174 @@
+/* 🌈 快乐小牧场 —— 可爱儿童风 UI */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(180deg, #aee7ff 0%, #d8f7c5 100%);
+  font-family: "Comic Sans MS", "Chalkboard SE", "PingFang SC", "Microsoft YaHei", sans-serif;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+
+#game-wrap { position: relative; }
+
+canvas {
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(60, 120, 60, .35);
+  background: #8fd48a;
+  display: block;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- HUD ---------- */
+#hud {
+  position: absolute; top: 10px; left: 12px; right: 12px;
+  display: flex; gap: 10px; pointer-events: none;
+}
+.hud-box {
+  background: rgba(255, 252, 240, .92);
+  border: 3px solid #ffb84d;
+  border-radius: 14px;
+  padding: 5px 14px;
+  font-size: 18px; font-weight: bold; color: #7a4a12;
+  box-shadow: 0 3px 0 #e09a2f;
+}
+#weather-box { margin-left: auto; }
+
+/* ---------- 物品栏 ---------- */
+#inventory {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; pointer-events: none;
+}
+.inv-slot {
+  width: 52px; height: 52px;
+  background: rgba(255, 252, 240, .92);
+  border: 3px solid #ffb84d; border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 22px; position: relative;
+  box-shadow: 0 3px 0 #e09a2f;
+}
+.inv-slot .cnt {
+  position: absolute; right: 2px; bottom: 0;
+  font-size: 12px; font-weight: bold; color: #7a4a12;
+  background: #ffe9b8; border-radius: 8px; padding: 0 4px;
+}
+
+/* ---------- 交互提示 ---------- */
+#prompt {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: 76px;
+  background: #fffbe8; border: 3px solid #7ac74f;
+  border-radius: 999px; padding: 6px 18px;
+  font-size: 17px; font-weight: bold; color: #3f7a1e;
+  box-shadow: 0 3px 0 #5da335;
+  animation: bounce .8s infinite alternate ease-in-out;
+  pointer-events: none; white-space: nowrap;
+}
+@keyframes bounce { from { transform: translateX(-50%) translateY(0); } to { transform: translateX(-50%) translateY(-5px); } }
+
+/* ---------- 提示气泡 ---------- */
+#toast {
+  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+  background: #ff6b8a; color: #fff; font-weight: bold; font-size: 18px;
+  border-radius: 999px; padding: 8px 22px;
+  border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  animation: pop .3s ease-out; pointer-events: none; z-index: 40;
+}
+@keyframes pop { from { transform: translateX(-50%) scale(.5); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+
+/* ---------- 开始界面 / 全屏面板 ---------- */
+.panel-full {
+  position: absolute; inset: 0; z-index: 50;
+  background: linear-gradient(180deg, #bfeaff 0%, #e2f9c9 100%);
+  border-radius: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; text-align: center; padding: 20px;
+}
+.title {
+  font-size: 44px; color: #ff7b54;
+  text-shadow: 3px 3px 0 #fff, 6px 6px 0 rgba(255,150,80,.3);
+  animation: wiggle 2s infinite ease-in-out;
+}
+@keyframes wiggle { 0%,100% { transform: rotate(-2deg) scale(1); } 50% { transform: rotate(2deg) scale(1.04); } }
+.subtitle { font-size: 18px; color: #5a7a3a; font-weight: bold; }
+
+.choose-row { display: flex; gap: 18px; }
+.choose-card {
+  background: #fffdf4; border: 4px solid #ddd; border-radius: 18px;
+  padding: 12px 26px; cursor: pointer; font-size: 18px; font-weight: bold; color: #666;
+  transition: transform .15s, border-color .15s;
+}
+.choose-card:hover { transform: scale(1.06); }
+.choose-card.selected { border-color: #ff9f43; color: #d35400; background: #fff3d6; transform: scale(1.08); box-shadow: 0 6px 16px rgba(255,159,67,.4); }
+.big-emoji { font-size: 52px; }
+
+.big-btn {
+  margin-top: 8px;
+  background: linear-gradient(180deg, #7ddb6a, #4fb83a);
+  color: #fff; font-size: 24px; font-weight: bold;
+  border: none; border-radius: 999px; padding: 12px 44px;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 6px 0 #35852a, 0 8px 16px rgba(0,0,0,.2);
+  transition: transform .12s;
+}
+.big-btn:hover { transform: scale(1.06); }
+.big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #35852a; }
+.help-hint { font-size: 15px; color: #7a6a4a; background: rgba(255,255,255,.6); border-radius: 12px; padding: 6px 16px; }
+
+/* ---------- 弹窗 ---------- */
+.modal {
+  position: absolute; inset: 0; z-index: 45;
+  background: rgba(60, 90, 40, .45);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-card {
+  background: #fffdf4; border: 5px solid #ffb84d; border-radius: 22px;
+  padding: 18px 26px; max-width: 620px; width: 88%;
+  max-height: 86%; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  animation: pop .25s ease-out;
+}
+.modal-card h2 { color: #e2701d; }
+.help-list { text-align: left; font-size: 16px; color: #5a4a2a; line-height: 1.9; list-style: none; }
+
+.tab-row { display: flex; gap: 8px; }
+.tab-btn {
+  background: #f2ead6; border: 3px solid #d8c9a3; border-radius: 12px;
+  padding: 6px 16px; font-size: 16px; font-weight: bold; color: #8a7a52;
+  cursor: pointer; font-family: inherit;
+}
+.tab-btn.selected { background: #ffe3a3; border-color: #ff9f43; color: #d35400; }
+
+.shop-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px; width: 100%;
+}
+.shop-item {
+  background: #fff8e6; border: 3px solid #ffd88a; border-radius: 14px;
+  padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 14px; color: #6a5a3a; font-weight: bold;
+}
+.shop-item .icon { font-size: 34px; }
+.shop-item button {
+  background: linear-gradient(180deg, #ffb347, #ff8c1a);
+  border: none; border-radius: 999px; color: #fff; font-weight: bold;
+  padding: 4px 14px; cursor: pointer; font-family: inherit; font-size: 14px;
+  box-shadow: 0 3px 0 #d96f00;
+}
+.shop-item button:active { transform: translateY(2px); box-shadow: none; }
+.shop-item button:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+.shop-item .owned-tag { color: #4fb83a; }
+
+/* ---------- 帮助按钮 ---------- */
+#btn-help {
+  position: absolute; right: 12px; bottom: 12px; z-index: 30;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: #fff3d6; border: 3px solid #ff9f43;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 3px 0 #e09a2f;
+}
+#btn-help:active { transform: translateY(2px); box-shadow: none; }

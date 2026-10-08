@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌈 快乐小牧场</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game" width="960" height="600"></canvas>
+
+  <!-- 顶部状态栏 -->
+  <div id="hud">
+    <div class="hud-box">💰 <span id="coins">0</span></div>
+    <div class="hud-box">📅 第 <span id="day">1</span> 天</div>
+    <div class="hud-box">🕐 <span id="clock">08:00</span></div>
+    <div class="hud-box" id="weather-box">☀️ 晴天</div>
+  </div>
+
+  <!-- 底部物品栏 -->
+  <div id="inventory"></div>
+
+  <!-- 交互提示 -->
+  <div id="prompt" class="hidden"></div>
+
+  <!-- 提示气泡 -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- ============ 开始界面 ============ -->
+  <div id="start-screen" class="panel-full">
+    <h1 class="title">🌈 快乐小牧场 🐮</h1>
+    <p class="subtitle">选择你的角色开始农场生活吧！</p>
+    <div class="choose-row">
+      <div class="choose-card selected" id="choose-boy">
+        <div class="big-emoji">👦</div><div>小男孩</div>
+      </div>
+      <div class="choose-card" id="choose-girl">
+        <div class="big-emoji">👧</div><div>小女孩</div>
+      </div>
+    </div>
+    <p class="subtitle">再挑一只小宠物陪你：</p>
+    <div class="choose-row">
+      <div class="choose-card selected" id="choose-dog">
+        <div class="big-emoji">🐶</div><div>小狗</div>
+      </div>
+      <div class="choose-card" id="choose-cat">
+        <div class="big-emoji">🐱</div><div>小猫</div>
+      </div>
+    </div>
+    <button id="btn-start" class="big-btn">🎮 开始游戏</button>
+    <div class="help-hint">
+      ⌨️ 方向键 / WASD 走路 &nbsp;·&nbsp; <b>E</b> 或 <b>空格</b> 做动作 &nbsp;·&nbsp; <b>H</b> 帮助
+    </div>
+  </div>
+
+  <!-- ============ 帮助 ============ -->
+  <div id="help-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>📖 怎么玩</h2>
+      <ul class="help-list">
+        <li>🚶 <b>方向键 / WASD</b>：走来走去</li>
+        <li>✋ <b>E / 空格</b>：捡东西、种地、挤奶、剪羊毛、钓鱼、和客人说话</li>
+        <li>🥚 鸡会下蛋，捡起来！</li>
+        <li>🐄 牛可以挤牛奶，🐑 羊可以剪羊毛</li>
+        <li>🌱 田里：先耕地 → 撒种子 → 浇水 → 收获</li>
+        <li>🍎 摇摇果树，水果掉下来</li>
+        <li>🎣 去池塘边钓鱼，看到「!」马上按 E！</li>
+        <li>🍳 回家用厨房做好吃的</li>
+        <li>👕 衣柜可以换新衣服（商店里买）</li>
+        <li>🛒 客人来买你头上的东西，卖给TA赚金币</li>
+        <li>📦 卖货箱可以卖掉任何东西</li>
+        <li>🌧️ 下雨天水会自动浇好哦</li>
+      </ul>
+      <button class="big-btn close-modal" data-close="help-modal">知道啦！</button>
+    </div>
+  </div>
+
+  <!-- ============ 商店 ============ -->
+  <div id="shop-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>🛒 牧场商店</h2>
+      <div class="tab-row">
+        <button class="tab-btn selected" data-tab="seeds">🌱 种子</button>
+        <button class="tab-btn" data-tab="clothes">👕 服装</button>
+        <button class="tab-btn" data-tab="pet">🐾 宠物装扮</button>
+      </div>
+      <div id="shop-items" class="shop-grid"></div>
+      <button class="big-btn close-modal" data-close="shop-modal">离开商店</button>
+    </div>
+  </div>
+
+  <!-- ============ 厨房 ============ -->
+  <div id="cook-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>🍳 小厨房</h2>
+      <div id="cook-items" class="shop-grid"></div>
+      <button class="big-btn close-modal" data-close="cook-modal">做好啦</button>
+    </div>
+  </div>
+
+  <!-- ============ 衣柜 ============ -->
+  <div id="wardrobe-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>👕 我的衣柜</h2>
+      <div class="tab-row">
+        <button class="tab-btn selected" data-wtab="hat">🎩 帽子</button>
+        <button class="tab-btn" data-wtab="shirt">👕 上衣</button>
+        <button class="tab-btn" data-wtab="pants">👖 裤子</button>
+      </div>
+      <div id="wardrobe-items" class="shop-grid"></div>
+      <button class="big-btn close-modal" data-close="wardrobe-modal">换好啦</button>
+    </div>
+  </div>
+
+  <!-- ============ 卖货箱 ============ -->
+  <div id="sell-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>📦 卖货箱</h2>
+      <p class="subtitle">点一点，把东西换成金币！</p>
+      <div id="sell-items" class="shop-grid"></div>
+      <button class="big-btn close-modal" data-close="sell-modal">关上门</button>
+    </div>
+  </div>
+
+  <!-- 帮助按钮 -->
+  <button id="btn-help" title="帮助">❓</button>
+</div>
+
+<script src="sprites.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
