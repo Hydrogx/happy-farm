@@ -1,6 +1,12 @@
 /* 🌈 快乐小牧场 —— 可爱儿童风 UI */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html, body {
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: linear-gradient(180deg, #aee7ff 0%, #d8f7c5 100%);
   font-family: "Comic Sans MS", "Chalkboard SE", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -8,6 +14,10 @@ body {
   min-height: 100vh; overflow: hidden;
   user-select: none; -webkit-user-select: none;
 }
+
+/* 屏幕适配：外层按比例缩放，内层游戏保持 960x600 */
+#scale-wrap { position: relative; }
+#game-wrap { position: absolute; top: 0; left: 0; transform-origin: top left; }
 
 #game-wrap { position: relative; }
 
@@ -179,3 +189,68 @@ canvas {
   box-shadow: 0 3px 0 #e09a2f;
 }
 #btn-help:active { transform: translateY(2px); box-shadow: none; }
+
+/* ---------- 触摸控件（手机 / 平板） ---------- */
+#touch-ui { display: none; position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+body.touch #touch-ui { display: block; }
+body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助键 */
+
+/* 虚拟摇杆（左下） */
+#joy-base {
+  position: absolute; left: 20px; bottom: 20px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(255,255,255,.22);
+  border: 3px solid rgba(255,255,255,.55);
+  pointer-events: auto; touch-action: none;
+}
+#joy-knob {
+  position: absolute; left: 50%; top: 50%;
+  width: 54px; height: 54px; margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.9);
+  border: 3px solid #ffb84d;
+  box-shadow: 0 3px 10px rgba(0,0,0,.3);
+}
+
+/* 动作按钮（右下） */
+#touch-btns {
+  position: absolute; right: 20px; bottom: 20px;
+  display: flex; gap: 14px; align-items: flex-end;
+}
+.touch-btn {
+  pointer-events: auto; touch-action: none;
+  width: 92px; height: 92px; border-radius: 50%;
+  border: none; font-size: 40px; font-family: inherit;
+  background: linear-gradient(180deg, #7ddb6a, #4fb83a);
+  color: #fff;
+  box-shadow: 0 5px 0 #35852a, 0 7px 16px rgba(0,0,0,.3);
+  cursor: pointer;
+}
+.touch-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #35852a; }
+.touch-btn.small {
+  width: 58px; height: 58px; font-size: 24px;
+  background: linear-gradient(180deg, #ffe3a3, #ff9f43);
+  box-shadow: 0 4px 0 #d97b1e, 0 6px 12px rgba(0,0,0,.3);
+}
+.touch-btn.small:active { box-shadow: 0 1px 0 #d97b1e; }
+/* 钓鱼咬钩时动作按钮闪烁提示 */
+#touch-action.urgent { animation: urgent-pulse .3s infinite alternate; }
+@keyframes urgent-pulse {
+  from { transform: scale(1); filter: brightness(1); }
+  to   { transform: scale(1.14); filter: brightness(1.25); }
+}
+
+/* 竖屏提示 */
+#rotate-hint {
+  display: none;
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(60,90,40,.85); color: #fff;
+  padding: 7px 18px; border-radius: 999px;
+  font-size: 15px; font-weight: bold; white-space: nowrap;
+}
+@media (orientation: portrait) {
+  body.touch #rotate-hint { display: block; }
+}
+
+/* 弹窗内容区允许纵向滚动（手机上的长列表） */
+.modal-card { touch-action: pan-y; }

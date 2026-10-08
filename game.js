@@ -765,6 +765,7 @@ function update(dt) {
     if (keys['arrowright'] || keys['d']) dx++;
     if (keys['arrowup'] || keys['w']) dy--;
     if (keys['arrowdown'] || keys['s']) dy++;
+    dx += touchMove.x; dy += touchMove.y;   // 虚拟摇杆
     if (dx || dy) {
       const len = Math.hypot(dx, dy), spd = 170;
       p.x = Math.max(20, Math.min(WORLD_W - 20, p.x + dx / len * spd * dt));
@@ -959,17 +960,20 @@ function update(dt) {
 
   // --- 交互提示 ---
   const pr = $('prompt');
+  const actionBtn = $('touch-action');
   if (!G.modalOpen && !G.fishing && G.sleepFade === 0) {
     const it = nearestInteract();
-    if (it) { pr.textContent = `[E] ${it.label}`; pr.classList.remove('hidden'); }
+    if (it) { pr.textContent = `[${KEY_HINT}] ${it.label}`; pr.classList.remove('hidden'); }
     else pr.classList.add('hidden');
   } else if (G.fishing && G.fishing.phase === 'bite') {
-    pr.textContent = '❗ 快按 E 收杆！';
+    pr.textContent = `❗ 快按 ${KEY_HINT} 收杆！`;
     pr.classList.remove('hidden');
   } else if (G.fishing) {
-    pr.textContent = '🎣 等待中…（按 E 提前收杆）';
+    pr.textContent = `🎣 等待中…（按 ${KEY_HINT} 提前收杆）`;
     pr.classList.remove('hidden');
   } else pr.classList.add('hidden');
+  // 钓鱼咬钩时，动作按钮闪烁提醒（手机端一眼能看到）
+  if (actionBtn) actionBtn.classList.toggle('urgent', !!(G.fishing && G.fishing.phase === 'bite'));
 
   renderHUD();
 }
@@ -1225,6 +1229,95 @@ $('btn-start').addEventListener('click', () => {
   sfx.success();
   toast(`欢迎来到快乐小牧场！去找点事情做吧 🌱`, 3000);
 });
+
+// ---------------- 屏幕适配 & 触摸控件 ----------------
+// 触摸检测：触屏设备自动显示虚拟摇杆和按钮
+const isTouch = ('ontouchstart' in window) ||
+  (navigator.maxTouchPoints > 0) ||
+  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+if (isTouch) document.body.classList.add('touch');
+
+// 手机上的操作提示用 ✋ 代替键盘的 E
+const KEY_HINT = isTouch ? '✋' : 'E';
+// 虚拟摇杆的方向向量（-1 ~ 1），与键盘一起驱动角色
+const touchMove = { x: 0, y: 0 };
+
+// 让游戏画面适配屏幕（保持 960x600 比例等比缩放，居中显示）
+function fitScreen() {
+  const s = Math.min(window.innerWidth / VIEW_W, window.innerHeight / VIEW_H);
+  const wrap = $('scale-wrap');
+  if (!wrap) return;
+  wrap.style.width = (VIEW_W * s) + 'px';
+  wrap.style.height = (VIEW_H * s) + 'px';
+  const gw = $('game-wrap');
+  gw.style.transform = `scale(${s})`;
+}
+window.addEventListener('resize', fitScreen);
+window.addEventListener('orientationchange', () => setTimeout(fitScreen, 120));
+fitScreen();
+
+// ---- 虚拟摇杆（左下角，支持多点触控：一边走一边按动作键） ----
+const joyBase = $('joy-base'), joyKnob = $('joy-knob');
+const JOY_R = 42;                 // 摇杆活动半径
+let joyPid = null, joyCx = 0, joyCy = 0;
+function joyUpdate(t) {
+  let dx = t.clientX - joyCx, dy = t.clientY - joyCy;
+  const len = Math.hypot(dx, dy);
+  if (len > JOY_R) { dx = dx / len * JOY_R; dy = dy / len * JOY_R; }
+  joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+  touchMove.x = dx / JOY_R;
+  touchMove.y = dy / JOY_R;
+}
+if (joyBase) {
+  joyBase.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    joyPid = e.pointerId;
+    try { joyBase.setPointerCapture(joyPid); } catch (err) {}
+    const r = joyBase.getBoundingClientRect();
+    joyCx = r.left + r.width / 2;
+    joyCy = r.top + r.height / 2;
+    joyUpdate(e);
+  });
+  joyBase.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== joyPid) return;
+    e.preventDefault();
+    joyUpdate(e);
+  });
+  const joyEnd = (e) => {
+    if (e.pointerId !== joyPid) return;
+    joyPid = null;
+    touchMove.x = 0; touchMove.y = 0;
+    joyKnob.style.transform = 'translate(0px, 0px)';
+  };
+  joyBase.addEventListener('pointerup', joyEnd);
+  joyBase.addEventListener('pointercancel', joyEnd);
+}
+
+// ---- 动作按钮（= E / 空格） ----
+const actionBtn = $('touch-action');
+if (actionBtn) {
+  actionBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    interactQueued = true;
+  });
+}
+// 触摸版帮助键
+const touchHelp = $('touch-help');
+if (touchHelp) {
+  touchHelp.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    sfx.open();
+    toggleModal('help-modal');
+  });
+}
+// 点一下游戏画面也能做动作（手机上更方便）
+canvas.addEventListener('pointerdown', () => { interactQueued = true; });
+// 首次触摸时再确认一次显示触摸控件（兼容带触屏的笔记本）
+window.addEventListener('touchstart', () => {
+  if (!document.body.classList.contains('touch')) {
+    document.body.classList.add('touch');
+  }
+}, { passive: true });
 
 // 启动
 initWorld();

@@ -2,14 +2,15 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>🌈 快乐小牧场</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="game-wrap">
+  <div id="scale-wrap">
+    <div id="game-wrap">
   <canvas id="game" width="960" height="600"></canvas>
 
   <!-- 顶部状态栏 -->
@@ -128,7 +129,18 @@
 
   <!-- 帮助按钮 -->
   <button id="btn-help" title="帮助">❓</button>
-</div>
+    </div>
+  </div>
+
+  <!-- 触摸控件（手机 / 平板） -->
+  <div id="touch-ui">
+    <div id="rotate-hint">🔄 横过来玩，画面更大更清楚</div>
+    <div id="joy-base"><div id="joy-knob"></div></div>
+    <div id="touch-btns">
+      <button id="touch-help" class="touch-btn small" title="帮助">❓</button>
+      <button id="touch-action" class="touch-btn" title="动作">✋</button>
+    </div>
+  </div>
 
 <script src="sprites.js"></script>
 <script src="game.js"></script>
