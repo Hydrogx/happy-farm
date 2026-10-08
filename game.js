@@ -50,6 +50,13 @@ const PET_HATS = {
   flower: { name: '宠物花环',   icon: '🌸', price: 60 },
   crown:  { name: '宠物皇冠',   icon: '👑', price: 90 },
 };
+// 可购买的动物
+const ANIMAL_SHOP = [
+  { type: 'chicken', name: '小鸡',   icon: '🐔', price: 150, desc: '会下蛋' },
+  { type: 'sheep',   name: '小绵羊', icon: '🐑', price: 320, desc: '能剪羊毛' },
+  { type: 'cow',     name: '小奶牛', icon: '🐄', price: 650, desc: '能挤牛奶' },
+];
+const MAX_ANIMALS = 24;
 const CUSTOMER_COLORS = ['#7ac74f', '#ff9f43', '#5fa8e8', '#c88ae8', '#ff8f8f'];
 const CUSTOMER_HAIRS = ['#3a2a1a', '#6b4226', '#d9a62e', '#8a8a8a', '#2a2a3a'];
 
@@ -79,6 +86,7 @@ const G = {
   customerTimer: 18,
   ambientT: 6,          // 环境动物叫声计时
   lastStep: 0,          // 脚步动画相位
+  saveT: 0,             // 自动存档计时
   particles: [],
   fishing: null,              // {phase:'wait'|'bite', timer, bx, by}
   modalOpen: null,
@@ -180,6 +188,12 @@ const sfx = {
   moo:    () => { tone(165, 110, 0.5, 'sawtooth', 0.09); tone(82, 60, 0.5, 'triangle', 0.05); },
   baa:    () => { for (let i = 0; i < 5; i++) tone(620 + Math.sin(i * 2.2) * 120, 620, 0.09, 'square', 0.045, i * 0.09); },
   pet:    () => { tone(700, 1050, 0.1, 'sine', 0.1); tone(1050, 1400, 0.12, 'sine', 0.09, 0.09); },
+  // 动物自己的叫声（可延时，用在和玩家互动之后）
+  animalVoice: (type, delay = 0) => setTimeout(() => {
+    if (type === 'chicken') sfx.cluck();
+    else if (type === 'sheep') sfx.baa();
+    else sfx.moo();
+  }, delay),
   // ---- 商店 / 烹饪 ----
   coin:   () => { tone(988, 988, 0.06, 'square', 0.07); tone(1319, 1319, 0.1, 'square', 0.07, 0.06); },
   buy:    () => { sfx.coin(); tone(1976, 1976, 0.12, 'sine', 0.06, 0.14); },
@@ -204,6 +218,54 @@ const sfx = {
   success:() => sfx.happy(),
   pop:    () => tone(520, 640, 0.06, 'triangle', 0.1),
 };
+
+// ---------------- 背景音乐（轻柔五声音阶循环，全部合成） ----------------
+let musicOn = true;
+try { musicOn = localStorage.getItem('farm-music') !== '0'; } catch (e) {}
+let musicTimer = null, musicStep = 0;
+const MUSIC_BEAT = 550;                       // 每拍毫秒（约 109 BPM）
+const M_CHORDS = [                            // 4 小节和弦（半音偏移，相对 C4）
+  { bass: 0,  triad: [0, 4, 7] },             // C
+  { bass: -3, triad: [-3, 0, 4] },            // Am
+  { bass: -7, triad: [-7, -3, 0] },           // F
+  { bass: -5, triad: [-5, -1, 2] },           // G
+];
+const M_MELODY = [                            // 32 拍旋律（都是悦耳的和弦音/五声音阶）
+  7, 4, 0, 4, 7, 12, 7, 4,
+  -3, 0, 4, 0, -3, -5, -3, 0,
+  -7, -5, -3, -5, -7, -3, 0, -3,
+  -5, -3, 0, 2, 4, 2, 0, -3,
+];
+const mtof = (semi) => 261.63 * Math.pow(2, semi / 12);   // 半音 → 频率
+
+function musicTick() {
+  const step = musicStep++;
+  if (!musicOn || muted || !audioInit()) return;
+  const ch = M_CHORDS[Math.floor(step / 8) % 4];
+  const beat = step % 8;
+  if (beat % 2 === 0) tone(mtof(ch.bass - 24), null, 1.0, 'sine', 0.045);          // 低音
+  if (beat === 0) ch.triad.forEach((n, i) =>                                          // 和弦垫音
+    tone(mtof(n - 12), null, 1.7, 'sine', 0.016, i * 0.03));
+  const n = M_MELODY[step % M_MELODY.length];
+  if (n !== null) tone(mtof(n), null, 0.5, 'triangle', 0.026);                        // 主旋律
+}
+function startMusic() {
+  if (musicTimer || !musicOn) return;
+  audioInit();
+  musicTick();
+  musicTimer = setInterval(musicTick, MUSIC_BEAT);
+}
+function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+function syncMusicButton() {
+  const b = $('btn-music');
+  if (b) { b.textContent = musicOn ? '🎵' : '🔕'; b.classList.toggle('off', !musicOn); }
+}
+function setMusic(on) {
+  musicOn = on;
+  try { localStorage.setItem('farm-music', on ? '1' : '0'); } catch (e) {}
+  syncMusicButton();
+  if (on) startMusic(); else stopMusic();
+}
 
 // ---------------- 输入 ----------------
 const keys = {};
@@ -282,17 +344,10 @@ function initWorld() {
     mkTree('strawberry', 600, 250),
   ];
   // 动物（各自住在自己的棚舍里）
-  const mk = (type, x, y) => ({
-    type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
-    moving: false, walkPhase: 0, phase: rand(0, 6),
-    tx: x, ty: y, waitT: rand(1, 3), peck: 0,
-    wool: 1, woolT: 0, milkReady: true, milkT: 0, eggT: rand(15, 40),
-    home: { ...PENS[type].home },
-  });
   G.animals = [
-    mk('chicken', 270, 780), mk('chicken', 320, 810), mk('chicken', 350, 770),
-    mk('sheep', 600, 870), mk('sheep', 690, 900),
-    mk('cow', 970, 870),
+    newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810), newAnimal('chicken', 350, 770),
+    newAnimal('sheep', 600, 870), newAnimal('sheep', 690, 900),
+    newAnimal('cow', 970, 870),
   ];
   // 装饰（避开建筑/田地/池塘/棚舍/果树）
   const avoid = [
@@ -316,6 +371,162 @@ function initWorld() {
     if (!okSpot(x, y)) continue;
     G.decor.push({ kind: 'flower', x, y, phase: rand(0, 6), color: pick(['#ff8fb0', '#fff', '#c88ae8', '#ffb84d']) });
   }
+}
+
+// 创建一只动物（初始动物和商店买的动物都用它）
+function newAnimal(type, x, y) {
+  return {
+    type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
+    moving: false, walkPhase: 0, phase: rand(0, 6),
+    tx: x, ty: y, waitT: rand(1, 3), peck: 0,
+    wool: 1, woolT: 0, milkReady: true, milkT: 0, eggT: rand(15, 40),
+    home: { ...PENS[type].home },
+  };
+}
+
+// ---------------- 存档 / 读档（localStorage） ----------------
+const SAVE_KEY = 'happy-farm-save-v1';
+const SAVE_EVERY = 10;         // 每 10 秒自动存一次
+
+function saveGame() {
+  if (!G.started) return false;   // 还没开始玩就不存
+  const data = {
+    v: 1,
+    coins: G.coins, day: G.day, timeMin: G.timeMin, weather: G.weather,
+    inventory: G.inventory, owned: G.owned, petHatsOwned: G.petHatsOwned,
+    player: {
+      x: G.player.x, y: G.player.y, dir: G.player.dir,
+      gender: G.player.gender, outfit: { ...G.player.outfit },
+    },
+    pet: { type: G.pet.type, hat: G.pet.hat },
+    animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady })),
+    plots: G.plots.map(p => ({ state: p.state, crop: p.crop, timer: p.timer, watered: p.watered })),
+    trees: G.trees.map(t => ({ type: t.type, fruits: t.fruits, timer: t.timer })),
+    items: G.groundItems.map(i => ({ id: i.id, x: i.x, y: i.y })),
+    music: musicOn, muted,
+    savedAt: Date.now(),
+  };
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    G.saveT = 0;
+    flashSaveIcon();
+    return true;
+  } catch (e) { return false; }
+}
+
+function readSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return (d && d.v === 1) ? d : null;
+  } catch (e) { return null; }
+}
+function hasSave() { return readSave() !== null; }
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+
+function loadGame() {
+  const d = readSave();
+  if (!d) return false;
+  try {
+    G.coins = Number.isFinite(d.coins) ? d.coins : 20;
+    G.day = Number.isFinite(d.day) ? d.day : 1;
+    G.timeMin = Number.isFinite(d.timeMin) ? d.timeMin : DAY_START;
+    G.weather = ['sunny', 'cloudy', 'rain'].includes(d.weather) ? d.weather : 'sunny';
+    G.inventory = (d.inventory && typeof d.inventory === 'object') ? d.inventory : {};
+    G.owned = d.owned || { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
+    G.petHatsOwned = Array.isArray(d.petHatsOwned) ? d.petHatsOwned : [];
+    if (d.player) {
+      if (Number.isFinite(d.player.x)) G.player.x = Math.max(20, Math.min(WORLD_W - 20, d.player.x));
+      if (Number.isFinite(d.player.y)) G.player.y = Math.max(120, Math.min(WORLD_H - 20, d.player.y));
+      G.player.dir = d.player.dir || 'down';
+      G.player.gender = d.player.gender === 'girl' ? 'girl' : 'boy';
+      if (d.player.outfit) {
+        G.player.outfit = {
+          hat: OUTFITS.hat[d.player.outfit.hat] ? d.player.outfit.hat : 'ragged',
+          shirt: OUTFITS.shirt[d.player.outfit.shirt] ? d.player.outfit.shirt : 'ragged',
+          pants: OUTFITS.pants[d.player.outfit.pants] ? d.player.outfit.pants : 'ragged',
+        };
+      }
+    }
+    if (d.pet) {
+      G.pet.type = d.pet.type === 'cat' ? 'cat' : 'dog';
+      G.pet.hat = (d.pet.hat && OUTFITS.hat[d.pet.hat]) ? d.pet.hat : 'none';
+      G.pet.x = G.player.x - 40; G.pet.y = G.player.y + 30;
+    }
+    // 动物
+    if (Array.isArray(d.animals) && d.animals.length) {
+      G.animals = d.animals.filter(a => a && PENS[a.type]).map(a => {
+        const na = newAnimal(a.type, Number.isFinite(a.x) ? a.x : PENS[a.type].home.x,
+                                      Number.isFinite(a.y) ? a.y : PENS[a.type].home.y);
+        if (typeof a.wool === 'number') na.wool = a.wool;
+        na.milkReady = a.milkReady !== false;
+        return na;
+      });
+      if (!G.animals.length) G.animals = [newAnimal('chicken', 270, 780)];
+    }
+    // 田地（按下标恢复）
+    if (Array.isArray(d.plots)) {
+      d.plots.forEach((p, i) => {
+        const pl = G.plots[i];
+        if (!pl || !p) return;
+        pl.state = ['grass', 'tilled', 'seed', 'growing', 'ripe'].includes(p.state) ? p.state : 'grass';
+        pl.crop = (p.crop && ITEMS[p.crop]) ? p.crop : null;
+        pl.timer = Number.isFinite(p.timer) ? p.timer : 0;
+        pl.watered = !!p.watered;
+      });
+    }
+    // 果树
+    if (Array.isArray(d.trees)) {
+      d.trees.forEach((t, i) => {
+        const tr = G.trees[i];
+        if (!tr || !t) return;
+        tr.fruits = Number.isFinite(t.fruits) ? Math.max(0, Math.min(3, t.fruits)) : tr.fruits;
+        tr.timer = Number.isFinite(t.timer) ? t.timer : 0;
+      });
+    }
+    // 地上的物品
+    G.groundItems = Array.isArray(d.items)
+      ? d.items.filter(i => i && ITEMS[i.id] && Number.isFinite(i.x) && Number.isFinite(i.y))
+               .map(i => ({ id: i.id, x: i.x, y: i.y, phase: rand(0, 6) }))
+      : [];
+    // 音效设置
+    if (typeof d.music === 'boolean') { musicOn = d.music; syncMusicButton(); }
+    if (typeof d.muted === 'boolean') setMuted(d.muted);
+    // 清掉临时状态
+    G.customers = []; G.particles = []; G.fishing = null;
+    G.sleepFade = 0; G.sleepDawn = false; G.customerTimer = rand(20, 40);
+    renderInventory(); renderHUD();
+    return true;
+  } catch (e) { return false; }
+}
+
+// 存档小图标闪一下
+function flashSaveIcon() {
+  const b = $('save-box');
+  if (!b) return;
+  b.classList.add('flash');
+  clearTimeout(flashSaveIcon._t);
+  flashSaveIcon._t = setTimeout(() => b.classList.remove('flash'), 700);
+}
+
+// 全新开始（清空进度）
+function resetGame() {
+  G.coins = 20; G.day = 1; G.timeMin = DAY_START; G.weather = 'sunny';
+  G.inventory = { seed_carrot: 2 };
+  G.owned = { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
+  G.petHatsOwned = [];
+  G.player.x = 420; G.player.y = 500; G.player.dir = 'down';
+  G.player.gender = chosenGender;
+  G.player.outfit = { hat: 'ragged', shirt: 'ragged', pants: 'ragged' };
+  G.pet.type = chosenPet; G.pet.hat = 'none'; G.pet.happy = 0;
+  G.pet.x = 380; G.pet.y = 530;
+  G.groundItems = []; G.customers = []; G.particles = [];
+  G.plots = []; G.trees = []; G.decor = []; G.animals = [];
+  G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
+  G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
+  initWorld();
+  renderInventory(); renderHUD();
 }
 
 // ---------------- DOM / UI ----------------
@@ -358,31 +569,43 @@ document.querySelectorAll('.close-modal').forEach(b =>
   b.addEventListener('click', () => { sfx.close(); closeModal(b.dataset.close); }));
 $('btn-help').addEventListener('click', () => { sfx.open(); toggleModal('help-modal'); });
 $('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); });
+$('btn-music').addEventListener('click', () => { sfx.click(); setMusic(!musicOn); });
 
 // ---------------- 商店 ----------------
 let shopTab = 'seeds';
+// 图标容器：服饰用「画出来的真实样式」，其它用 emoji
+function iconBox(kind, keyOrEmoji) {
+  const d = document.createElement('div');
+  d.className = 'icon';
+  if (kind === 'emoji') d.textContent = keyOrEmoji;
+  else d.appendChild(clothingIconCanvas(kind, keyOrEmoji));
+  return d;
+}
+
 function renderShop() {
   const box = $('shop-items');
   box.innerHTML = '';
-  const mkCard = (icon, name, price, onBuy, owned) => {
+  const mkCard = (icon, name, price, onBuy, owned, sub) => {
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${icon}</div><div>${name}</div>`;
+    d.appendChild(icon);
+    const info = document.createElement('div');
+    info.innerHTML = `<div>${name}</div>${sub ? `<div class="sub">${sub}</div>` : ''}`;
+    d.appendChild(info);
     const b = document.createElement('button');
     if (owned) {
       b.textContent = '已有啦 ✓'; b.disabled = true;
-      d.appendChild(b);
     } else {
       b.textContent = `💰${price} 买`;
       b.disabled = G.coins < price;
       b.onclick = onBuy;
-      d.appendChild(b);
     }
+    d.appendChild(b);
     box.appendChild(d);
   };
   if (shopTab === 'seeds') {
     for (const id of ['seed_carrot', 'seed_tomato', 'seed_corn']) {
-      mkCard(ITEMS[id].icon, ITEMS[id].name, ITEMS[id].price, () => {
+      mkCard(iconBox('emoji', ITEMS[id].icon), ITEMS[id].name, ITEMS[id].price, () => {
         G.coins -= ITEMS[id].price; addItem(id); sfx.buy(); toast(`买到 ${ITEMS[id].name}！`); renderShop(); renderHUD();
       });
     }
@@ -391,16 +614,38 @@ function renderShop() {
       for (const [key, o] of Object.entries(OUTFITS[cat])) {
         if (o.price === 0) continue;
         const owned = G.owned[cat].includes(key);
-        mkCard(o.icon, o.name, o.price, () => {
+        mkCard(iconBox(cat, key), o.name, o.price, () => {
           G.coins -= o.price; G.owned[cat].push(key); sfx.buy();
           toast(`买到 ${o.name}！去衣柜换上吧 👕`); renderShop(); renderHUD();
         }, owned);
       }
     }
+  } else if (shopTab === 'animals') {
+    // 动物列表：买回来会在自己的棚舍附近自由散步
+    const head = document.createElement('div');
+    head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    head.textContent = `牧场现在有 ${G.animals.length} 只动物（最多 ${MAX_ANIMALS} 只）`;
+    box.appendChild(head);
+    for (const a of ANIMAL_SHOP) {
+      const full = G.animals.length >= MAX_ANIMALS;
+      mkCard(iconBox('emoji', a.icon), a.name, a.price, () => {
+        if (G.animals.length >= MAX_ANIMALS) { sfx.error(); toast('牧场里的动物太多啦！'); return; }
+        G.coins -= a.price;
+        const h = PENS[a.type].home;
+        const na = newAnimal(a.type, h.x + rand(-30, 30), h.y + rand(-20, 20));
+        na.waitT = 0.8;
+        G.animals.push(na);
+        sfx.buy();
+        sfx.animalVoice(a.type, 260);
+        spawnParticles(na.x, na.y - 20, '💖', 5);
+        toast(`${a.name}来到牧场啦！它会自己散步 🎉`, 2400);
+        renderShop(); renderHUD();
+      }, false, a.desc);
+    }
   } else {
     for (const [key, o] of Object.entries(PET_HATS)) {
       const owned = G.petHatsOwned.includes(key);
-      mkCard(o.icon, o.name, o.price, () => {
+      mkCard(iconBox('hat', key), o.name, o.price, () => {
         G.coins -= o.price; G.petHatsOwned.push(key);
         G.pet.hat = key; G.pet.happy = 3; sfx.buy();
         spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
@@ -429,7 +674,8 @@ function renderWardrobe() {
     const o = OUTFITS[wTab][key];
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${o.icon}</div><div>${o.name}</div>`;
+    d.appendChild(iconBox(wTab, key));
+    d.insertAdjacentHTML('beforeend', `<div>${o.name}</div>`);
     const b = document.createElement('button');
     const wearing = G.player.outfit[wTab] === key;
     b.textContent = wearing ? '穿着呢 ✓' : '穿上';
@@ -453,7 +699,8 @@ function renderWardrobe() {
       const o = PET_HATS[key];
       const d = document.createElement('div');
       d.className = 'shop-item';
-      d.innerHTML = `<div class="icon">${o.icon}</div><div>${o.name}</div>`;
+      d.appendChild(iconBox('hat', key));
+      d.insertAdjacentHTML('beforeend', `<div>${o.name}</div>`);
       const b = document.createElement('button');
       const wearing = G.pet.hat === key;
       b.textContent = wearing ? '戴着呢 ✓' : '给宠物戴';
@@ -642,18 +889,19 @@ function doInteract() {
     }
     case 'shear':
       t.a.wool = 0; t.a.woolT = 0;
-      addItem('wool'); sfx.shear();
+      addItem('wool'); sfx.shear(); sfx.animalVoice('sheep', 230);
       spawnParticles(t.a.x, t.a.y - 20, '✨', 5);
       toast('剪到一团软软的羊毛！');
       break;
     case 'milk':
       t.a.milkReady = false; t.a.milkT = 0;
-      addItem('milk'); sfx.milk();
+      addItem('milk'); sfx.milk(); sfx.animalVoice('cow', 270);
       spawnParticles(t.a.x, t.a.y - 20, '🥛', 4);
       toast('挤到新鲜牛奶！');
       break;
     case 'petChicken': case 'petSheep': case 'petCow':
-      spawnParticles(t.a.x, t.a.y - 20, '💖', 3); sfx.pet();
+      spawnParticles(t.a.x, t.a.y - 20, '💖', 3);
+      sfx.pet(); sfx.animalVoice(t.a.type, 130);   // 摸一摸，动物会回应你
       break;
     case 'till':
       t.pl.state = 'tilled'; sfx.till();
@@ -946,12 +1194,15 @@ function update(dt) {
   if (G.started && !G.modalOpen) {
     G.ambientT -= dt;
     if (G.ambientT <= 0) {
-      G.ambientT = rand(9, 22);
-      const a = pick(G.animals);
-      if (a.type === 'chicken') sfx.cluck();
-      else if (a.type === 'sheep') sfx.baa();
-      else sfx.moo();
+      G.ambientT = rand(6, 16);
+      sfx.animalVoice(pick(G.animals).type);
     }
+  }
+
+  // --- 自动存档 ---
+  if (G.started && G.sleepFade === 0) {
+    G.saveT += dt;
+    if (G.saveT >= SAVE_EVERY) saveGame();
   }
 
   // --- 相机 ---
@@ -998,6 +1249,7 @@ function nextDay() {
   }
   renderHUD();
   if (G.weather === 'rain') sfx.rain(); else sfx.morning();
+  saveGame();   // 换天时存一次
   toast(`☀️ 第 ${G.day} 天开始啦！${G.weather === 'rain' ? '今天下雨，不用浇水～' : ''}`, 2500);
 }
 
@@ -1221,13 +1473,25 @@ function setupChooser(idA, idB, cb) {
 setupChooser('choose-boy', 'choose-girl', (i) => { chosenGender = i === 0 ? 'boy' : 'girl'; });
 setupChooser('choose-dog', 'choose-cat', (i) => { chosenPet = i === 0 ? 'dog' : 'cat'; });
 
+// 开始新游戏
 $('btn-start').addEventListener('click', () => {
-  G.player.gender = chosenGender;
-  G.pet.type = chosenPet;
+  resetGame();
   $('start-screen').classList.add('hidden');
   G.started = true;
   sfx.success();
+  startMusic();
+  saveGame();
   toast(`欢迎来到快乐小牧场！去找点事情做吧 🌱`, 3000);
+});
+// 继续上次的存档
+$('btn-continue').addEventListener('click', () => {
+  if (!loadGame()) { toast('存档读不出来，重新开始吧'); resetGame(); }
+  $('start-screen').classList.add('hidden');
+  G.started = true;
+  sfx.success();
+  startMusic();
+  saveGame();
+  toast(`欢迎回来！第 ${G.day} 天继续加油 🌻`, 3000);
 });
 
 // ---------------- 屏幕适配 & 触摸控件 ----------------
@@ -1322,6 +1586,26 @@ window.addEventListener('touchstart', () => {
 // 启动
 initWorld();
 setMuted(muted);   // 同步静音按钮图标
+{
+  const mb = $('btn-music');
+  if (mb) syncMusicButton();
+}
+// 关页面 / 切到后台时也存一次，避免丢进度
+window.addEventListener('beforeunload', () => saveGame());
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+// 开始界面：有存档就显示「继续上次」
+if (hasSave()) {
+  const d = readSave();
+  const btn = $('btn-continue');
+  if (btn) {
+    btn.classList.remove('hidden');
+    const info = $('save-info');
+    if (info && d) {
+      info.textContent = `第 ${d.day || 1} 天 · 💰${d.coins || 0} · 上次保存 ${new Date(d.savedAt || Date.now()).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+      info.classList.remove('hidden');
+    }
+  }
+}
 renderInventory();
 renderHUD();
 requestAnimationFrame(loop);

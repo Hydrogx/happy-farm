@@ -99,63 +99,30 @@ const PANTS_COLORS = {
   polka:       { main: '#7ac7e8', patch: '#ffffff' },
 };
 
-/* ------------------------------------------------------------
- * 画小农夫（男孩 / 女孩，可换装，带走路与动作动画）
- * ---------------------------------------------------------- */
-function drawPlayer(ctx, x, y, o) {
-  // o: {gender, dir, walkPhase, moving, outfit, actionT, t}
-  const bob = o.moving ? Math.abs(Math.sin(o.walkPhase)) * 3 : Math.sin(o.t * 2) * 1.2;
-  const swing = o.moving ? Math.sin(o.walkPhase) * 6 : 0;
-  const yy = y - bob;
-  const dirX = o.dir === 'left' ? -1 : 1;
-  const skin = '#ffdbac';
-  const shirt = SHIRT_COLORS[o.outfit.shirt] || SHIRT_COLORS.ragged;
-  const pants = PANTS_COLORS[o.outfit.pants] || PANTS_COLORS.ragged;
-
-  ctx.save();
-  ctx.translate(x, yy);
-  if (o.dir === 'left' || o.dir === 'right') ctx.scale(dirX, 1);
-
-  drawShadow(ctx, 0, bob, 15);
-
-  // --- 腿（裤子层） ---
-  ctx.fillStyle = pants.main;
-  rr(ctx, -9 + swing * 0.5, 2, 8, 15, 3); ctx.fill();
-  rr(ctx, 1 - swing * 0.5, 2, 8, 15, 3); ctx.fill();
-  // 裤子花纹
+// 裤子花纹（swing = 走路摆动，图标传 0）
+function drawPantsPattern(ctx, key, pants, swing = 0) {
   ctx.fillStyle = pants.patch;
-  if (o.outfit.pants === 'ragged') {
+  if (key === 'ragged') {
     rr(ctx, -8 + swing * 0.5, 8, 4, 4, 1); ctx.fill();
-  } else if (o.outfit.pants === 'stripepants') {
+  } else if (key === 'stripepants') {
     rr(ctx, -9 + swing * 0.5, 5, 8, 2.5, 1); ctx.fill();
     rr(ctx, -9 + swing * 0.5, 11, 8, 2.5, 1); ctx.fill();
     rr(ctx, 1 - swing * 0.5, 5, 8, 2.5, 1); ctx.fill();
     rr(ctx, 1 - swing * 0.5, 11, 8, 2.5, 1); ctx.fill();
-  } else if (o.outfit.pants === 'polka') {
+  } else if (key === 'polka') {
     ellipse(ctx, -5 + swing * 0.5, 7, 1.8, 1.8); ctx.fill();
     ellipse(ctx, -5 + swing * 0.5, 13, 1.8, 1.8); ctx.fill();
     ellipse(ctx, 5 - swing * 0.5, 7, 1.8, 1.8); ctx.fill();
     ellipse(ctx, 5 - swing * 0.5, 13, 1.8, 1.8); ctx.fill();
-  } else if (o.outfit.pants === 'jeans' || o.outfit.pants === 'brown') {
+  } else if (key === 'jeans' || key === 'brown') {
     rr(ctx, -9 + swing * 0.5, 3, 8, 2, 1); ctx.fill(); // 裤兜线
     rr(ctx, 1 - swing * 0.5, 3, 8, 2, 1); ctx.fill();
   }
-  // 鞋子
-  ctx.fillStyle = '#7a5230';
-  rr(ctx, -10 + swing * 0.6, 15, 9, 5, 2); ctx.fill();
-  rr(ctx, 1 - swing * 0.6, 15, 9, 5, 2); ctx.fill();
+}
 
-  // --- 身体（上衣层） ---
-  ctx.fillStyle = shirt.main;
-  if (o.outfit.shirt === 'dress') {
-    ctx.beginPath();
-    ctx.moveTo(-11, -16); ctx.lineTo(11, -16);
-    ctx.lineTo(15, 6); ctx.lineTo(-15, 6); ctx.closePath(); ctx.fill();
-  } else {
-    rr(ctx, -11, -16, 22, 21, 6); ctx.fill();
-  }
-  // 上衣花纹
-  switch (o.outfit.shirt) {
+// 上衣花纹（与 drawPlayer 共用，商店图标也用它）
+function drawShirtPattern(ctx, key, shirt) {
+  switch (key) {
     case 'ragged':
       ctx.fillStyle = shirt.patch;
       rr(ctx, -8, -10, 6, 6, 1); ctx.fill();
@@ -211,6 +178,49 @@ function drawPlayer(ctx, x, y, o) {
       rr(ctx, 5, -16, 6, 20, 3); ctx.fill();
       break;
   }
+}
+
+/* ------------------------------------------------------------
+ * 画小农夫（男孩 / 女孩，可换装，带走路与动作动画）
+ * ---------------------------------------------------------- */
+function drawPlayer(ctx, x, y, o) {
+  // o: {gender, dir, walkPhase, moving, outfit, actionT, t}
+  const bob = o.moving ? Math.abs(Math.sin(o.walkPhase)) * 3 : Math.sin(o.t * 2) * 1.2;
+  const swing = o.moving ? Math.sin(o.walkPhase) * 6 : 0;
+  const yy = y - bob;
+  const dirX = o.dir === 'left' ? -1 : 1;
+  const skin = '#ffdbac';
+  const shirt = SHIRT_COLORS[o.outfit.shirt] || SHIRT_COLORS.ragged;
+  const pants = PANTS_COLORS[o.outfit.pants] || PANTS_COLORS.ragged;
+
+  ctx.save();
+  ctx.translate(x, yy);
+  if (o.dir === 'left' || o.dir === 'right') ctx.scale(dirX, 1);
+
+  drawShadow(ctx, 0, bob, 15);
+
+  // --- 腿（裤子层） ---
+  ctx.fillStyle = pants.main;
+  rr(ctx, -9 + swing * 0.5, 2, 8, 15, 3); ctx.fill();
+  rr(ctx, 1 - swing * 0.5, 2, 8, 15, 3); ctx.fill();
+  // 裤子花纹
+  drawPantsPattern(ctx, o.outfit.pants, pants, swing);
+  // 鞋子
+  ctx.fillStyle = '#7a5230';
+  rr(ctx, -10 + swing * 0.6, 15, 9, 5, 2); ctx.fill();
+  rr(ctx, 1 - swing * 0.6, 15, 9, 5, 2); ctx.fill();
+
+  // --- 身体（上衣层） ---
+  ctx.fillStyle = shirt.main;
+  if (o.outfit.shirt === 'dress') {
+    ctx.beginPath();
+    ctx.moveTo(-11, -16); ctx.lineTo(11, -16);
+    ctx.lineTo(15, 6); ctx.lineTo(-15, 6); ctx.closePath(); ctx.fill();
+  } else {
+    rr(ctx, -11, -16, 22, 21, 6); ctx.fill();
+  }
+  // 上衣花纹
+  drawShirtPattern(ctx, o.outfit.shirt, shirt);
 
   // --- 手臂（动作时举起来） ---
   const armRaise = o.actionT > 0 ? Math.sin(o.actionT * 10) * 10 + 12 : 0;
@@ -261,8 +271,11 @@ function drawPlayer(ctx, x, y, o) {
   ctx.strokeStyle = '#b5673a'; ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.arc(0, -24, 3, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
 
-  // --- 帽子层 ---
+  // --- 帽子层（整体上移一点，避免压住眼睛） ---
+  ctx.save();
+  ctx.translate(0, -3.5);
   drawHat(ctx, o.outfit.hat, o.t);
+  ctx.restore();
 
   ctx.restore();
 }
@@ -365,6 +378,85 @@ function drawHat(ctx, hat, t) {
       ellipse(ctx, 6, -39.5, 1.1, 1.1); ctx.fill();
       break;
   }
+}
+
+/* ------------------------------------------------------------
+ * 服饰独立图标（商店 / 衣柜用，画出真实样式）
+ * ---------------------------------------------------------- */
+// 帽子图标：头 + 头发 + 帽子
+function iconHat(ctx, key) {
+  ctx.fillStyle = '#ffdbac';
+  ellipse(ctx, 0, 0, 11, 10.5); ctx.fill();
+  ctx.fillStyle = '#6b4226';
+  ctx.beginPath(); ctx.ellipse(0, -4, 11.5, 7.5, 0, Math.PI, Math.PI * 2); ctx.fill();
+  // drawHat 以头中心 (0,-27) 为基准，向下偏移 27 对齐到头中心 (0,0)
+  ctx.save();
+  ctx.translate(0, 27);
+  drawHat(ctx, key, 0);
+  ctx.restore();
+}
+
+// 上衣图标：只画上半身（露出花色）
+function iconShirt(ctx, key) {
+  const shirt = SHIRT_COLORS[key] || SHIRT_COLORS.ragged;
+  // 手臂
+  ctx.strokeStyle = shirt.main; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-11, -11); ctx.lineTo(-16, -1);
+  ctx.moveTo(11, -11); ctx.lineTo(16, -1);
+  ctx.stroke();
+  // 手
+  ctx.fillStyle = '#ffdbac';
+  ellipse(ctx, -16, -1, 3.2, 3.2); ctx.fill();
+  ellipse(ctx, 16, -1, 3.2, 3.2); ctx.fill();
+  // 身体
+  ctx.fillStyle = shirt.main;
+  if (key === 'dress') {
+    ctx.beginPath();
+    ctx.moveTo(-11, -16); ctx.lineTo(11, -16);
+    ctx.lineTo(15, 8); ctx.lineTo(-15, 8); ctx.closePath(); ctx.fill();
+  } else {
+    rr(ctx, -11, -16, 22, 22, 6); ctx.fill();
+  }
+  // 花纹
+  drawShirtPattern(ctx, key, shirt);
+}
+
+// 裤子图标：只画两条腿
+function iconPants(ctx, key) {
+  const pants = PANTS_COLORS[key] || PANTS_COLORS.ragged;
+  ctx.fillStyle = pants.main;
+  rr(ctx, -9, -10, 8, 17, 3); ctx.fill();
+  rr(ctx, 1, -10, 8, 17, 3); ctx.fill();
+  drawPantsPattern(ctx, key, pants, 0);
+  // 鞋子
+  ctx.fillStyle = '#7a5230';
+  rr(ctx, -10, 5, 9, 5, 2); ctx.fill();
+  rr(ctx, 1, 5, 9, 5, 2); ctx.fill();
+}
+
+// 生成服饰图标的 canvas 元素
+function clothingIconCanvas(cat, key, size = 44) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const x = c.getContext('2d');
+  x.save();
+  if (cat === 'hat') {
+    // iconHat 内部把帽子画在头中心上方，这里整体下移使「帽子+头」居中
+    x.translate(size / 2, size * 0.66);
+    x.scale(0.85, 0.85);
+    iconHat(x, key);
+  } else if (cat === 'shirt') {
+    x.translate(size / 2, size / 2 + 4);
+    x.scale(0.95, 0.95);
+    iconShirt(x, key);
+  } else {
+    x.translate(size / 2, size / 2);
+    x.scale(1.3, 1.3);
+    iconPants(x, key);
+  }
+  x.restore();
+  return c;
 }
 
 /* ------------------------------------------------------------
@@ -519,8 +611,11 @@ function drawPet(ctx, x, y, p) {
     ctx.moveTo(10, -6); ctx.lineTo(15, -5); ctx.moveTo(10, -7.5); ctx.lineTo(15, -8.5);
     ctx.stroke();
   }
+  // 宠物帽子：把 drawHat 的「头部基准点」对准宠物的头，帽子才戴得正
   if (p.hat && p.hat !== 'none') {
-    ctx.save(); ctx.translate(7, -4); ctx.scale(0.55, 0.55);
+    ctx.save();
+    ctx.translate(7, 9.3);        // 宠物头中心在 (7,-8)，drawHat 以 (0,-27) 为头心
+    ctx.scale(0.7, 0.7);
     drawHat(ctx, p.hat, p.t);
     ctx.restore();
   }

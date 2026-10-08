@@ -19,6 +19,8 @@
     <div class="hud-box">📅 第 <span id="day">1</span> 天</div>
     <div class="hud-box">🕐 <span id="clock">08:00</span></div>
     <div class="hud-box" id="weather-box">☀️ 晴天</div>
+    <div class="hud-box" id="save-box" title="自动存档">💾</div>
+    <button id="btn-music" class="hud-box" title="背景音乐开关">🎵</button>
     <button id="btn-mute" class="hud-box" title="声音开关">🔊</button>
   </div>
 
@@ -52,7 +54,9 @@
         <div class="big-emoji">🐱</div><div>小猫</div>
       </div>
     </div>
-    <button id="btn-start" class="big-btn">🎮 开始游戏</button>
+    <button id="btn-continue" class="big-btn hidden">📂 继续上次的牧场</button>
+    <div id="save-info" class="save-info hidden"></div>
+    <button id="btn-start" class="big-btn">🎮 开始新游戏</button>
     <div class="help-hint">
       ⌨️ 方向键 / WASD 走路 &nbsp;·&nbsp; <b>E</b> 或 <b>空格</b> 做动作 &nbsp;·&nbsp; <b>H</b> 帮助
     </div>
@@ -87,6 +91,7 @@
       <div class="tab-row">
         <button class="tab-btn selected" data-tab="seeds">🌱 种子</button>
         <button class="tab-btn" data-tab="clothes">👕 服装</button>
+        <button class="tab-btn" data-tab="animals">🐮 动物</button>
         <button class="tab-btn" data-tab="pet">🐾 宠物装扮</button>
       </div>
       <div id="shop-items" class="shop-grid"></div>
