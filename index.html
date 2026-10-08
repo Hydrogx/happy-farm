@@ -60,6 +60,9 @@
           <div class="choose-card" id="choose-cat">
             <div class="big-emoji">🐱</div><div data-i18n="cat">小猫</div>
           </div>
+          <div class="choose-card" id="choose-duck">
+            <div class="big-emoji">🦆</div><div data-i18n="petDuck">小鸭</div>
+          </div>
         </div>
         <button id="btn-continue" class="big-btn hidden" data-i18n="btnContinue">📂 继续上次的牧场</button>
         <div id="save-info" class="save-info hidden"></div>
@@ -98,7 +101,8 @@
           <div class="tab-row">
             <button class="tab-btn selected" data-tab="seeds" data-i18n="tabSeeds">🌱 种子</button>
             <button class="tab-btn" data-tab="clothes" data-i18n="tabClothes">👕 服装</button>
-            <button class="tab-btn" data-tab="animals" data-i18n="tabAnimals">🐮 动物</button>
+            <button class="tab-btn" data-tab="animals" data-i18n="tabAnimals">🐮 农场动物</button>
+            <button class="tab-btn" data-tab="zoo" data-i18n="tabZoo">🦁 观赏动物</button>
             <button class="tab-btn" data-tab="decor" data-i18n="tabDecor">🎡 装饰</button>
             <button class="tab-btn" data-tab="pet" data-i18n="tabPet">🐾 宠物装扮</button>
           </div>
@@ -120,6 +124,14 @@
       <div id="wardrobe-modal" class="modal hidden">
         <div class="modal-card">
           <h2 data-i18n="wardrobeTitle">👕 我的衣柜</h2>
+          <div class="tab-row char-row">
+            <span class="char-label" data-i18n="charSection">👦 角色与宠物</span>
+            <button class="tab-btn" id="pick-boy" data-i18n="boy">小男孩</button>
+            <button class="tab-btn" id="pick-girl" data-i18n="girl">小女孩</button>
+            <button class="tab-btn" id="pick-dog" data-i18n="dog">小狗</button>
+            <button class="tab-btn" id="pick-cat" data-i18n="cat">小猫</button>
+            <button class="tab-btn" id="pick-duck" data-i18n="petDuck">小鸭</button>
+          </div>
           <div class="tab-row">
             <button class="tab-btn selected" data-wtab="hat" data-i18n="wtabHat">🎩 帽子</button>
             <button class="tab-btn" data-wtab="shirt" data-i18n="wtabShirt">👕 上衣</button>
@@ -140,7 +152,22 @@
         </div>
       </div>
 
-      <!-- 帮助按钮 -->
+      <!-- ============ 动物图鉴 ============ -->
+      <div id="book-modal" class="modal hidden">
+        <div class="modal-card">
+          <h2 data-i18n="bookTitle">📖 动物图鉴</h2>
+          <div class="tab-row">
+            <button class="tab-btn selected" data-book="zoo" data-i18n="bookZoo">🦁 动物园</button>
+            <button class="tab-btn" data-book="sea" data-i18n="bookSea">🐟 海洋馆</button>
+          </div>
+          <p class="subtitle" data-i18n="bookHint">买到的观赏动物和钓到的海洋生物都会记录在这里</p>
+          <div id="book-items" class="shop-grid"></div>
+          <button class="big-btn close-modal" data-close="book-modal" data-i18n="btnKnow">知道啦！</button>
+        </div>
+      </div>
+
+      <!-- 图鉴 & 帮助按钮 -->
+      <button id="btn-book" title="动物图鉴">📖</button>
       <button id="btn-help" title="帮助" data-i18n-title="helpTitle">❓</button>
     </div>
   </div>
@@ -150,6 +177,7 @@
     <div id="rotate-hint">🔄 横过来玩，画面更大更清楚</div>
     <div id="joy-base"><div id="joy-knob"></div></div>
     <div id="touch-btns">
+      <button id="touch-book" class="touch-btn small" title="图鉴">📖</button>
       <button id="touch-help" class="touch-btn small" title="帮助">❓</button>
       <button id="touch-action" class="touch-btn" title="动作">✋</button>
     </div>

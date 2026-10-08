@@ -233,6 +233,15 @@ function drawPlayer(ctx, x, y, o) {
   ellipse(ctx, -16, -2 + swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
   ellipse(ctx, 16, -2 - swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
 
+  // --- 手里的鱼竿（钓鱼时从手的位置伸出去） ---
+  if (o.rod) {
+    const rhx = 16, rhy = -2 - swing * 0.4 - armRaise;
+    ctx.strokeStyle = '#8a5a2e'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(rhx - 3, rhy + 3); ctx.lineTo(rhx + 11, rhy - 25); ctx.stroke();
+    ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(rhx + 11, rhy - 25); ctx.lineTo(rhx + 12.5, rhy - 27); ctx.stroke();
+  }
+
   // --- 头 ---
   ctx.fillStyle = skin;
   ellipse(ctx, 0, -27, 11, 10.5); ctx.fill();
@@ -576,11 +585,50 @@ function drawCow(ctx, x, y, a) {
 /* ------------------------------------------------------------
  * 宠物（小狗 / 小猫，跟随，可戴帽）
  * ---------------------------------------------------------- */
+// 小鸭子宠物
+function drawDuckPet(ctx, p) {
+  const waddle = p.moving ? Math.sin(p.walkPhase) * 0.13 : Math.sin(p.t * 2 + p.phase) * 0.035;
+  drawShadow(ctx, 0, 0, 9);
+  ctx.save();
+  ctx.rotate(waddle);
+  const step = p.moving ? Math.sin(p.walkPhase) * 2.5 : 0;
+  // 橙色蹼足
+  ctx.fillStyle = '#ffab2e';
+  rr(ctx, -7 + step, 6, 9, 4, 2); ctx.fill();
+  rr(ctx, 1 - step, 6, 9, 4, 2); ctx.fill();
+  // 身体
+  ctx.fillStyle = '#fffdf5';
+  ellipse(ctx, 0, 0, 10, 7.5); ctx.fill();
+  // 翅膀（拍打）
+  const flap = p.moving ? Math.sin(p.walkPhase * 2) * 2.2 : Math.sin(p.t * 2 + p.phase) * 0.9;
+  ctx.fillStyle = '#f0e7cf';
+  ellipse(ctx, -2, -1 + flap * 0.3, 5.5, 4); ctx.fill();
+  // 尾巴
+  ctx.strokeStyle = '#f0e7cf'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-9, -2); ctx.lineTo(-13.5, -5.5); ctx.stroke();
+  // 头
+  ctx.fillStyle = '#fffdf5';
+  ellipse(ctx, 7, -8, 6, 5.5); ctx.fill();
+  // 头顶呆毛
+  ctx.strokeStyle = '#f0e7cf'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(7, -13); ctx.quadraticCurveTo(9 + flap, -17.5, 11.5, -14); ctx.stroke();
+  // 橙色嘴
+  ctx.fillStyle = '#ff9f43';
+  ctx.beginPath(); ctx.ellipse(13.6, -7.6, 4.2, 2.7, 0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8852a';
+  ctx.beginPath(); ctx.ellipse(14, -6.7, 3.5, 1.1, 0.15, 0, Math.PI * 2); ctx.fill();
+  // 眼睛
+  ctx.fillStyle = '#333';
+  ellipse(ctx, 8.6, -9.6, 1.3, 1.6); ctx.fill();
+  ctx.restore();
+}
+
 function drawPet(ctx, x, y, p) {
   const hop = p.moving ? Math.abs(Math.sin(p.walkPhase)) * 5 : Math.sin(p.t * 3 + p.phase) * 1.5;
   ctx.save();
   ctx.translate(x, y - hop);
   if (p.dir === 'left') ctx.scale(-1, 1);
+  if (p.type === 'duck') { drawDuckPet(ctx, p); ctx.restore(); return; }
   drawShadow(ctx, 0, hop, 9);
   const body = p.type === 'dog' ? '#e8b36a' : '#b8b8c8';
   const dark = p.type === 'dog' ? '#c78f3f' : '#8a8a9e';
@@ -982,6 +1030,49 @@ function drawCowBarn(ctx, x, y, t) {
   ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
   ctx.fillStyle = '#7a4a12';
   ctx.fillText('🐮', x + 34, y - 38 + Math.sin(t * 2) * 1);
+}
+
+/* ------------------------------------------------------------
+ * 动物园观赏动物（用 Noto Emoji Animation 的动画图）
+ * ---------------------------------------------------------- */
+function drawZoo(ctx, x, y, o) {
+  const hop = o.moving ? Math.abs(Math.sin(o.walkPhase)) * 4.5 : Math.sin(o.t * 2 + o.phase) * 1.6;
+  const s = o.size;
+  drawShadow(ctx, x, y, s * 0.4);
+  const flip = o.dir === 'left' ? -1 : 1;
+  ctx.save();
+  ctx.translate(x, y - hop);
+  ctx.scale(flip, 1);
+  if (o.rec && o.rec.ok && o.rec.img) {
+    // 有动画 gif 时浏览器自己播放；静态 png 时用 canvas 叠加呼吸与摇摆
+    if (o.rec.kind === 'png') {
+      ctx.rotate(Math.sin(o.t * 2 + o.phase) * 0.05);
+      const sc = 1 + Math.sin(o.t * 2.4 + o.phase) * 0.035;
+      ctx.scale(sc, sc);
+    }
+    ctx.drawImage(o.rec.img, -s / 2, -s, s, s);
+  } else {
+    // 图片还在加载时，先用文字 emoji 顶上
+    ctx.font = Math.round(s * 0.8) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#222';
+    ctx.fillText(o.emoji, 0, -s * 0.12);
+  }
+  ctx.restore();
+}
+
+// 钓鱼水波纹（大小对应能钓到的鱼）
+function drawRipple(ctx, x, y, rip, phase) {
+  for (let i = 0; i < 3; i++) {
+    const ph = ((phase * 0.55 + i * 0.33) % 1);
+    const r = rip.r * (0.3 + ph * 0.95);
+    ctx.strokeStyle = rip.color;
+    ctx.globalAlpha = (1 - ph) * 0.9;
+    ctx.lineWidth = 1.5 + rip.lv * 0.6;
+    ellipse(ctx, x, y + 2, r, r * 0.42);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }
 
 /* ------------------------------------------------------------

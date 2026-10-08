@@ -224,6 +224,24 @@ body.touch .log-line { font-size: 12px; }
 }
 .lang-big:active { transform: translateY(2px); box-shadow: none; }
 
+/* ---------- 动画 emoji 图片 ---------- */
+.emoji-img { width: 34px; height: 34px; object-fit: contain; display: block; pointer-events: none; }
+.emoji-img.big { width: 46px; height: 46px; }
+.inv-slot .emoji-img { width: 34px; height: 34px; }
+.char-row { align-items: center; }
+.char-label { font-size: 13px; font-weight: bold; color: #b08a3a; margin-right: 4px; }
+
+/* ---------- 图鉴 / 帮助按钮 ---------- */
+#btn-book {
+  position: absolute; right: 64px; bottom: 12px; z-index: 30;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: #e8f4ff; border: 3px solid #5fa8e8;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 3px 0 #3a7fbf;
+}
+#btn-book:active { transform: translateY(2px); box-shadow: none; }
+body.touch #btn-book { display: none; }
+
 /* ---------- 帮助按钮 ---------- */
 #btn-help {
   position: absolute; right: 12px; bottom: 12px; z-index: 30;

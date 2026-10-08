@@ -12,27 +12,40 @@ const DAY_LENGTH = 240;                        // 现实秒 / 天
 
 // ---------------- 物品数据 ----------------
 const ITEMS = {
-  egg:        { name: '鸡蛋',     icon: '🥚', price: 10 },
-  milk:       { name: '牛奶',     icon: '🥛', price: 18 },
-  wool:       { name: '羊毛',     icon: '🧶', price: 25 },
-  carrot:     { name: '胡萝卜',   icon: '🥕', price: 15 },
-  tomato:     { name: '番茄',     icon: '🍅', price: 20 },
-  corn:       { name: '玉米',     icon: '🌽', price: 25 },
-  apple:      { name: '苹果',     icon: '🍎', price: 12 },
-  orange:     { name: '橘子',     icon: '🍊', price: 14 },
-  pear:       { name: '梨子',     icon: '🍐', price: 16 },
-  peach:      { name: '桃子',     icon: '🍑', price: 20 },
-  strawberry: { name: '草莓',     icon: '🍓', price: 25 },
-  fish:       { name: '小鱼',     icon: '🐟', price: 22 },
-  bigfish:    { name: '大鱼',     icon: '🐠', price: 50 },
-  fried_egg:  { name: '煎蛋',     icon: '🍳', price: 26 },
-  salad:      { name: '水果沙拉', icon: '🥗', price: 40 },
-  fish_grill: { name: '烤鱼',     icon: '🍢', price: 55 },
-  pudding:    { name: '蛋奶布丁', icon: '🍮', price: 65 },
-  fruit_cake: { name: '草莓蛋糕', icon: '🍰', price: 90 },
+  egg: { name: '鸡蛋', icon: '🥚', price: 10, cp: '1f95a' },
+  milk: { name: '牛奶', icon: '🥛', price: 18, cp: '1f95b' },
+  wool: { name: '羊毛', icon: '🧶', price: 25, cp: '1f9f6' },
+  carrot: { name: '胡萝卜', icon: '🥕', price: 15, cp: '1f955' },
+  tomato: { name: '番茄', icon: '🍅', price: 20, cp: '1f345' },
+  corn: { name: '玉米', icon: '🌽', price: 25, cp: '1f33d' },
+  apple: { name: '苹果', icon: '🍎', price: 12, cp: '1f34e' },
+  orange: { name: '橘子', icon: '🍊', price: 14, cp: '1f34a' },
+  pear: { name: '梨子', icon: '🍐', price: 16, cp: '1f350' },
+  peach: { name: '桃子', icon: '🍑', price: 20, cp: '1f351' },
+  strawberry: { name: '草莓', icon: '🍓', price: 25, cp: '1f353' },
+  fish:       { name: '小鱼',     icon: '🐟', price: 22, cp: '1f41f' },
+  shrimp:     { name: '小虾',     icon: '🦐', price: 14, cp: '1f990' },
+  shell:      { name: '贝壳',     icon: '🐚', price: 8,  cp: '1f41a' },
+  goldfish:   { name: '金鱼',     icon: '🐠', price: 24, cp: '1f420' },
+  crab:       { name: '螃蟹',     icon: '🦀', price: 28, cp: '1f980' },
+  squid:      { name: '鱿鱼',     icon: '🦑', price: 32, cp: '1f991' },
+  puffer:     { name: '河豚',     icon: '🐡', price: 48, cp: '1f421' },
+  octopus:    { name: '章鱼',     icon: '🐙', price: 56, cp: '1f419' },
+  lobster:    { name: '龙虾',     icon: '🦞', price: 68, cp: '1f99e' },
+  seaturtle:  { name: '海龟',     icon: '🐢', price: 95, cp: '1f422' },
+  croc:       { name: '鳄鱼',     icon: '🐊', price: 120, cp: '1f40a' },
+  seal:       { name: '海豹',     icon: '🦭', price: 150, cp: '1f9ad' },
+  dolphin:    { name: '海豚',     icon: '🐬', price: 200, cp: '1f42c' },
+  shark:      { name: '鲨鱼',     icon: '🦈', price: 280, cp: '1f988' },
+  whale:      { name: '鲸鱼',     icon: '🐳', price: 400, cp: '1f433' },
+  fried_egg: { name: '煎蛋', icon: '🍳', price: 26, cp: '1f373' },
+  salad: { name: '水果沙拉', icon: '🥗', price: 40, cp: '1f957' },
+  fish_grill: { name: '烤鱼', icon: '🍢', price: 55, cp: '1f362' },
+  pudding: { name: '蛋奶布丁', icon: '🍮', price: 65, cp: '1f36e' },
+  fruit_cake: { name: '草莓蛋糕', icon: '🍰', price: 90, cp: '1f370' },
   seed_carrot:{ name: '胡萝卜种子', icon: '🌱', price: 5,  seed: 'carrot' },
   seed_tomato:{ name: '番茄种子',  icon: '🫘', price: 8,  seed: 'tomato' },
-  seed_corn:  { name: '玉米种子',  icon: '🌾', price: 12, seed: 'corn' },
+  seed_corn: { name: '玉米种子', icon: '🌾', price: 12, cp: '1f331', seed: 'corn' },
 };
 const RECIPES = [
   { id: 'fried_egg',  needs: { egg: 1 } },
@@ -42,7 +55,24 @@ const RECIPES = [
   { id: 'fruit_cake', needs: { strawberry: 2, egg: 1, milk: 1 } },
 ];
 const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry'];
-const SELLABLE = ['egg','milk','wool','carrot','tomato','corn',...FRUIT_IDS,'fish','bigfish','fried_egg','salad','fish_grill','pudding','fruit_cake'];
+// ---------------- 钓鱼：5 种大小的水波纹，每种 3 种渔获 ----------------
+const RIPPLE_SIZES = [
+  { lv: 1, name: '小水波',   nameEn: 'Small Ripple',  r: 11, color: '#cdeeff', w: 34 },
+  { lv: 2, name: '中水波',   nameEn: 'Medium Ripple', r: 18, color: '#9adcff', w: 26 },
+  { lv: 3, name: '大水波',   nameEn: 'Big Ripple',    r: 26, color: '#63c6f7', w: 20 },
+  { lv: 4, name: '巨水波',   nameEn: 'Huge Ripple',   r: 36, color: '#2f9fdc', w: 13 },
+  { lv: 5, name: '传说水波', nameEn: 'Legend Ripple', r: 48, color: '#9a7cf0', w: 7 },
+];
+const SEA_POOL = {
+  1: ['fish', 'shrimp', 'shell'],
+  2: ['goldfish', 'crab', 'squid'],
+  3: ['puffer', 'octopus', 'lobster'],
+  4: ['seaturtle', 'croc', 'seal'],
+  5: ['dolphin', 'shark', 'whale'],
+};
+const SEA_ALL = Object.keys(SEA_POOL).reduce(function (a, k) { return a.concat(SEA_POOL[k]); }, []);
+
+const SELLABLE = ['egg','milk','wool','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,'fried_egg','salad','fish_grill','pudding','fruit_cake'];
 const PET_HATS = {
   bow:    { name: '宠物蝴蝶结', icon: '🎀', price: 30 },
   straw:  { name: '宠物草帽',   icon: '👒', price: 30 },
@@ -175,6 +205,22 @@ const STR = {
     logLang: '🌏 语言切换为中文',
     logDecor: '摆放了{decor}',
     cancelHint: '（按 Q 取消）',
+    ripple1: '小水波', ripple2: '中水波', ripple3: '大水波', ripple4: '巨水波', ripple5: '传说水波',
+    caught: '🎣 钓到了{fish}！（{size}）',
+    logRipple: '水面出现{size}…',
+    zooHead: '农场里有 {n} 只观赏动物（最多 {max} 只）',
+    zooNote: '观赏动物·不产出',
+    tooManyZoo: '观赏动物太多啦，先让它们散散步吧！',
+    boughtZoo: '{animal}来到农场啦！它会四处散步 🎉',
+    genderSwitched: '变成{who}啦！',
+    petSwitched: '宠物换成小{pet}啦！',
+    charSection: '👦 角色与宠物',
+    tabZoo: '🦁 观赏动物',
+    bookTitle: '📖 动物图鉴', bookZoo: '🦁 动物园', bookSea: '🐟 海洋馆',
+    bookOwned: '已拥有 {n} 只', bookNone: '还没收集到',
+    bookHint: '买到的观赏动物和钓到的海洋生物都会记录在这里',
+    caughtTimes: '钓到过 {n} 次',
+    petDuck: '小鸭',
     logSoldCustomer: '把 {item} 卖给了客人，+{n} 金币',
     rotateHint: '🔄 横过来玩，画面更大更清楚',
     logTitle2: '最近发生的事',
@@ -278,6 +324,22 @@ const STR = {
     logLang: '🌏 Language switched to English',
     logDecor: 'Placed {decor}',
     cancelHint: ' (press Q to cancel)',
+    ripple1: 'Small ripple', ripple2: 'Medium ripple', ripple3: 'Big ripple', ripple4: 'Huge ripple', ripple5: 'Legendary ripple',
+    caught: '🎣 You caught {fish}! ({size})',
+    logRipple: 'A {size} appears on the water…',
+    zooHead: 'You have {n} zoo animals (max {max})',
+    zooNote: 'Ornamental · no produce',
+    tooManyZoo: 'Too many zoo animals — let them roam first!',
+    boughtZoo: '{animal} joined the farm! It will wander around 🎉',
+    genderSwitched: 'Now you are a {who}!',
+    petSwitched: 'Your pet is now a {pet}!',
+    charSection: '👦 Character & Pet',
+    tabZoo: '🦁 Zoo Animals',
+    bookTitle: '📖 Animal Book', bookZoo: '🦁 Zoo', bookSea: '🐟 Aquarium',
+    bookOwned: '{n} owned', bookNone: 'Not collected yet',
+    bookHint: 'Zoo animals you buy and sea creatures you catch are recorded here',
+    caughtTimes: 'Caught {n} times',
+    petDuck: 'Duck',
     logSoldCustomer: 'Sold {item} to the customer, +{n} coins',
     rotateHint: '🔄 Turn your phone sideways for a bigger view',
     logTitle2: 'Recent events',
@@ -300,7 +362,10 @@ const EN_NAMES = {
     apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
     fish: 'Small Fish', bigfish: 'Big Fish', fried_egg: 'Fried Egg', salad: 'Fruit Salad',
     fish_grill: 'Grilled Fish', pudding: 'Milk Pudding', fruit_cake: 'Strawberry Cake',
-    seed_carrot: 'Carrot Seeds', seed_tomato: 'Tomato Seeds', seed_corn: 'Corn Seeds' },
+    seed_carrot: 'Carrot Seeds', seed_tomato: 'Tomato Seeds', seed_corn: 'Corn Seeds',
+    shrimp: 'Shrimp', shell: 'Seashell', goldfish: 'Goldfish', crab: 'Crab', squid: 'Squid',
+    puffer: 'Pufferfish', octopus: 'Octopus', lobster: 'Lobster', seaturtle: 'Sea Turtle',
+    croc: 'Crocodile', seal: 'Seal', dolphin: 'Dolphin', shark: 'Shark', whale: 'Whale' },
   hat: { none: 'No Hat', ragged: 'Torn Hat', straw: 'Straw Hat', bow: 'Hair Bow', cap: 'Baseball Cap',
     beanie: 'Knit Beanie', bandana: 'Pirate Bandana', flower: 'Flower Crown', chef: 'Chef Hat',
     wizard: 'Wizard Hat', frog: 'Frog Hat', crown: 'Little Crown' },
@@ -320,6 +385,7 @@ const EN_NAMES = {
 
 // 取名字：cat = item/hat/shirt/pants/petHat/animal/decor/crop
 function nm(cat, key) {
+  if (cat === 'zoo') { const z = ZOO_MAP[key]; if (z) return lang === 'en' ? z.nameEn : z.name; return key; }
   if (lang === 'en' && EN_NAMES[cat] && EN_NAMES[cat][key]) return EN_NAMES[cat][key];
   switch (cat) {
     case 'item': case 'crop': return (ITEMS[key] && ITEMS[key].name) || key;
@@ -337,6 +403,67 @@ function t(key, p) {
   return s;
 }
 function weatherText() { const w = STR[lang].weather || STR.zh.weather; return w[G.weather] || w.sunny; }
+
+// ---------------- 动画 emoji 资源（Noto Emoji Animation） ----------------
+// 资源来源：https://googlefonts.github.io/noto-emoji-animation/
+// 有动画的用 512.gif（浏览器自动播放），没有动画版的退回 512.png（再用 canvas 叠加动作）
+const EMOJI_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest/';
+const emojiCache = {};     // cp -> { img, ok, kind }
+function emojiAnimUrl(cp) { return EMOJI_BASE + cp + '/512.gif'; }
+function emojiPngUrl(cp) { return EMOJI_BASE + cp + '/512.png'; }
+function loadEmoji(cp) {
+  if (!cp) return null;
+  let rec = emojiCache[cp];
+  if (rec) return rec;
+  rec = emojiCache[cp] = { img: null, ok: false, kind: '' };
+  if (typeof Image === 'undefined') return rec;
+  const tryLoad = (url, kind, onFail) => {
+    const im = new Image();
+    im.onload = () => { rec.img = im; rec.ok = true; rec.kind = kind; };
+    im.onerror = () => { if (onFail) onFail(); };
+    im.src = url;
+  };
+  tryLoad(emojiAnimUrl(cp), 'gif', () => tryLoad(emojiPngUrl(cp), 'png'));
+  return rec;
+}
+// DOM 里用 <img> 显示动画 emoji（列表用）
+function emojiImgHTML(cp, emoji, cls) {
+  cls = cls || 'emoji-img';
+  if (cp) return '<img class="' + cls + '" src="' + emojiAnimUrl(cp) + '" alt="' + emoji + '" loading="lazy" draggable="false">';
+  return emoji;
+}
+
+// ---------------- 动物园观赏动物（只看不产出，会在农场里散步） ----------------
+const ZOO_SHOP = [
+  { type: 'giraffe',  cp: '1f992', name: '长颈鹿', icon: '🦒', nameEn: 'Giraffe',   price: 1600, size: 76, v: 'low',    p: 0.8 },
+  { type: 'elephant', cp: '1f418', name: '大象', icon: '🐘',   nameEn: 'Elephant',  price: 1800, size: 74, v: 'low',    p: 0.7 },
+  { type: 'zebra',    cp: '1f993', name: '斑马', icon: '🦓',   nameEn: 'Zebra',     price: 1400, size: 68, v: 'mid',    p: 1 },
+  { type: 'lion',     cp: '1f981', name: '狮子', icon: '🦁',   nameEn: 'Lion',      price: 1500, size: 66, v: 'growl',  p: 0.9 },
+  { type: 'bear',     cp: '1f43b', name: '小熊', icon: '🐻',   nameEn: 'Bear',      price: 1100, size: 66, v: 'growl',  p: 1.1 },
+  { type: 'panda',    cp: '1f43c', name: '熊猫', icon: '🐼',   nameEn: 'Panda',     price: 1200, size: 64, v: 'mid',    p: 1.1 },
+  { type: 'peacock',  cp: '1f99a', name: '孔雀', icon: '🦚',   nameEn: 'Peacock',   price: 1300, size: 64, v: 'trill',  p: 1.2 },
+  { type: 'kangaroo', cp: '1f998', name: '袋鼠', icon: '🦘',   nameEn: 'Kangaroo',  price: 1000, size: 64, v: 'mid',    p: 1.3 },
+  { type: 'monkey',   cp: '1f435', name: '猴子', icon: '🐵',   nameEn: 'Monkey',    price: 850,  size: 58, v: 'high',   p: 1.4 },
+  { type: 'flamingo', cp: '1f9a9', name: '火烈鸟', icon: '🦩', nameEn: 'Flamingo',  price: 950,  size: 62, v: 'trill',  p: 1.5 },
+  { type: 'sloth',    cp: '1f9a5', name: '树懒', icon: '🦥',   nameEn: 'Sloth',     price: 900,  size: 56, v: 'squeak', p: 0.8 },
+  { type: 'fox',      cp: '1f98a', name: '狐狸', icon: '🦊',   nameEn: 'Fox',       price: 700,  size: 56, v: 'high',   p: 1.2 },
+  { type: 'koala',    cp: '1f428', name: '考拉', icon: '🐨',   nameEn: 'Koala',     price: 750,  size: 56, v: 'squeak', p: 1 },
+  { type: 'raccoon',  cp: '1f99d', name: '浣熊', icon: '🦝',   nameEn: 'Raccoon',   price: 600,  size: 54, v: 'mid',    p: 1.5 },
+  { type: 'penguin',  cp: '1f427', name: '企鹅', icon: '🐧',   nameEn: 'Penguin',   price: 800,  size: 58, v: 'trill',  p: 1.3 },
+  { type: 'lizard',   cp: '1f98e', name: '蜥蜴', icon: '🦎',   nameEn: 'Lizard',    price: 550,  size: 50, v: 'squeak', p: 1.4 },
+  { type: 'snake',    cp: '1f40d', name: '小蛇', icon: '🐍',   nameEn: 'Snake',     price: 650,  size: 50, v: 'squeak', p: 0.9 },
+  { type: 'turtle',   cp: '1f422', name: '乌龟', icon: '🐢',   nameEn: 'Turtle',    price: 500,  size: 48, v: 'low',    p: 1.6 },
+  { type: 'hedgehog', cp: '1f994', name: '刺猬', icon: '🦔',   nameEn: 'Hedgehog',  price: 450,  size: 46, v: 'squeak', p: 1.6 },
+  { type: 'rabbit',   cp: '1f407', name: '兔子', icon: '🐇',   nameEn: 'Rabbit',    price: 350,  size: 48, v: 'squeak', p: 1.8 },
+  { type: 'squirrel', cp: '1f43f', name: '松鼠', icon: '🐿️',   nameEn: 'Squirrel',  price: 400,  size: 46, v: 'high',   p: 2 },
+  { type: 'frog',     cp: '1f438', name: '青蛙', icon: '🐸',   nameEn: 'Frog',      price: 300,  size: 42, v: 'low',    p: 2.2 },
+  { type: 'butterfly',cp: '1f98b', name: '蝴蝶', icon: '🦋', nameEn: 'Butterfly', price: 250, size: 40, v: 'trill', p: 2.4 },
+  { type: 'bee',      cp: '1f41d', name: '蜜蜂', icon: '🐝',   nameEn: 'Bee',       price: 220,  size: 36, v: 'trill',  p: 2.6 },
+  { type: 'snail',    cp: '1f40c', name: '蜗牛', icon: '🐌',   nameEn: 'Snail',     price: 200,  size: 38, v: 'squeak', p: 1.2 },
+];
+const ZOO_MAP = {};
+ZOO_SHOP.forEach(function (z) { ZOO_MAP[z.type] = z; });
+const MAX_ZOO = 30;
 
 // ---------------- 游戏状态 ----------------
 const G = {
@@ -357,6 +484,8 @@ const G = {
   petHatsOwned: [],
   animals: [],
   groundItems: [],
+  zoo: [],                // 动物园观赏动物（只看不产出）
+  seaCaught: {},          // 钓鱼图鉴：已钓到的种类
   decorations: [],        // 自己摆放的庭院装饰
   placing: null,          // 放置模式：{ id }
   plots: [],
@@ -475,6 +604,22 @@ const sfx = {
     else if (type === 'sheep') sfx.baa();
     else sfx.moo();
   }, delay),
+  // 动物园动物的叫声（v=音色, p=音高）
+  zooVoice: (v, p, delay = 0) => {
+    p = p || 1;
+    if (v === 'low') { tone(150 * p, 100 * p, 0.5, 'sawtooth', 0.07, delay); }
+    else if (v === 'growl') { tone(190 * p, 120 * p, 0.42, 'sawtooth', 0.065, delay); noise(0.3, 0.045, 420, 1, delay); }
+    else if (v === 'mid') { tone(340 * p, 270 * p, 0.22, 'triangle', 0.07, delay); }
+    else if (v === 'high') { tone(700 * p, 900 * p, 0.09, 'square', 0.05, delay); tone(820 * p, 1100 * p, 0.09, 'square', 0.045, delay + 0.1); }
+    else if (v === 'trill') { for (let i = 0; i < 4; i++) tone(1100 * p, 1500 * p, 0.06, 'sine', 0.04, delay + i * 0.07); }
+    else { tone(900 * p, 1400 * p, 0.07, 'sine', 0.045, delay); tone(1500 * p, 800 * p, 0.09, 'sine', 0.04, delay + 0.07); }
+  },
+  // 宠物叫声（狗/猫/鸭）
+  petVoice: (type, delay = 0) => {
+    if (type === 'duck') { tone(420, 300, 0.1, 'square', 0.06, delay); tone(380, 260, 0.12, 'square', 0.055, delay + 0.13); }
+    else if (type === 'cat') { tone(620, 900, 0.25, 'triangle', 0.06, delay); tone(900, 700, 0.3, 'sine', 0.045, delay + 0.22); }
+    else { tone(300, 200, 0.1, 'square', 0.07, delay); tone(260, 180, 0.1, 'square', 0.06, delay + 0.12); }
+  },
   // ---- 商店 / 烹饪 ----
   coin:   () => { tone(988, 988, 0.06, 'square', 0.07); tone(1319, 1319, 0.1, 'square', 0.07, 0.06); },
   buy:    () => { sfx.coin(); tone(1976, 1976, 0.12, 'sine', 0.06, 0.14); },
@@ -686,6 +831,8 @@ function saveGame(silent = false) {
     trees: G.trees.map(t => ({ type: t.type, fruits: t.fruits, timer: t.timer })),
     items: G.groundItems.map(i => ({ id: i.id, x: i.x, y: i.y })),
     decorations: G.decorations.map(d => ({ id: d.id, x: d.x, y: d.y })),
+    zoo: G.zoo.map(z => ({ type: z.type, x: z.x, y: z.y })),
+    seaCaught: G.seaCaught,
     music: musicOn, muted,
     savedAt: Date.now(),
   };
@@ -718,6 +865,7 @@ function loadGame() {
     G.timeMin = Number.isFinite(d.timeMin) ? d.timeMin : DAY_START;
     G.weather = ['sunny', 'cloudy', 'rain'].includes(d.weather) ? d.weather : 'sunny';
     G.inventory = (d.inventory && typeof d.inventory === 'object') ? d.inventory : {};
+    for (const k in G.inventory) if (!ITEMS[k] || !(G.inventory[k] > 0)) delete G.inventory[k];   // 丢掉旧版本残留物品
     G.owned = d.owned || { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
     G.petHatsOwned = Array.isArray(d.petHatsOwned) ? d.petHatsOwned : [];
     if (d.player) {
@@ -734,7 +882,7 @@ function loadGame() {
       }
     }
     if (d.pet) {
-      G.pet.type = d.pet.type === 'cat' ? 'cat' : 'dog';
+      G.pet.type = ['cat', 'duck'].includes(d.pet.type) ? d.pet.type : 'dog';
       G.pet.hat = (d.pet.hat && OUTFITS.hat[d.pet.hat]) ? d.pet.hat : 'none';
       G.pet.x = G.player.x - 40; G.pet.y = G.player.y + 30;
     }
@@ -774,6 +922,14 @@ function loadGame() {
       ? d.items.filter(i => i && ITEMS[i.id] && Number.isFinite(i.x) && Number.isFinite(i.y))
                .map(i => ({ id: i.id, x: i.x, y: i.y, phase: rand(0, 6) }))
       : [];
+    // 动物园的观赏动物
+    if (Array.isArray(d.zoo)) {
+      G.zoo = d.zoo.filter(z => z && ZOO_MAP[z.type] && Number.isFinite(z.x) && Number.isFinite(z.y))
+                   .map(z => newZoo(z.type, z.x, z.y));
+    }
+    // 钓鱼图鉴
+    G.seaCaught = (d.seaCaught && typeof d.seaCaught === 'object') ? d.seaCaught : {};
+    for (const k in G.seaCaught) if (!ITEMS[k]) delete G.seaCaught[k];
     // 自己摆放的装饰
     G.decorations = Array.isArray(d.decorations)
       ? d.decorations.filter(v => v && DECOR_R[v.id] && Number.isFinite(v.x) && Number.isFinite(v.y))
@@ -812,11 +968,50 @@ function resetGame() {
   G.pet.x = 380; G.pet.y = 530;
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = [];
-  G.decorations = []; G.placing = null;
+  G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {};
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
   G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
   initWorld();
   renderInventory(); renderHUD();
+}
+
+// ---------------- 动物园观赏动物 ----------------
+function newZoo(type, x, y) {
+  const z = ZOO_MAP[type] || ZOO_SHOP[0];
+  loadEmoji(z.cp);                 // 预加载动画图
+  return {
+    type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
+    moving: false, walkPhase: 0, phase: rand(0, 6),
+    tx: x, ty: y, waitT: rand(1, 4), voiceT: rand(6, 22),
+    home: { x, y, r: 230 },
+  };
+}
+// 随机找一个能站的位置（不落水、不出界）
+function zooRandomSpot(home) {
+  for (let i = 0; i < 12; i++) {
+    const x = Math.max(40, Math.min(WORLD_W - 40, home.x + rand(-home.r, home.r)));
+    const y = Math.max(150, Math.min(WORLD_H - 30, home.y + rand(-home.r, home.r)));
+    const pc = ZONES.pond;
+    const ex = (x - pc.x) / (pc.w / 2 + 40), ey = (y - pc.y) / (pc.h / 2 + 40);
+    if (ex * ex + ey * ey > 1) return { x, y };
+  }
+  return { x: home.x, y: home.y };
+}
+
+// ---------------- 角色 / 宠物切换（游戏内） ----------------
+function setGender(g) {
+  G.player.gender = (g === 'girl') ? 'girl' : 'boy';
+  sfx.equip(); spawnParticles(G.player.x, G.player.y - 30, '✨', 5);
+  say('genderSwitched', { who: t(G.player.gender) });
+  saveGame(true); renderWardrobe();
+}
+function setPet(type) {
+  G.pet.type = ['cat', 'duck'].includes(type) ? type : 'dog';
+  G.pet.happy = 3;
+  sfx.petVoice(G.pet.type);
+  spawnParticles(G.pet.x, G.pet.y - 20, '💖', 5);
+  say('petSwitched', { pet: t(G.pet.type === 'duck' ? 'petDuck' : G.pet.type) });
+  saveGame(true); renderWardrobe();
 }
 
 // ---------------- 庭院装饰：放置 ----------------
@@ -881,6 +1076,7 @@ function applyLang() {
   else if (G.modalOpen === 'wardrobe-modal') renderWardrobe();
   else if (G.modalOpen === 'cook-modal') renderCook();
   else if (G.modalOpen === 'sell-modal') renderSell();
+  else if (G.modalOpen === 'book-modal') renderBook();
 }
 function setLang(l) {
   lang = (l === 'en') ? 'en' : 'zh';
@@ -942,7 +1138,7 @@ function renderInventory() {
     const d = document.createElement('div');
     d.className = 'inv-slot';
     d.title = nm('item', id);
-    d.innerHTML = `${ITEMS[id].icon}<span class="cnt">${n}</span>`;
+    d.innerHTML = emojiImgHTML(ITEMS[id].cp, ITEMS[id].icon) + `<span class="cnt">${n}</span>`;
     bar.appendChild(d);
   }
 }
@@ -958,6 +1154,8 @@ function toggleModal(id) {
 document.querySelectorAll('.close-modal').forEach(b =>
   b.addEventListener('click', () => { sfx.close(); closeModal(b.dataset.close); }));
 $('btn-help').addEventListener('click', () => { sfx.open(); toggleModal('help-modal'); });
+$('btn-book').addEventListener('click', () => { sfx.open(); renderBook(); toggleModal('book-modal'); });
+$('touch-book').addEventListener('pointerdown', (e) => { e.preventDefault(); sfx.open(); renderBook(); toggleModal('book-modal'); });
 $('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); note(muted ? 'logSoundOff' : 'logSoundOn'); });
 $('btn-music').addEventListener('click', () => { sfx.click(); setMusic(!musicOn); note(musicOn ? 'logMusicOn' : 'logMusicOff'); });
 
@@ -968,7 +1166,13 @@ function iconBox(kind, keyOrEmoji) {
   const d = document.createElement('div');
   d.className = 'icon';
   if (kind === 'emoji') d.textContent = keyOrEmoji;
-  else d.appendChild(clothingIconCanvas(kind, keyOrEmoji));
+  else if (kind === 'item' || kind === 'sea') {
+    const it = ITEMS[keyOrEmoji];
+    d.innerHTML = emojiImgHTML(it.cp, it.icon, 'emoji-img big');
+  } else if (kind === 'zoo') {
+    const z = ZOO_MAP[keyOrEmoji];
+    d.innerHTML = emojiImgHTML(z.cp, z.icon, 'emoji-img big');
+  } else d.appendChild(clothingIconCanvas(kind, keyOrEmoji));
   return d;
 }
 
@@ -995,7 +1199,7 @@ function renderShop() {
   };
   if (shopTab === 'seeds') {
     for (const id of ['seed_carrot', 'seed_tomato', 'seed_corn']) {
-      mkCard(iconBox('emoji', ITEMS[id].icon), ITEMS[id].name, ITEMS[id].price, () => {
+      mkCard(iconBox('item', id), nm('item', id), ITEMS[id].price, () => {
         G.coins -= ITEMS[id].price; addItem(id); sfx.buy(); say('bought', { item: nm('item', id) }); renderShop(); renderHUD();
       });
     }
@@ -1031,6 +1235,24 @@ function renderShop() {
         say('boughtAnimal', { animal: nm('animal', a.type) }, 2400);
         renderShop(); renderHUD();
       }, false, a.desc);
+    }
+  } else if (shopTab === 'zoo') {
+    // 动物园：观赏动物，不产出
+    const head = document.createElement('div');
+    head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    head.textContent = t('zooHead', { n: G.zoo.length, max: MAX_ZOO });
+    box.appendChild(head);
+    for (const z of ZOO_SHOP) {
+      mkCard(iconBox('zoo', z.type), nm('zoo', z.type), z.price, () => {
+        if (G.zoo.length >= MAX_ZOO) { sfx.error(); say('tooManyZoo'); return; }
+        G.coins -= z.price;
+        const spot = zooRandomSpot({ x: WORLD_W / 2, y: 520, r: 420 });
+        G.zoo.push(newZoo(z.type, spot.x, spot.y));
+        sfx.buy(); sfx.zooVoice(z.v, z.p, 300);
+        spawnParticles(spot.x, spot.y - 20, '💖', 5);
+        say('boughtZoo', { animal: nm('zoo', z.type) }, 2600);
+        renderShop(); renderHUD();
+      }, false, t('zooNote'));
     }
   } else if (shopTab === 'decor') {
     // 庭院装饰：买好后进入放置模式，走到喜欢的位置放下
@@ -1071,6 +1293,7 @@ document.querySelectorAll('#shop-modal .tab-btn').forEach(b =>
 // ---------------- 衣柜 ----------------
 let wTab = 'hat';
 function renderWardrobe() {
+  if (typeof highlightChar === 'function') highlightChar();
   const box = $('wardrobe-items');
   box.innerHTML = '';
   // 帽子可以有「不戴」选项；上衣/裤子必须穿，初始的破衣服/破裤子也在列表里
@@ -1139,7 +1362,7 @@ function renderCook() {
       id === 'fruit' ? t('anyFruit', { n }) : `${ITEMS[id].icon}×${n}`).join(' + ');
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${out.icon}</div><div>${nm('item', r.id)}</div><div style="font-size:12px">${t('need')} ${needStr}</div>`;
+    d.innerHTML = `<div class="icon">${emojiImgHTML(out.cp, out.icon, 'emoji-img big')}</div><div>${nm('item', r.id)}</div><div style="font-size:12px">${t('need')} ${needStr}</div>`;
     const b = document.createElement('button');
     b.textContent = can ? t('cookOne') : t('noMats');
     b.disabled = !can;
@@ -1156,6 +1379,46 @@ function renderCook() {
   }
 }
 
+// ---------------- 动物图鉴 ----------------
+let bookTab = 'zoo';
+function renderBook() {
+  const box = $('book-items');
+  if (!box) return;
+  box.innerHTML = '';
+  const mk = (html, name, sub) => {
+    const d = document.createElement('div');
+    d.className = 'shop-item';
+    d.innerHTML = `<div class="icon">${html}</div><div>${name}</div><div class="sub">${sub}</div>`;
+    box.appendChild(d);
+  };
+  if (bookTab === 'zoo') {
+    for (const z of ZOO_SHOP) {
+      const n = G.zoo.filter(v => v.type === z.type).length;
+      mk(emojiImgHTML(z.cp, z.icon, 'emoji-img big'), nm('zoo', z.type),
+         n > 0 ? t('bookOwned', { n }) : t('bookNone'));
+    }
+  } else {
+    for (const lv of RIPPLE_SIZES) {
+      const head = document.createElement('div');
+      head.style.cssText = 'grid-column:1/-1;font-size:13px;font-weight:bold;color:#3a7fbf;margin-top:4px;';
+      head.textContent = t('ripple' + lv.lv);
+      box.appendChild(head);
+      for (const id of SEA_POOL[lv.lv]) {
+        const n = G.seaCaught[id] || 0;
+        mk(emojiImgHTML(ITEMS[id].cp, ITEMS[id].icon, 'emoji-img big'), nm('item', id),
+           n > 0 ? t('caughtTimes', { n }) : t('bookNone'));
+      }
+    }
+  }
+}
+document.querySelectorAll('#book-modal .tab-btn').forEach(b =>
+  b.addEventListener('click', () => {
+    bookTab = b.dataset.book;
+    sfx.click();
+    document.querySelectorAll('#book-modal .tab-btn').forEach(x => x.classList.toggle('selected', x === b));
+    renderBook();
+  }));
+
 // ---------------- 卖货箱 ----------------
 function renderSell() {
   const box = $('sell-items');
@@ -1169,7 +1432,7 @@ function renderSell() {
     const it = ITEMS[id];
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${it.icon}</div><div>${nm('item', id)} ×${G.inventory[id]}</div>`;
+    d.innerHTML = `<div class="icon">${emojiImgHTML(it.cp, it.icon, 'emoji-img big')}</div><div>${nm('item', id)} ×${G.inventory[id]}</div>`;
     const b = document.createElement('button');
     b.textContent = t('sellOne', { n: it.price });
     b.onclick = () => {
@@ -1359,24 +1622,43 @@ function doInteract() {
 }
 
 // ---------------- 钓鱼 ----------------
+// 按权重随机水波纹大小（下雨天更容易出大波纹）
+function pickRipple() {
+  const rain = G.weather === 'rain';
+  const w = RIPPLE_SIZES.map(r => rain && r.lv >= 3 ? r.w * 1.9 : (rain ? r.w * 0.85 : r.w));
+  let x = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return RIPPLE_SIZES[i]; }
+  return RIPPLE_SIZES[0];
+}
 function startFishing() {
   const p = G.player, pond = ZONES.pond;
   const ang = Math.atan2(pond.y - p.y, pond.x - p.x);
   const bx = p.x + Math.cos(ang) * 70, by = p.y + Math.sin(ang) * 45;
-  G.fishing = { phase: 'wait', timer: rand(2, G.weather === 'rain' ? 4 : 7), bx, by };
+  const rip = pickRipple();
+  // 波纹越大等得越久，但咬钩后给的时间窗口越短
+  const wait = rip.lv <= 2 ? rand(1.5, 3.5) : rip.lv === 3 ? rand(2.5, 5) : rand(3.5, 6.5);
+  G.fishing = {
+    phase: 'wait', timer: wait, bx, by,
+    lv: rip.lv, rip, biteWin: 1.45 - rip.lv * 0.13, ripple: 0,
+  };
+  p.dir = pond.x < p.x ? 'left' : 'right';   // 面朝池塘，鱼竿握在手里
   sfx.cast();
   say('castLine');
+  note('logRipple', { size: t('ripple' + rip.lv) });
 }
 function reelIn() {
   const f = G.fishing;
   if (f.phase === 'bite') {
-    const big = Math.random() < (G.weather === 'rain' ? 0.4 : 0.15);
-    addItem(big ? 'bigfish' : 'fish');
+    const pool = SEA_POOL[f.lv] || SEA_POOL[1];
+    const id = pick(pool);
+    addItem(id);
+    G.seaCaught[id] = (G.seaCaught[id] || 0) + 1;   // 记进图鉴
     sfx.catchf();
-    spawnParticles(f.bx, f.by, '💦', 6);
-    spawnParticles(f.bx, f.by - 10, big ? '🐠' : '🐟', 1);
-    say(big ? 'caughtBig' : 'caughtSmall');
+    spawnParticles(f.bx, f.by, '💦', 8);
+    spawnParticles(f.bx, f.by - 12, ITEMS[id].icon, 1);
+    say('caught', { fish: nm('item', id), size: t('ripple' + f.lv) }, 2600);
     G.pet.happy = 2;
+    saveGame(true);
   } else {
     sfx.splash(); say('reelIn');
   }
@@ -1522,6 +1804,32 @@ function update(dt) {
     }
   }
 
+  // --- 动物园动物：随机散步 + 随机叫 ---
+  for (const z of G.zoo) {
+    const zd = ZOO_MAP[z.type] || ZOO_SHOP[0];
+    if (z.moving) {
+      const d = dist(z.x, z.y, z.tx, z.ty);
+      if (d < 6) { z.moving = false; z.waitT = rand(1.5, 5); }
+      else {
+        const ang = Math.atan2(z.ty - z.y, z.tx - z.x);
+        const spd = 26 + zd.size * 0.22;          // 大动物走得快一点
+        z.x += Math.cos(ang) * spd * dt;
+        z.y += Math.sin(ang) * spd * dt;
+        z.dir = Math.cos(ang) < 0 ? 'left' : 'right';
+        z.walkPhase += dt * (5 + zd.size * 0.06);
+      }
+    } else {
+      z.waitT -= dt;
+      if (z.waitT <= 0) { const sp = zooRandomSpot(z.home); z.tx = sp.x; z.ty = sp.y; z.moving = true; }
+    }
+    // 随机叫一声
+    z.voiceT -= dt;
+    if (z.voiceT <= 0) {
+      z.voiceT = rand(8, 26);
+      if (!G.modalOpen && G.started) sfx.zooVoice(zd.v, zd.p);
+    }
+  }
+
   // --- 作物生长 ---
   for (const pl of G.plots) {
     if (pl.state === 'seed' || pl.state === 'growing') {
@@ -1585,8 +1893,9 @@ function update(dt) {
   if (G.fishing) {
     const f = G.fishing;
     f.timer -= dt;
+    f.ripple = (f.ripple || 0) + dt * (0.6 + f.lv * 0.12);
     if (f.phase === 'wait' && f.timer <= 0) {
-      f.phase = 'bite'; f.timer = 1.1;
+      f.phase = 'bite'; f.timer = f.biteWin || 1.1;
       sfx.bite();
     } else if (f.phase === 'bite' && f.timer <= 0) {
       G.fishing = null;
@@ -1639,7 +1948,7 @@ function update(dt) {
     pr.textContent = t('prBite', { key: KEY_HINT });
     pr.classList.remove('hidden');
   } else if (G.fishing) {
-    pr.textContent = t('prFishing', { key: KEY_HINT });
+    pr.textContent = t('prFishing', { key: KEY_HINT }) + ' · ' + t('ripple' + G.fishing.lv);
     pr.classList.remove('hidden');
   } else pr.classList.add('hidden');
   // 钓鱼咬钩时，动作按钮闪烁提醒（手机端一眼能看到）
@@ -1752,6 +2061,18 @@ function render() {
   for (const dc of G.decorations) {
     drawables.push({ y: dc.y + 4, draw: () => drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase) });
   }
+  // 动物园的观赏动物（动画 emoji 图）
+  for (const z of G.zoo) {
+    const zd = ZOO_MAP[z.type] || ZOO_SHOP[0];
+    const rec = loadEmoji(zd.cp);
+    drawables.push({
+      y: z.y + 4,
+      draw: () => drawZoo(ctx, z.x, z.y, {
+        size: zd.size, rec, moving: z.moving, walkPhase: z.walkPhase,
+        phase: z.phase, emoji: zd.icon, dir: z.dir, t,
+      }),
+    });
+  }
   for (const a of G.animals) {
     drawables.push({
       y: a.y + 14,
@@ -1792,7 +2113,7 @@ function render() {
     draw: () => drawPlayer(ctx, G.player.x, G.player.y, {
       gender: G.player.gender, dir: G.player.dir,
       walkPhase: G.player.walkPhase, moving: G.player.moving,
-      outfit: G.player.outfit, actionT: G.player.actionT, t,
+      outfit: G.player.outfit, actionT: G.player.actionT, rod: !!G.fishing, t,
     }),
   });
   drawables.sort((a, b) => a.y - b.y);
@@ -1833,12 +2154,18 @@ function render() {
   // 地面物品（休息动画）
   for (const it of G.groundItems) drawGroundItem(ctx, it.x, it.y, ITEMS[it.id].icon, t, it.phase);
 
-  // 钓鱼浮漂
+  // 钓鱼：水波纹 + 从手里鱼竿伸出的鱼线 + 浮漂
   if (G.fishing) {
     const f = G.fishing;
     const dip = f.phase === 'bite' ? Math.sin(t * 20) * 4 + 3 : Math.sin(t * 3) * 2;
-    ctx.strokeStyle = 'rgba(80,60,40,.7)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(G.player.x, G.player.y - 20); ctx.quadraticCurveTo((G.player.x + f.bx) / 2, f.by - 40, f.bx, f.by + dip); ctx.stroke();
+    drawRipple(ctx, f.bx, f.by, f.rip, f.ripple || 0);          // 波纹大小 = 能钓到的鱼的大小
+    const dirS = G.player.dir === 'left' ? -1 : 1;
+    const tipX = G.player.x + 29 * dirS, tipY = G.player.y - 32; // 鱼竿尖端（手举起来的位置）
+    ctx.strokeStyle = 'rgba(252,252,252,.85)'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.quadraticCurveTo((tipX + f.bx) / 2 + 6, f.by - 46, f.bx, f.by + dip);
+    ctx.stroke();
     ctx.fillStyle = '#ff5a5a';
     ellipse(ctx, f.bx, f.by + dip, 4, 5); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.fillRect(f.bx - 4, f.by + dip - 1, 8, 2.5);
@@ -1919,6 +2246,11 @@ function setupChooser(idA, idB, cb) {
 }
 setupChooser('choose-boy', 'choose-girl', (i) => { chosenGender = i === 0 ? 'boy' : 'girl'; });
 setupChooser('choose-dog', 'choose-cat', (i) => { chosenPet = i === 0 ? 'dog' : 'cat'; });
+$('choose-duck').addEventListener('click', () => {
+  ['choose-dog', 'choose-cat', 'choose-duck'].forEach(id => $(id).classList.remove('selected'));
+  $('choose-duck').classList.add('selected');
+  chosenPet = 'duck'; sfx.click();
+});
 
 // 开始新游戏
 $('btn-start').addEventListener('click', () => {
@@ -2040,6 +2372,19 @@ setMuted(muted);   // 同步静音按钮图标
 // 关页面 / 切到后台时也存一次，避免丢进度
 window.addEventListener('beforeunload', () => saveGame(true));
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(true); });
+// 角色与宠物切换
+function highlightChar() {
+  const g = G.player.gender, pt = G.pet.type;
+  const set = (id, on) => { const el = $(id); if (el) el.classList.toggle('selected', !!on); };
+  set('pick-boy', g === 'boy'); set('pick-girl', g === 'girl');
+  set('pick-dog', pt === 'dog'); set('pick-cat', pt === 'cat'); set('pick-duck', pt === 'duck');
+}
+$('pick-boy').addEventListener('click', () => { setGender('boy'); highlightChar(); });
+$('pick-girl').addEventListener('click', () => { setGender('girl'); highlightChar(); });
+$('pick-dog').addEventListener('click', () => { setPet('dog'); highlightChar(); });
+$('pick-cat').addEventListener('click', () => { setPet('cat'); highlightChar(); });
+$('pick-duck').addEventListener('click', () => { setPet('duck'); highlightChar(); });
+
 // 开始界面：有存档就显示「继续上次」
 if (hasSave()) {
   const btn = $('btn-continue');
