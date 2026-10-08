@@ -57,6 +57,22 @@ const ANIMAL_SHOP = [
   { type: 'cow',     name: '小奶牛', icon: '🐄', price: 650, desc: '能挤牛奶' },
 ];
 const MAX_ANIMALS = 24;
+// 可购买的庭院装饰（r = 占地半径，用于防重叠）
+const DECOR_SHOP = [
+  { id: 'rock',      name: '大石头', icon: '🪨', price: 20,  r: 16 },
+  { id: 'mushroom',  name: '小蘑菇', icon: '🍄', price: 30,  r: 13 },
+  { id: 'fence',     name: '小栅栏', icon: '🚧', price: 40,  r: 34 },
+  { id: 'flowerbed', name: '花坛',   icon: '🌷', price: 60,  r: 34 },
+  { id: 'lamp',      name: '路灯',   icon: '💡', price: 100, r: 13 },
+  { id: 'bench',     name: '长椅',   icon: '🪑', price: 120, r: 32 },
+  { id: 'scarecrow', name: '稻草人', icon: '🧑‍🌾', price: 180, r: 22 },
+  { id: 'blossom',   name: '樱花树', icon: '🌸', price: 200, r: 26 },
+  { id: 'christmas', name: '圣诞树', icon: '🎄', price: 300, r: 26 },
+  { id: 'fountain',  name: '小喷泉', icon: '⛲', price: 500, r: 38 },
+  { id: 'windmill',  name: '大风车', icon: '🎡', price: 800, r: 38 },
+];
+const DECOR_R = {};
+DECOR_SHOP.forEach(d => { DECOR_R[d.id] = d.r; });
 const CUSTOMER_COLORS = ['#7ac74f', '#ff9f43', '#5fa8e8', '#c88ae8', '#ff8f8f'];
 const CUSTOMER_HAIRS = ['#3a2a1a', '#6b4226', '#d9a62e', '#8a8a8a', '#2a2a3a'];
 
@@ -79,6 +95,8 @@ const G = {
   petHatsOwned: [],
   animals: [],
   groundItems: [],
+  decorations: [],        // 自己摆放的庭院装饰
+  placing: null,          // 放置模式：{ id }
   plots: [],
   trees: [],
   decor: [],
@@ -276,6 +294,7 @@ window.addEventListener('keydown', (e) => {
   keys[k] = true;
   if (k === 'e' || k === ' ') interactQueued = true;
   if (k === 'h') toggleModal('help-modal');
+  if (k === 'q' && G.placing) { G.placing = null; sfx.close(); toast('先不放了，收起来咯'); }
   if (k === 'escape' && G.modalOpen) closeModal(G.modalOpen);
 });
 window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
@@ -403,6 +422,7 @@ function saveGame() {
     plots: G.plots.map(p => ({ state: p.state, crop: p.crop, timer: p.timer, watered: p.watered })),
     trees: G.trees.map(t => ({ type: t.type, fruits: t.fruits, timer: t.timer })),
     items: G.groundItems.map(i => ({ id: i.id, x: i.x, y: i.y })),
+    decorations: G.decorations.map(d => ({ id: d.id, x: d.x, y: d.y })),
     music: musicOn, muted,
     savedAt: Date.now(),
   };
@@ -490,6 +510,11 @@ function loadGame() {
       ? d.items.filter(i => i && ITEMS[i.id] && Number.isFinite(i.x) && Number.isFinite(i.y))
                .map(i => ({ id: i.id, x: i.x, y: i.y, phase: rand(0, 6) }))
       : [];
+    // 自己摆放的装饰
+    G.decorations = Array.isArray(d.decorations)
+      ? d.decorations.filter(v => v && DECOR_R[v.id] && Number.isFinite(v.x) && Number.isFinite(v.y))
+                      .map(v => ({ id: v.id, x: v.x, y: v.y, phase: rand(0, 6) }))
+      : [];
     // 音效设置
     if (typeof d.music === 'boolean') { musicOn = d.music; syncMusicButton(); }
     if (typeof d.muted === 'boolean') setMuted(d.muted);
@@ -523,10 +548,40 @@ function resetGame() {
   G.pet.x = 380; G.pet.y = 530;
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = [];
+  G.decorations = []; G.placing = null;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
   G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
   initWorld();
   renderInventory(); renderHUD();
+}
+
+// ---------------- 庭院装饰：放置 ----------------
+function canPlaceAt(id, x, y) {
+  const d = DECOR_SHOP.find(v => v.id === id);
+  if (!d) return '这个装饰不存在';
+  const pc = ZONES.pond;
+  const ex = (x - pc.x) / (pc.w / 2 + 20), ey = (y - pc.y) / (pc.h / 2 + 20);
+  if (ex * ex + ey * ey < 1) return '不能放在水里哦 💧';
+  for (const dd of G.decorations) {
+    const need = (d.r + (DECOR_R[dd.id] || 20)) * 0.75;
+    if (dist(x, y, dd.x, dd.y) < need) return '这里太挤啦，换个地方吧';
+  }
+  return true;
+}
+function placeDecoration() {
+  const id = G.placing.id;
+  const d = DECOR_SHOP.find(v => v.id === id);
+  const x = Math.max(30, Math.min(WORLD_W - 30, G.player.x));
+  const y = Math.max(150, Math.min(WORLD_H - 20, G.player.y + 8));
+  const chk = canPlaceAt(id, x, y);
+  if (chk !== true) { sfx.error(); toast(chk); return; }
+  G.decorations.push({ id, x, y, phase: rand(0, 6) });
+  G.player.actionT = 0.6;
+  sfx.equip();
+  spawnParticles(x, y - 20, '✨', 8);
+  G.placing = null;
+  saveGame();
+  toast(`${d.name}放好啦，真好看 🎉`, 2200);
 }
 
 // ---------------- DOM / UI ----------------
@@ -641,6 +696,21 @@ function renderShop() {
         toast(`${a.name}来到牧场啦！它会自己散步 🎉`, 2400);
         renderShop(); renderHUD();
       }, false, a.desc);
+    }
+  } else if (shopTab === 'decor') {
+    // 庭院装饰：买好后进入放置模式，走到喜欢的位置放下
+    const head = document.createElement('div');
+    head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    head.textContent = `农场已有 ${G.decorations.length} 件装饰 · 买好后走到想放的地方，按 ${KEY_HINT} 放下`;
+    box.appendChild(head);
+    for (const d of DECOR_SHOP) {
+      mkCard(iconBox('emoji', d.icon), d.name, d.price, () => {
+        G.coins -= d.price;
+        sfx.buy(); renderHUD();
+        closeModal('shop-modal');
+        G.placing = { id: d.id };
+        toast(`买好啦！走到想放的地方按 ${KEY_HINT} 放下${isTouch ? '（点画面也行）' : '（按 Q 取消）'}`, 3200);
+      }, false, '可自由摆放');
     }
   } else {
     for (const [key, o] of Object.entries(PET_HATS)) {
@@ -857,6 +927,8 @@ function nearestInteract() {
 
 function doInteract() {
   if (G.modalOpen) return;
+  // 放置模式：按 E 把装饰放下
+  if (G.placing) { placeDecoration(); return; }
   // 钓鱼中再按 = 收杆
   if (G.fishing) { reelIn(); return; }
   const t = nearestInteract();
@@ -1212,7 +1284,11 @@ function update(dt) {
   // --- 交互提示 ---
   const pr = $('prompt');
   const actionBtn = $('touch-action');
-  if (!G.modalOpen && !G.fishing && G.sleepFade === 0) {
+  if (G.placing && !G.modalOpen) {
+    const d = DECOR_SHOP.find(v => v.id === G.placing.id);
+    pr.textContent = `放置「${d.icon} ${d.name}」：[${KEY_HINT}] 放下${isTouch ? '' : ' · [Q] 取消'}`;
+    pr.classList.remove('hidden');
+  } else if (!G.modalOpen && !G.fishing && G.sleepFade === 0) {
     const it = nearestInteract();
     if (it) { pr.textContent = `[${KEY_HINT}] ${it.label}`; pr.classList.remove('hidden'); }
     else pr.classList.add('hidden');
@@ -1328,6 +1404,10 @@ function render() {
       ? drawStrawberryBush(ctx, tr.x, tr.y, t, tr.phase, tr.fruits)
       : drawTree(ctx, tr.x, tr.y, t, tr.phase, tr.fruits, tr.type),
   });
+  // 庭院装饰
+  for (const dc of G.decorations) {
+    drawables.push({ y: dc.y + 4, draw: () => drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase) });
+  }
   for (const a of G.animals) {
     drawables.push({
       y: a.y + 14,
@@ -1373,6 +1453,29 @@ function render() {
   });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
+
+  // 自己摆放的庭院装饰（已放在 drawables 里一起排序）
+  // 放置预览：跟着角色走，绿色=可以放，红色=放不下
+  if (G.placing) {
+    const d = DECOR_SHOP.find(v => v.id === G.placing.id);
+    if (d) {
+      const px2 = Math.max(30, Math.min(WORLD_W - 30, G.player.x));
+      const py2 = Math.max(150, Math.min(WORLD_H - 20, G.player.y + 8));
+      const okSpot = canPlaceAt(d.id, px2, py2) === true;
+      ctx.globalAlpha = 0.62;
+      drawDecor(ctx, d.id, px2, py2, t, 0);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = okSpot ? 'rgba(80,220,120,.95)' : 'rgba(255,90,90,.95)';
+      ctx.lineWidth = 3;
+      if (ctx.setLineDash) ctx.setLineDash([7, 5]);
+      ellipse(ctx, px2, py2 - 8, d.r + 8, (d.r + 8) * 0.42);
+      ctx.stroke();
+      if (ctx.setLineDash) ctx.setLineDash([]);
+      ctx.fillStyle = okSpot ? 'rgba(80,220,120,.9)' : 'rgba(255,90,90,.9)';
+      ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(okSpot ? '✓' : '✕', px2, py2 - 10);
+    }
+  }
 
   // 玩家动作特效（浇水/收获光圈）
   if (G.player.actionT > 0) {

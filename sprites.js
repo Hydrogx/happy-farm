@@ -983,6 +983,223 @@ function drawCowBarn(ctx, x, y, t) {
 }
 
 /* ------------------------------------------------------------
+ * 庭院装饰（商店购买后自己摆放，全部带动画）
+ * ---------------------------------------------------------- */
+function drawDecor(ctx, id, x, y, t, phase = 0) {
+  switch (id) {
+    case 'rock':
+      drawShadow(ctx, x, y, 16);
+      ctx.fillStyle = '#9aa0a6'; ellipse(ctx, x, y - 8, 15, 12); ctx.fill();
+      ctx.fillStyle = '#b8bec4'; ellipse(ctx, x - 4, y - 12, 7, 5); ctx.fill();
+      ctx.fillStyle = '#7c8288'; ellipse(ctx, x + 6, y - 4, 5.5, 3.5); ctx.fill();
+      break;
+
+    case 'mushroom': {
+      drawShadow(ctx, x, y, 10);
+      const bob = Math.sin(t * 2 + phase) * 1.2;
+      ctx.fillStyle = '#fff2e0'; rr(ctx, x - 4, y - 15, 8, 15, 3); ctx.fill();
+      ctx.fillStyle = '#ff5a5a';
+      ctx.beginPath(); ctx.ellipse(x, y - 15 + bob, 12.5, 8.5, 0, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ellipse(ctx, x - 5, y - 18 + bob, 2.5, 2); ctx.fill();
+      ellipse(ctx, x + 4.5, y - 20 + bob, 2, 1.7); ctx.fill();
+      break;
+    }
+
+    case 'flowerbed': {
+      drawShadow(ctx, x, y, 34);
+      ctx.fillStyle = '#b07b4f'; rr(ctx, x - 32, y - 16, 64, 18, 5); ctx.fill();
+      ctx.fillStyle = '#8a5f36'; rr(ctx, x - 32, y - 6, 64, 8, 3); ctx.fill();
+      const cols = ['#ff8fb0', '#ffd23e', '#c88ae8', '#fff', '#ff6b6b'];
+      for (let i = 0; i < 5; i++) {
+        const fx = x - 24 + i * 12, sw = Math.sin(t * 2 + phase + i) * 2;
+        ctx.strokeStyle = '#5da84d'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(fx, y - 16); ctx.quadraticCurveTo(fx + sw * .5, y - 24, fx + sw, y - 31); ctx.stroke();
+        ctx.fillStyle = cols[i % cols.length];
+        for (let k = 0; k < 5; k++) {
+          const a = (k / 5) * Math.PI * 2 + phase;
+          ellipse(ctx, fx + sw + Math.cos(a) * 3.2, y - 33 + Math.sin(a) * 3.2, 2.3, 2.3); ctx.fill();
+        }
+        ctx.fillStyle = '#ffd23e'; ellipse(ctx, fx + sw, y - 33, 2.2, 2.2); ctx.fill();
+      }
+      break;
+    }
+
+    case 'fence':
+      drawShadow(ctx, x, y, 34);
+      ctx.fillStyle = '#b8905e';
+      [-28, 0, 28].forEach(px => { rr(ctx, x + px - 3.5, y - 32, 7, 34, 3); ctx.fill(); });
+      ctx.fillStyle = '#c9a06a';
+      rr(ctx, x - 33, y - 25, 66, 5.5, 2); ctx.fill();
+      rr(ctx, x - 33, y - 12, 66, 5.5, 2); ctx.fill();
+      break;
+
+    case 'lamp': {
+      drawShadow(ctx, x, y, 12);
+      ctx.fillStyle = '#5a5a66'; rr(ctx, x - 3, y - 54, 6, 56, 3); ctx.fill();
+      ctx.fillStyle = '#7a7a88'; rr(ctx, x - 9, y - 4, 18, 5, 2); ctx.fill();
+      const glow = 0.75 + Math.sin(t * 3 + phase) * 0.12;
+      ctx.fillStyle = `rgba(255,225,130,${0.22 * glow})`;
+      ellipse(ctx, x, y - 60, 20, 20); ctx.fill();
+      ctx.fillStyle = `rgba(255,240,180,${glow})`;
+      ellipse(ctx, x, y - 60, 8.5, 10); ctx.fill();
+      ctx.fillStyle = '#5a5a66'; rr(ctx, x - 8, y - 70, 16, 5, 2); ctx.fill();
+      break;
+    }
+
+    case 'bench':
+      drawShadow(ctx, x, y, 30);
+      ctx.fillStyle = '#a57c4a';
+      rr(ctx, x - 26, y - 8, 7, 12, 2); ctx.fill();
+      rr(ctx, x + 19, y - 8, 7, 12, 2); ctx.fill();
+      ctx.fillStyle = '#c98a5a';
+      rr(ctx, x - 30, y - 18, 60, 9, 3); ctx.fill();
+      rr(ctx, x - 30, y - 36, 60, 7, 3); ctx.fill();
+      ctx.fillStyle = '#a57c4a';
+      rr(ctx, x - 26, y - 30, 5, 14, 2); ctx.fill();
+      rr(ctx, x + 21, y - 30, 5, 14, 2); ctx.fill();
+      break;
+
+    case 'blossom': {
+      drawShadow(ctx, x, y, 24);
+      const sway = Math.sin(t * 1.3 + phase) * 2.5;
+      ctx.fillStyle = '#8a5a2e'; rr(ctx, x - 5, y - 30, 10, 34, 4); ctx.fill();
+      ctx.fillStyle = '#ffb7d5';
+      ellipse(ctx, x - 15 + sway, y - 44, 16, 13); ctx.fill();
+      ellipse(ctx, x + 15 + sway, y - 44, 16, 13); ctx.fill();
+      ellipse(ctx, x + sway, y - 56, 19, 15); ctx.fill();
+      ctx.fillStyle = '#ffd0e4';
+      ellipse(ctx, x - 6 + sway, y - 54, 9, 7); ctx.fill();
+      // 飘落的花瓣
+      for (let i = 0; i < 4; i++) {
+        const p = ((t * 0.35 + i * 0.27 + phase * 0.1) % 1);
+        const px2 = x + Math.sin((t + i * 2) * 1.6) * 16;
+        ctx.fillStyle = `rgba(255,183,213,${1 - p})`;
+        ellipse(ctx, px2, y - 56 + p * 58, 3, 2.2); ctx.fill();
+      }
+      break;
+    }
+
+    case 'scarecrow': {
+      drawShadow(ctx, x, y, 16);
+      const sway = Math.sin(t * 1.8 + phase) * 2;
+      ctx.fillStyle = '#a57c4a'; rr(ctx, x - 4, y - 52, 8, 54, 3); ctx.fill();
+      ctx.fillStyle = '#c9a06a'; rr(ctx, x - 24, y - 44, 48, 6, 3); ctx.fill();
+      // 稻草手
+      ctx.strokeStyle = '#f4d35e'; ctx.lineWidth = 2.5;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath(); ctx.moveTo(x - 24, y - 41); ctx.lineTo(x - 30, y - 38 + i * 3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 24, y - 41); ctx.lineTo(x + 30, y - 38 + i * 3); ctx.stroke();
+      }
+      // 身体（格子衫）
+      ctx.fillStyle = '#e05252'; rr(ctx, x - 14 + sway * .3, y - 40, 28, 26, 4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      rr(ctx, x - 14 + sway * .3, y - 34, 28, 3, 1); ctx.fill();
+      rr(ctx, x - 14 + sway * .3, y - 24, 28, 3, 1); ctx.fill();
+      // 头 + 草帽
+      ctx.fillStyle = '#e8c88a'; ellipse(ctx, x + sway * .4, y - 48, 10, 9); ctx.fill();
+      ctx.fillStyle = '#333'; ellipse(ctx, x - 3 + sway * .4, y - 49, 1.4, 1.6); ctx.fill();
+      ellipse(ctx, x + 3 + sway * .4, y - 49, 1.4, 1.6); ctx.fill();
+      ctx.strokeStyle = '#c98a5a'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x + sway * .4, y - 45, 4, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+      ctx.fillStyle = '#f4d35e';
+      ctx.beginPath(); ctx.ellipse(x + sway * .4, y - 54, 17, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + sway * .4, y - 57, 9, 7, 0, Math.PI, Math.PI * 2); ctx.fill();
+      break;
+    }
+
+    case 'christmas': {
+      drawShadow(ctx, x, y, 26);
+      ctx.fillStyle = '#8a5a2e'; rr(ctx, x - 5, y - 12, 10, 16, 3); ctx.fill();
+      const tiers = [[0, -22, 26], [0, -40, 21], [0, -56, 15]];
+      ctx.fillStyle = '#2f7d4f';
+      tiers.forEach(([dx, dy, w]) => {
+        ctx.beginPath();
+        ctx.moveTo(x + dx, y + dy - 22); ctx.lineTo(x + dx + w, y + dy); ctx.lineTo(x + dx - w, y + dy);
+        ctx.closePath(); ctx.fill();
+      });
+      ctx.fillStyle = '#3f9e63';
+      ctx.beginPath(); ctx.moveTo(x, y - 96); ctx.lineTo(x + 8, y - 78); ctx.lineTo(x - 8, y - 78); ctx.closePath(); ctx.fill();
+      // 星星
+      const tw = 0.8 + Math.sin(t * 4 + phase) * 0.2;
+      ctx.fillStyle = `rgba(255,225,90,${tw})`;
+      ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('⭐', x, y - 92);
+      // 彩灯
+      const lc = ['#ff5a5a', '#ffd23e', '#5fa8e8', '#ff8fb0'];
+      for (let i = 0; i < 8; i++) {
+        const tier = i % 3, row = Math.floor(i / 3);
+        const ly = y - 18 - tier * 17 - (i % 2) * 5;
+        const lx = x + (row - 1) * 12 + (tier % 2 ? 5 : -5);
+        const on = Math.sin(t * 5 + i * 1.7) > 0;
+        ctx.fillStyle = on ? lc[i % 4] : 'rgba(255,255,255,.35)';
+        ellipse(ctx, lx, ly, 2.6, 2.6); ctx.fill();
+      }
+      break;
+    }
+
+    case 'fountain': {
+      drawShadow(ctx, x, y, 40);
+      ctx.fillStyle = '#b8bec4'; ellipse(ctx, x, y - 8, 38, 14); ctx.fill();
+      ctx.fillStyle = '#9aa0a6'; ellipse(ctx, x, y - 12, 34, 12); ctx.fill();
+      ctx.fillStyle = '#5fb8e8'; ellipse(ctx, x, y - 13, 29, 9.5); ctx.fill();
+      // 水柱
+      const h = 30 + Math.sin(t * 3 + phase) * 4;
+      ctx.strokeStyle = 'rgba(190,235,255,.9)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(x, y - 16); ctx.quadraticCurveTo(x + 3, y - 16 - h * .6, x, y - 16 - h); ctx.stroke();
+      ctx.fillStyle = 'rgba(200,240,255,.85)';
+      ellipse(ctx, x, y - 16 - h, 5, 4); ctx.fill();
+      for (let i = 0; i < 5; i++) {
+        const p = ((t * 0.7 + i * 0.2) % 1);
+        const side = i % 2 ? 1 : -1;
+        ctx.fillStyle = `rgba(200,240,255,${1 - p})`;
+        ellipse(ctx, x + side * (8 + p * 22), y - 16 - h * .5 + p * 16, 2.2, 2.2); ctx.fill();
+      }
+      // 波纹
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 2; i++) {
+        const r = ((t * 12 + i * 16) % 26) + 4;
+        ctx.globalAlpha = 1 - r / 30;
+        ellipse(ctx, x, y - 13, r, r * .33); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+
+    case 'windmill': {
+      drawShadow(ctx, x, y, 34);
+      // 塔身
+      ctx.fillStyle = '#f2e6cf';
+      ctx.beginPath();
+      ctx.moveTo(x - 20, y); ctx.lineTo(x - 12, y - 74); ctx.lineTo(x + 12, y - 74); ctx.lineTo(x + 20, y);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#d8c9a8'; rr(ctx, x - 22, y - 80, 44, 8, 3); ctx.fill();
+      ctx.fillStyle = '#e05252';
+      ctx.beginPath(); ctx.moveTo(x - 26, y - 78); ctx.lineTo(x, y - 96); ctx.lineTo(x + 26, y - 78); ctx.closePath(); ctx.fill();
+      // 门窗
+      ctx.fillStyle = '#a56a35'; rr(ctx, x - 6, y - 20, 12, 20, 3); ctx.fill();
+      ctx.fillStyle = '#7cc3e8'; ellipse(ctx, x, y - 58, 5, 5); ctx.fill();
+      // 风车叶片（旋转）
+      ctx.save();
+      ctx.translate(x, y - 68);
+      ctx.rotate(t * 0.9);
+      for (let i = 0; i < 4; i++) {
+        ctx.save(); ctx.rotate((i / 4) * Math.PI * 2);
+        ctx.fillStyle = i % 2 ? '#ffffff' : '#ffd8a8';
+        ctx.beginPath();
+        ctx.moveTo(0, -6); ctx.lineTo(30, -10); ctx.lineTo(30, 6); ctx.lineTo(0, 6);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.restore();
+      }
+      ctx.fillStyle = '#8a5a2e'; ellipse(ctx, 0, 0, 6, 6); ctx.fill();
+      ctx.restore();
+      break;
+    }
+  }
+}
+
+/* ------------------------------------------------------------
  * 地面物品（带原地休息动画：上下浮动 + 闪光）
  * ---------------------------------------------------------- */
 function drawGroundItem(ctx, x, y, icon, t, phase) {

@@ -157,7 +157,7 @@ canvas {
 .modal-card h2 { color: #e2701d; }
 .help-list { text-align: left; font-size: 16px; color: #5a4a2a; line-height: 1.9; list-style: none; }
 
-.tab-row { display: flex; gap: 8px; }
+.tab-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .tab-btn {
   background: #f2ead6; border: 3px solid #d8c9a3; border-radius: 12px;
   padding: 6px 16px; font-size: 16px; font-weight: bold; color: #8a7a52;
