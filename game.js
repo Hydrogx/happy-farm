@@ -76,6 +76,268 @@ DECOR_SHOP.forEach(d => { DECOR_R[d.id] = d.r; });
 const CUSTOMER_COLORS = ['#7ac74f', '#ff9f43', '#5fa8e8', '#c88ae8', '#ff8f8f'];
 const CUSTOMER_HAIRS = ['#3a2a1a', '#6b4226', '#d9a62e', '#8a8a8a', '#2a2a3a'];
 
+// ---------------- 多语言（中文 / English） ----------------
+let lang = 'zh';
+try { lang = localStorage.getItem('farm-lang') === 'en' ? 'en' : 'zh'; } catch (e) {}
+
+const STR = {
+  zh: {
+    // —— 开始界面 / 通用 UI ——
+    title: '🌈 快乐小牧场',
+    subtitle1: '选择你的角色开始农场生活吧！',
+    boy: '小男孩', girl: '小女孩',
+    subtitle2: '再挑一只小宠物陪你：',
+    dog: '小狗', cat: '小猫',
+    btnStart: '🎮 开始新游戏',
+    btnContinue: '📂 继续上次的牧场',
+    helpHint: '⌨️ 方向键 / WASD 走路 · E 或 空格 做动作 · H 帮助',
+    helpTitle: '📖 怎么玩', btnKnow: '知道啦！',
+    help1: '🚶 方向键 / WASD：走来走去',
+    help2: '✋ E / 空格：捡东西、种地、挤奶、剪羊毛、钓鱼、和客人说话',
+    help3: '🥚 鸡会下蛋，捡起来！',
+    help4: '🐄 牛可以挤牛奶，🐑 羊可以剪羊毛',
+    help5: '🌱 田里：先耕地 → 撒种子 → 浇水 → 收获',
+    help6: '🍎 摇摇果树，水果掉下来',
+    help7: '🎣 去池塘边钓鱼，看到「!」马上按 E！',
+    help8: '🍳 回家用厨房做好吃的',
+    help9: '👕 衣柜可以换新衣服（商店里买）',
+    help10: '🛒 客人来买你头上的东西，卖给TA赚金币',
+    help11: '📦 卖货箱可以卖掉任何东西',
+    help12: '🎡 商店还能买动物和庭院装饰，自己摆放！',
+    help13: '🌧️ 下雨天水会自动浇好；💾 游戏会自动存档',
+    shopTitle: '🛒 牧场商店', tabSeeds: '🌱 种子', tabClothes: '👕 服装',
+    tabAnimals: '🐮 动物', tabDecor: '🎡 装饰', tabPet: '🐾 宠物装扮',
+    btnLeaveShop: '离开商店',
+    cookTitle: '🍳 小厨房', btnCookDone: '做好啦',
+    wardrobeTitle: '👕 我的衣柜', wtabHat: '🎩 帽子', wtabShirt: '👕 上衣', wtabPants: '👖 裤子',
+    btnWardrobeDone: '换好啦',
+    sellTitle: '📦 卖货箱', sellSubtitle: '点一点，把东西换成金币！', btnCloseBin: '关上门',
+    logTitle: '📜 牧场日志',
+    // —— 状态栏 ——
+    hudDay: '📅 第 {n} 天', weather: { sunny: '☀️ 晴天', cloudy: '⛅ 多云', rain: '🌧️ 下雨' },
+    // —— 交互提示 ——
+    prPickup: '捡起 {item}', prShear: '✂️ 剪羊毛', prMilk: '🥛 挤牛奶',
+    prPetChicken: '🐔 摸摸小鸡', prPetSheep: '🐑 摸摸小羊（羊毛还没长好）', prPetCow: '🐄 摸摸奶牛（等会儿才有奶）',
+    prTill: '⛏️ 耕地', prPlant: '🌱 播种 {seed}', prNoSeed: '🌱 需要种子（去商店买）',
+    prWater: '💧 浇水', prHarvest: '🧺 收获 {crop}', prTree: '摇一摇{fruit}树',
+    prCook: '🍳 做饭', prWardrobe: '👕 换衣服', prSell: '📦 卖东西', prShop: '🛒 打开商店',
+    prFish: '🎣 钓鱼', prCustomer: '把 {item} 卖给客人',
+    prPlace: '放置「{decor}」：[{key}] 放下{extra}',
+    prFishing: '🎣 等待中…（按 {key} 提前收杆）', prBite: '❗ 快按 {key} 收杆！',
+    // —— 日志 / 提示 ——
+    welcome: '欢迎来到快乐小牧场！去找点事情做吧 🌱',
+    welcomeBack: '欢迎回来！第 {day} 天继续加油 🌻',
+    loadFailed: '存档读不出来，重新开始吧',
+    saveOk: '💾 游戏已保存',
+    night: '🌙 天黑啦，睡觉觉…',
+    morning: '☀️ 第 {day} 天开始啦！',
+    rainHint: '🌧️ 今天下雨，不用浇水～',
+    bought: '买到 {item}！',
+    boughtClothes: '买到 {name}！去衣柜换上吧 👕',
+    boughtAnimal: '{animal}来到牧场啦！它会自己散步 🎉',
+    tooManyAnimals: '牧场里的动物太多啦！',
+    boughtDecor: '买好啦！走到想放的地方按 {key} 放下{extra}',
+    decorCancel: '先不放了，收起来咯',
+    placedDecor: '{decor}放好啦，真好看 🎉',
+    inWater: '不能放在水里哦 💧',
+    tooCrowded: '这里太挤啦，换个地方吧',
+    wearPetHat: '小{pet}戴上啦，好开心！',
+    equipDone: '换上 {name}！',
+    cookDone: '香喷喷的{dish}做好啦！',
+    soldBin: '卖掉 {item}，+{n} 金币！',
+    soldCustomer: '客人好开心！+{n} 金币',
+    noSuchItem: '背包里没有 {item} 哦',
+    gotWool: '剪到一团软软的羊毛！',
+    gotMilk: '挤到新鲜牛奶！',
+    noSeed: '没有种子啦，去商店买一些吧 🛒',
+    harvested: '收获 2 个{crop}！',
+    castLine: '等待小鱼上钩…',
+    caughtBig: '哇！钓到一条大鱼！🐠',
+    caughtSmall: '钓到一条小鱼！🐟',
+    reelIn: '收起鱼竿啦',
+    customerCome: '🔔 有客人来买东西啦！',
+    customerGone: '客人等太久走掉了…',
+    fishEscaped: '小鱼跑掉了…再试一次！',
+    notEnoughCoins: '金币不够啦',
+    // —— 日志专用 ——
+    logPickup: '捡起了 {item}',
+    logTill: '翻好了一块地',
+    logPlant: '种下了 {seed}',
+    logWater: '给菜地浇了水',
+    logShear: '剪到了羊毛',
+    logMilk: '挤到了牛奶',
+    logEgg: '小鸡下了一个蛋 🥚',
+    logWoolBack: '🐑 羊毛长好啦',
+    logMilkBack: '🐄 奶牛又有奶了',
+    logCustomerWant: '🔔 有客人想买 {item}',
+    logMusicOn: '🎵 背景音乐已打开', logMusicOff: '🔕 背景音乐已关闭',
+    logSoundOn: '🔊 音效已打开', logSoundOff: '🔇 音效已关闭',
+    logLang: '🌏 语言切换为中文',
+    logDecor: '摆放了{decor}',
+    cancelHint: '（按 Q 取消）',
+    logSoldCustomer: '把 {item} 卖给了客人，+{n} 金币',
+    rotateHint: '🔄 横过来玩，画面更大更清楚',
+    logTitle2: '最近发生的事',
+    owned: '已有啦 ✓', buyFor: '💰{n} 买',
+    animalCount: '牧场现在有 {n} 只动物（最多 {max} 只）',
+    decorCount: '农场已有 {n} 件装饰 · 买好后走到想放的地方，按 {key} 放下',
+    placeFree: '可自由摆放', wearing: '穿着呢 ✓', wearIt: '穿上',
+    petSection: '🐾 宠物的装扮：', wearPet: '给宠物戴',
+    need: '需要', cookOne: '🍳 做一份', noMats: '材料不够',
+    bagEmpty: '背包空空的呢～', sellOne: '卖 1 个 💰{n}', anyFruit: '🍎任意水果×{n}',
+    saveInfo: '第 {day} 天 · 💰{coins} · 上次保存 {time}',
+    switchLang: '切换中文 / English',
+    saveTitle2: '自动存档', musicTitle: '背景音乐开关', muteTitle: '声音开关',
+  },
+  en: {
+    title: '🌈 Happy Little Farm',
+    subtitle1: 'Pick your character and start farm life!',
+    boy: 'Boy', girl: 'Girl',
+    subtitle2: 'Now choose a pet to join you:',
+    dog: 'Puppy', cat: 'Kitten',
+    btnStart: '🎮 New Game',
+    btnContinue: '📂 Continue',
+    helpHint: '⌨️ Arrows / WASD to walk · E or Space to act · H for help',
+    helpTitle: '📖 How to Play', btnKnow: 'Got it!',
+    help1: '🚶 Arrow keys / WASD: walk around',
+    help2: '✋ E / Space: pick up, plant, milk, shear, fish, talk to customers',
+    help3: '🥚 Chickens lay eggs — pick them up!',
+    help4: '🐄 Milk the cow, 🐑 shear the sheep',
+    help5: '🌱 Field: till → plant seeds → water → harvest',
+    help6: '🍎 Shake the fruit trees to drop fruit',
+    help7: '🎣 Fish at the pond — press E fast when you see「!」',
+    help8: '🍳 Cook tasty food in the kitchen at home',
+    help9: '👕 Change clothes in the wardrobe (buy them in the shop)',
+    help10: '🛒 Customers come to buy things — sell to earn coins',
+    help11: '📦 The shipping bin buys anything you have',
+    help12: '🎡 The shop also sells animals and yard decorations!',
+    help13: '🌧️ Rain waters your crops; 💾 the game saves by itself',
+    shopTitle: '🛒 Farm Shop', tabSeeds: '🌱 Seeds', tabClothes: '👕 Clothes',
+    tabAnimals: '🐮 Animals', tabDecor: '🎡 Decor', tabPet: '🐾 Pet Hats',
+    btnLeaveShop: 'Leave Shop',
+    cookTitle: '🍳 Kitchen', btnCookDone: 'Done',
+    wardrobeTitle: '👕 My Wardrobe', wtabHat: '🎩 Hats', wtabShirt: '👕 Tops', wtabPants: '👖 Pants',
+    btnWardrobeDone: 'Done',
+    sellTitle: '📦 Shipping Bin', sellSubtitle: 'Tap an item to turn it into coins!', btnCloseBin: 'Close',
+    logTitle: '📜 Farm Log',
+    hudDay: '📅 Day {n}', weather: { sunny: '☀️ Sunny', cloudy: '⛅ Cloudy', rain: '🌧️ Rainy' },
+    prPickup: 'Pick up {item}', prShear: '✂️ Shear wool', prMilk: '🥛 Milk the cow',
+    prPetChicken: '🐔 Pet the chick', prPetSheep: '🐑 Pet the lamb (no wool yet)', prPetCow: '🐄 Pet the cow (no milk yet)',
+    prTill: '⛏️ Till the soil', prPlant: '🌱 Plant {seed}', prNoSeed: '🌱 Need seeds (buy at the shop)',
+    prWater: '💧 Water it', prHarvest: '🧺 Harvest {crop}', prTree: 'Shake the {fruit} tree',
+    prCook: '🍳 Cook', prWardrobe: '👕 Change clothes', prSell: '📦 Sell things', prShop: '🛒 Open the shop',
+    prFish: '🎣 Go fishing', prCustomer: 'Sell {item} to the customer',
+    prPlace: 'Place "{decor}": [{key}] put down{extra}',
+    prFishing: '🎣 Waiting… (press {key} to reel in)', prBite: '❗ Press {key} now!',
+    welcome: 'Welcome to Happy Little Farm! Go find something to do 🌱',
+    welcomeBack: 'Welcome back! Day {day} — let\'s go 🌻',
+    loadFailed: 'Could not read the save — starting fresh',
+    saveOk: '💾 Game saved',
+    night: '🌙 It\'s dark — time to sleep…',
+    morning: '☀️ Day {day} begins!',
+    rainHint: '🌧️ It\'s raining — no need to water today!',
+    bought: 'Bought {item}!',
+    boughtClothes: 'Bought {name}! Change it in the wardrobe 👕',
+    boughtAnimal: '{animal} joined the farm! It will wander around 🎉',
+    tooManyAnimals: 'The farm has too many animals!',
+    boughtDecor: 'Bought! Walk somewhere nice and press {key} to place it{extra}',
+    decorCancel: 'Put it away for now',
+    placedDecor: '{decor} looks lovely there! 🎉',
+    inWater: 'Can\'t put that in the water 💧',
+    tooCrowded: 'Too crowded here — try another spot',
+    wearPetHat: 'Your {pet} loves the new hat!',
+    equipDone: 'Wearing {name}!',
+    cookDone: 'Yummy {dish} is ready!',
+    soldBin: 'Sold {item}, +{n} coins!',
+    soldCustomer: 'The customer is happy! +{n} coins',
+    noSuchItem: 'No {item} in your bag',
+    gotWool: 'Got a fluffy ball of wool!',
+    gotMilk: 'Got fresh milk!',
+    noSeed: 'No seeds left — buy some at the shop 🛒',
+    harvested: 'Harvested 2 {crop}!',
+    castLine: 'Waiting for a bite…',
+    caughtBig: 'Wow! You caught a big fish! 🐠',
+    caughtSmall: 'You caught a small fish! 🐟',
+    reelIn: 'Reeled the line in',
+    customerCome: '🔔 A customer is coming!',
+    customerGone: 'The customer waited too long and left…',
+    fishEscaped: 'The fish got away… try again!',
+    notEnoughCoins: 'Not enough coins',
+    logPickup: 'Picked up {item}',
+    logTill: 'Tilled a patch of soil',
+    logPlant: 'Planted {seed}',
+    logWater: 'Watered the crops',
+    logShear: 'Sheared some wool',
+    logMilk: 'Milked the cow',
+    logEgg: 'A chicken laid an egg 🥚',
+    logWoolBack: '🐑 The wool grew back',
+    logMilkBack: '🐄 The cow has milk again',
+    logCustomerWant: '🔔 A customer wants to buy {item}',
+    logMusicOn: '🎵 Music on', logMusicOff: '🔕 Music off',
+    logSoundOn: '🔊 Sound on', logSoundOff: '🔇 Sound off',
+    logLang: '🌏 Language switched to English',
+    logDecor: 'Placed {decor}',
+    cancelHint: ' (press Q to cancel)',
+    logSoldCustomer: 'Sold {item} to the customer, +{n} coins',
+    rotateHint: '🔄 Turn your phone sideways for a bigger view',
+    logTitle2: 'Recent events',
+    owned: 'Owned ✓', buyFor: '💰{n} Buy',
+    animalCount: 'You have {n} animals (max {max})',
+    decorCount: '{n} decorations placed · walk somewhere and press {key} to place',
+    placeFree: 'Place anywhere', wearing: 'Wearing ✓', wearIt: 'Wear it',
+    petSection: '🐾 Pet outfits:', wearPet: 'Put on pet',
+    need: 'Needs', cookOne: '🍳 Cook one', noMats: 'Not enough',
+    bagEmpty: 'Your bag is empty~', sellOne: 'Sell 1 for 💰{n}', anyFruit: '🍎Any fruit ×{n}',
+    saveInfo: 'Day {day} · 💰{coins} · saved {time}',
+    switchLang: 'Switch 中文 / English',
+    saveTitle2: 'Auto-save', musicTitle: 'Music on/off', muteTitle: 'Sound on/off',
+  },
+};
+
+// 英文名表（中文名直接用原表）
+const EN_NAMES = {
+  item: { egg: 'Egg', milk: 'Milk', wool: 'Wool', carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
+    apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
+    fish: 'Small Fish', bigfish: 'Big Fish', fried_egg: 'Fried Egg', salad: 'Fruit Salad',
+    fish_grill: 'Grilled Fish', pudding: 'Milk Pudding', fruit_cake: 'Strawberry Cake',
+    seed_carrot: 'Carrot Seeds', seed_tomato: 'Tomato Seeds', seed_corn: 'Corn Seeds' },
+  hat: { none: 'No Hat', ragged: 'Torn Hat', straw: 'Straw Hat', bow: 'Hair Bow', cap: 'Baseball Cap',
+    beanie: 'Knit Beanie', bandana: 'Pirate Bandana', flower: 'Flower Crown', chef: 'Chef Hat',
+    wizard: 'Wizard Hat', frog: 'Frog Hat', crown: 'Little Crown' },
+  shirt: { ragged: 'Torn Shirt', stripes: 'Striped Shirt', overalls: 'Blue Overalls', dotty: 'Polka Top',
+    hoodie: 'Green Hoodie', dress: 'Pink Dress', sailor: 'Sailor Top', vest: 'Little Vest',
+    star: 'Star T-Shirt', pumpkin: 'Pumpkin Suit', rainbow: 'Rainbow Tee' },
+  pants: { ragged: 'Torn Pants', brown: 'Work Pants', jeans: 'Blue Jeans', shorts: 'Red Shorts',
+    green: 'Green Pants', orange: 'Orange Shorts', white: 'White Pants', pink: 'Pink Pants',
+    purple: 'Purple Pants', stripepants: 'Striped Pants', polka: 'Polka Pants' },
+  petHat: { bow: 'Pet Bow', straw: 'Pet Straw Hat', cap: 'Pet Cap', flower: 'Pet Flower Crown', crown: 'Pet Crown' },
+  animal: { chicken: 'Chick', sheep: 'Lamb', cow: 'Calf' },
+  decor: { rock: 'Big Rock', mushroom: 'Mushroom', fence: 'Small Fence', flowerbed: 'Flower Bed',
+    lamp: 'Lamp Post', bench: 'Bench', scarecrow: 'Scarecrow', blossom: 'Cherry Tree',
+    christmas: 'Christmas Tree', fountain: 'Fountain', windmill: 'Windmill' },
+  crop: { carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn' },
+};
+
+// 取名字：cat = item/hat/shirt/pants/petHat/animal/decor/crop
+function nm(cat, key) {
+  if (lang === 'en' && EN_NAMES[cat] && EN_NAMES[cat][key]) return EN_NAMES[cat][key];
+  switch (cat) {
+    case 'item': case 'crop': return (ITEMS[key] && ITEMS[key].name) || key;
+    case 'petHat': return (PET_HATS[key] && PET_HATS[key].name) || key;
+    case 'animal': { const a = ANIMAL_SHOP.find(v => v.type === key); return a ? a.name : key; }
+    case 'decor': { const d = DECOR_SHOP.find(v => v.id === key); return d ? d.name : key; }
+    default: return (OUTFITS[cat] && OUTFITS[cat][key] && OUTFITS[cat][key].name) || key;
+  }
+}
+// 翻译：t('key', {占位符: 值})
+function t(key, p) {
+  const tbl = STR[lang] || STR.zh;
+  let s = tbl[key] !== undefined ? tbl[key] : (STR.zh[key] !== undefined ? STR.zh[key] : key);
+  if (p && typeof s === 'string') for (const k in p) s = s.split('{' + k + '}').join(p[k]);
+  return s;
+}
+function weatherText() { const w = STR[lang].weather || STR.zh.weather; return w[G.weather] || w.sunny; }
+
 // ---------------- 游戏状态 ----------------
 const G = {
   started: false,
@@ -105,6 +367,7 @@ const G = {
   ambientT: 6,          // 环境动物叫声计时
   lastStep: 0,          // 脚步动画相位
   saveT: 0,             // 自动存档计时
+  log: [],              // 游戏日志
   particles: [],
   fishing: null,              // {phase:'wait'|'bite', timer, bx, by}
   modalOpen: null,
@@ -294,7 +557,7 @@ window.addEventListener('keydown', (e) => {
   keys[k] = true;
   if (k === 'e' || k === ' ') interactQueued = true;
   if (k === 'h') toggleModal('help-modal');
-  if (k === 'q' && G.placing) { G.placing = null; sfx.close(); toast('先不放了，收起来咯'); }
+  if (k === 'q' && G.placing) { G.placing = null; sfx.close(); say('decorCancel'); }
   if (k === 'escape' && G.modalOpen) closeModal(G.modalOpen);
 });
 window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
@@ -407,7 +670,7 @@ function newAnimal(type, x, y) {
 const SAVE_KEY = 'happy-farm-save-v1';
 const SAVE_EVERY = 10;         // 每 10 秒自动存一次
 
-function saveGame() {
+function saveGame(silent = false) {
   if (!G.started) return false;   // 还没开始玩就不存
   const data = {
     v: 1,
@@ -430,6 +693,7 @@ function saveGame() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     G.saveT = 0;
     flashSaveIcon();
+    if (!silent) note('saveOk');
     return true;
   } catch (e) { return false; }
 }
@@ -558,13 +822,13 @@ function resetGame() {
 // ---------------- 庭院装饰：放置 ----------------
 function canPlaceAt(id, x, y) {
   const d = DECOR_SHOP.find(v => v.id === id);
-  if (!d) return '这个装饰不存在';
+  if (!d) return 'tooCrowded';
   const pc = ZONES.pond;
   const ex = (x - pc.x) / (pc.w / 2 + 20), ey = (y - pc.y) / (pc.h / 2 + 20);
-  if (ex * ex + ey * ey < 1) return '不能放在水里哦 💧';
+  if (ex * ex + ey * ey < 1) return 'inWater';
   for (const dd of G.decorations) {
     const need = (d.r + (DECOR_R[dd.id] || 20)) * 0.75;
-    if (dist(x, y, dd.x, dd.y) < need) return '这里太挤啦，换个地方吧';
+    if (dist(x, y, dd.x, dd.y) < need) return 'tooCrowded';
   }
   return true;
 }
@@ -574,18 +838,80 @@ function placeDecoration() {
   const x = Math.max(30, Math.min(WORLD_W - 30, G.player.x));
   const y = Math.max(150, Math.min(WORLD_H - 20, G.player.y + 8));
   const chk = canPlaceAt(id, x, y);
-  if (chk !== true) { sfx.error(); toast(chk); return; }
+  if (chk !== true) { sfx.error(); say(chk); return; }
   G.decorations.push({ id, x, y, phase: rand(0, 6) });
   G.player.actionT = 0.6;
   sfx.equip();
   spawnParticles(x, y - 20, '✨', 8);
   G.placing = null;
   saveGame();
-  toast(`${d.name}放好啦，真好看 🎉`, 2200);
+  say('placedDecor', { decor: nm('decor', id) }, 2200);
+}
+
+// ---------------- 界面语言切换 ----------------
+function updateSaveInfo() {
+  const info = $('save-info');
+  if (!info) return;
+  const d = readSave();
+  if (!d) { info.classList.add('hidden'); return; }
+  const time = new Date(d.savedAt || Date.now()).toLocaleString(
+    lang === 'en' ? 'en-US' : 'zh-CN',
+    { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  info.textContent = t('saveInfo', { day: d.day || 1, coins: d.coins || 0, time });
+  info.classList.remove('hidden');
+}
+function applyLang() {
+  // 静态界面文字
+  const els = (document.querySelectorAll ? document.querySelectorAll('[data-i18n]') : []) || [];
+  for (let i = 0; i < els.length; i++) {
+    const k = els[i].getAttribute && els[i].getAttribute('data-i18n');
+    if (k) els[i].textContent = t(k);
+  }
+  const rh = $('rotate-hint'); if (rh) rh.textContent = t('rotateHint');
+  const lh = $('log-head'); if (lh) lh.textContent = t('logTitle');
+  const lb = $('btn-lang');
+  if (lb) { lb.textContent = lang === 'en' ? 'EN' : '\u4e2d'; lb.title = t('switchLang'); }
+  const btns = { 'btn-help': 'helpTitle', 'save-box': 'saveTitle2',
+                 'btn-music': 'musicTitle', 'btn-mute': 'muteTitle' };
+  for (const id in btns) { const b = $(id); if (b) b.title = t(btns[id]); }
+  document.title = t('title');
+  // 动态内容
+  renderHUD(); renderInventory(); renderLog(); updateSaveInfo();
+  if (G.modalOpen === 'shop-modal') renderShop();
+  else if (G.modalOpen === 'wardrobe-modal') renderWardrobe();
+  else if (G.modalOpen === 'cook-modal') renderCook();
+  else if (G.modalOpen === 'sell-modal') renderSell();
+}
+function setLang(l) {
+  lang = (l === 'en') ? 'en' : 'zh';
+  try { localStorage.setItem('farm-lang', lang); } catch (e) {}
+  applyLang();
+  note('logLang');
 }
 
 // ---------------- DOM / UI ----------------
 const $ = (id) => document.getElementById(id);
+
+// ---------------- 消息日志 ----------------
+function addLog(text) {
+  if (!text) return;
+  G.log.push({ text });
+  if (G.log.length > 120) G.log.shift();   // 只留最近 120 条
+  renderLog();
+}
+function renderLog() {
+  const box = $('log-list');
+  if (!box) return;
+  const items = G.log.slice(-5);
+  box.innerHTML = '';
+  items.forEach((e, i) => {
+    const d = document.createElement('div');
+    d.className = 'log-line' + (i === items.length - 1 ? ' newest' : '');
+    d.textContent = e.text;
+    box.appendChild(d);
+  });
+}
+// 只弹提示
 function toast(msg, ms = 1800) {
   const el = $('toast');
   el.textContent = msg;
@@ -593,12 +919,21 @@ function toast(msg, ms = 1800) {
   clearTimeout(toast._t);
   toast._t = setTimeout(() => el.classList.add('hidden'), ms);
 }
+// 翻译 + 弹提示 + 记日志
+function say(key, params, ms = 1800, noLog = false) {
+  const s = t(key, params);
+  toast(s, ms);
+  if (!noLog) addLog(s);
+  return s;
+}
+// 只记日志（不弹提示）
+function note(key, params) { addLog(t(key, params)); }
 function renderHUD() {
   $('coins').textContent = G.coins;
-  $('day').textContent = G.day;
+  $('day-box').innerHTML = t('hudDay', { n: G.day });
   const h = Math.floor(G.timeMin / 60), m = Math.floor(G.timeMin % 60);
   $('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  $('weather-box').textContent = { sunny: '☀️ 晴天', cloudy: '⛅ 多云', rain: '🌧️ 下雨' }[G.weather];
+  $('weather-box').textContent = weatherText();
 }
 function renderInventory() {
   const bar = $('inventory');
@@ -606,7 +941,7 @@ function renderInventory() {
   for (const [id, n] of Object.entries(G.inventory)) {
     const d = document.createElement('div');
     d.className = 'inv-slot';
-    d.title = ITEMS[id].name;
+    d.title = nm('item', id);
     d.innerHTML = `${ITEMS[id].icon}<span class="cnt">${n}</span>`;
     bar.appendChild(d);
   }
@@ -623,8 +958,8 @@ function toggleModal(id) {
 document.querySelectorAll('.close-modal').forEach(b =>
   b.addEventListener('click', () => { sfx.close(); closeModal(b.dataset.close); }));
 $('btn-help').addEventListener('click', () => { sfx.open(); toggleModal('help-modal'); });
-$('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); });
-$('btn-music').addEventListener('click', () => { sfx.click(); setMusic(!musicOn); });
+$('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); note(muted ? 'logSoundOff' : 'logSoundOn'); });
+$('btn-music').addEventListener('click', () => { sfx.click(); setMusic(!musicOn); note(musicOn ? 'logMusicOn' : 'logMusicOff'); });
 
 // ---------------- 商店 ----------------
 let shopTab = 'seeds';
@@ -649,9 +984,9 @@ function renderShop() {
     d.appendChild(info);
     const b = document.createElement('button');
     if (owned) {
-      b.textContent = '已有啦 ✓'; b.disabled = true;
+      b.textContent = t('owned'); b.disabled = true;
     } else {
-      b.textContent = `💰${price} 买`;
+      b.textContent = t('buyFor', { n: price });
       b.disabled = G.coins < price;
       b.onclick = onBuy;
     }
@@ -661,7 +996,7 @@ function renderShop() {
   if (shopTab === 'seeds') {
     for (const id of ['seed_carrot', 'seed_tomato', 'seed_corn']) {
       mkCard(iconBox('emoji', ITEMS[id].icon), ITEMS[id].name, ITEMS[id].price, () => {
-        G.coins -= ITEMS[id].price; addItem(id); sfx.buy(); toast(`买到 ${ITEMS[id].name}！`); renderShop(); renderHUD();
+        G.coins -= ITEMS[id].price; addItem(id); sfx.buy(); say('bought', { item: nm('item', id) }); renderShop(); renderHUD();
       });
     }
   } else if (shopTab === 'clothes') {
@@ -671,7 +1006,7 @@ function renderShop() {
         const owned = G.owned[cat].includes(key);
         mkCard(iconBox(cat, key), o.name, o.price, () => {
           G.coins -= o.price; G.owned[cat].push(key); sfx.buy();
-          toast(`买到 ${o.name}！去衣柜换上吧 👕`); renderShop(); renderHUD();
+          say('boughtClothes', { name: nm(cat, key) }); renderShop(); renderHUD();
         }, owned);
       }
     }
@@ -679,12 +1014,12 @@ function renderShop() {
     // 动物列表：买回来会在自己的棚舍附近自由散步
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
-    head.textContent = `牧场现在有 ${G.animals.length} 只动物（最多 ${MAX_ANIMALS} 只）`;
+    head.textContent = t('animalCount', { n: G.animals.length, max: MAX_ANIMALS });
     box.appendChild(head);
     for (const a of ANIMAL_SHOP) {
       const full = G.animals.length >= MAX_ANIMALS;
       mkCard(iconBox('emoji', a.icon), a.name, a.price, () => {
-        if (G.animals.length >= MAX_ANIMALS) { sfx.error(); toast('牧场里的动物太多啦！'); return; }
+        if (G.animals.length >= MAX_ANIMALS) { sfx.error(); say('tooManyAnimals'); return; }
         G.coins -= a.price;
         const h = PENS[a.type].home;
         const na = newAnimal(a.type, h.x + rand(-30, 30), h.y + rand(-20, 20));
@@ -693,7 +1028,7 @@ function renderShop() {
         sfx.buy();
         sfx.animalVoice(a.type, 260);
         spawnParticles(na.x, na.y - 20, '💖', 5);
-        toast(`${a.name}来到牧场啦！它会自己散步 🎉`, 2400);
+        say('boughtAnimal', { animal: nm('animal', a.type) }, 2400);
         renderShop(); renderHUD();
       }, false, a.desc);
     }
@@ -701,7 +1036,7 @@ function renderShop() {
     // 庭院装饰：买好后进入放置模式，走到喜欢的位置放下
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
-    head.textContent = `农场已有 ${G.decorations.length} 件装饰 · 买好后走到想放的地方，按 ${KEY_HINT} 放下`;
+    head.textContent = t('decorCount', { n: G.decorations.length, key: KEY_HINT });
     box.appendChild(head);
     for (const d of DECOR_SHOP) {
       mkCard(iconBox('emoji', d.icon), d.name, d.price, () => {
@@ -709,8 +1044,8 @@ function renderShop() {
         sfx.buy(); renderHUD();
         closeModal('shop-modal');
         G.placing = { id: d.id };
-        toast(`买好啦！走到想放的地方按 ${KEY_HINT} 放下${isTouch ? '（点画面也行）' : '（按 Q 取消）'}`, 3200);
-      }, false, '可自由摆放');
+        say('boughtDecor', { key: KEY_HINT, extra: isTouch ? '' : t('cancelHint') }, 3200);
+      }, false, t('placeFree'));
     }
   } else {
     for (const [key, o] of Object.entries(PET_HATS)) {
@@ -719,7 +1054,7 @@ function renderShop() {
         G.coins -= o.price; G.petHatsOwned.push(key);
         G.pet.hat = key; G.pet.happy = 3; sfx.buy();
         spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
-        toast(`小${G.pet.type === 'dog' ? '狗' : '猫'}戴上啦，好开心！`);
+        say('wearPetHat', { pet: t(G.pet.type === 'dog' ? 'dog' : 'cat') });
         renderShop(); renderHUD();
       }, owned);
     }
@@ -748,12 +1083,12 @@ function renderWardrobe() {
     d.insertAdjacentHTML('beforeend', `<div>${o.name}</div>`);
     const b = document.createElement('button');
     const wearing = G.player.outfit[wTab] === key;
-    b.textContent = wearing ? '穿着呢 ✓' : '穿上';
+    b.textContent = wearing ? t('wearing') : t('wearIt');
     b.disabled = wearing;
     b.onclick = () => {
       G.player.outfit[wTab] = key;
       sfx.equip(); spawnParticles(G.player.x, G.player.y - 30, '✨', 5);
-      toast(`换上 ${o.name}！`);
+      say('equipDone', { name: nm(wTab, key) });
       renderWardrobe();
     };
     d.appendChild(b);
@@ -763,7 +1098,7 @@ function renderWardrobe() {
   if (G.petHatsOwned.length) {
     const title = document.createElement('div');
     title.style.cssText = 'grid-column:1/-1;font-weight:bold;color:#c77;';
-    title.textContent = '🐾 宠物的装扮：';
+    title.textContent = t('petSection');
     box.appendChild(title);
     for (const key of G.petHatsOwned) {
       const o = PET_HATS[key];
@@ -773,7 +1108,7 @@ function renderWardrobe() {
       d.insertAdjacentHTML('beforeend', `<div>${o.name}</div>`);
       const b = document.createElement('button');
       const wearing = G.pet.hat === key;
-      b.textContent = wearing ? '戴着呢 ✓' : '给宠物戴';
+      b.textContent = wearing ? t('wearing') : t('wearPet');
       b.disabled = wearing;
       b.onclick = () => {
         G.pet.hat = key; G.pet.happy = 3; sfx.equip();
@@ -801,19 +1136,19 @@ function renderCook() {
     const out = ITEMS[r.id];
     const can = hasItems(r.needs);
     const needStr = Object.entries(r.needs).map(([id, n]) =>
-      id === 'fruit' ? `🍎任意水果×${n}` : `${ITEMS[id].icon}×${n}`).join(' + ');
+      id === 'fruit' ? t('anyFruit', { n }) : `${ITEMS[id].icon}×${n}`).join(' + ');
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${out.icon}</div><div>${out.name}</div><div style="font-size:12px">需要 ${needStr}</div>`;
+    d.innerHTML = `<div class="icon">${out.icon}</div><div>${nm('item', r.id)}</div><div style="font-size:12px">${t('need')} ${needStr}</div>`;
     const b = document.createElement('button');
-    b.textContent = can ? '🍳 做一份' : '材料不够';
+    b.textContent = can ? t('cookOne') : t('noMats');
     b.disabled = !can;
     b.onclick = () => {
       consumeItems(r.needs);
       addItem(r.id);
       sfx.cook();
       spawnParticles(G.player.x, G.player.y - 30, '✨', 6);
-      toast(`香喷喷的${out.name}做好啦！`);
+      say('cookDone', { dish: nm('item', r.id) });
       renderCook();
     };
     d.appendChild(b);
@@ -827,20 +1162,20 @@ function renderSell() {
   box.innerHTML = '';
   const ids = Object.keys(G.inventory).filter(id => !ITEMS[id].seed);
   if (!ids.length) {
-    box.innerHTML = '<div style="grid-column:1/-1;color:#a8906a">背包空空的呢～</div>';
+    box.innerHTML = `<div style="grid-column:1/-1;color:#a8906a">${t('bagEmpty')}</div>`;
     return;
   }
   for (const id of ids) {
     const it = ITEMS[id];
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${it.icon}</div><div>${it.name} ×${G.inventory[id]}</div>`;
+    d.innerHTML = `<div class="icon">${it.icon}</div><div>${nm('item', id)} ×${G.inventory[id]}</div>`;
     const b = document.createElement('button');
-    b.textContent = `卖 1 个 💰${it.price}`;
+    b.textContent = t('sellOne', { n: it.price });
     b.onclick = () => {
       if (removeItem(id)) {
         G.coins += it.price; sfx.coin(); renderHUD(); renderSell();
-        toast(`卖出 ${it.name}，+${it.price} 金币！`);
+        say('soldBin', { item: nm('item', id), n: it.price });
       }
     };
     d.appendChild(b);
@@ -856,7 +1191,7 @@ function nearestInteract() {
   // 1. 地面物品
   for (const it of G.groundItems) {
     const d = dist(p.x, p.y, it.x, it.y);
-    if (d < bestD) { bestD = d; best = { kind: 'item', it, label: `捡起 ${ITEMS[it.id].icon} ${ITEMS[it.id].name}` }; }
+    if (d < bestD) { bestD = d; best = { kind: 'item', it, label: `${ITEMS[it.id].icon} ${t('prPickup', { item: nm('item', it.id) })}` }; }
   }
   // 2. 等待中的客人（优先售卖，检测范围比其它略大）
   for (const c of G.customers) {
@@ -864,18 +1199,18 @@ function nearestInteract() {
     const d = dist(p.x, p.y, c.x, c.y);
     if (d < bestD + 30) {
       bestD = Math.min(bestD, d);
-      best = { kind: 'customer', c, label: `把 ${ITEMS[c.want].icon} 卖给客人` };
+      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomer', { item: nm('item', c.want) })}` };
     }
   }
   // 3. 动物
   for (const a of G.animals) {
     const d = dist(p.x, p.y, a.x, a.y);
     if (d < bestD) {
-      if (a.type === 'sheep' && a.wool > 0.5) { bestD = d; best = { kind: 'shear', a, label: '✂️ 剪羊毛' }; }
-      else if (a.type === 'cow' && a.milkReady) { bestD = d; best = { kind: 'milk', a, label: '🥛 挤牛奶' }; }
-      else if (a.type === 'chicken') { bestD = d; best = { kind: 'petChicken', a, label: '🐔 摸摸小鸡' }; }
-      else if (a.type === 'sheep') { bestD = d; best = { kind: 'petSheep', a, label: '🐑 摸摸小羊（羊毛还没长好）' }; }
-      else { bestD = d; best = { kind: 'petCow', a, label: '🐄 摸摸奶牛（等会儿才有奶）' }; }
+      if (a.type === 'sheep' && a.wool > 0.5) { bestD = d; best = { kind: 'shear', a, label: t('prShear') }; }
+      else if (a.type === 'cow' && a.milkReady) { bestD = d; best = { kind: 'milk', a, label: t('prMilk') }; }
+      else if (a.type === 'chicken') { bestD = d; best = { kind: 'petChicken', a, label: t('prPetChicken') }; }
+      else if (a.type === 'sheep') { bestD = d; best = { kind: 'petSheep', a, label: t('prPetSheep') }; }
+      else { bestD = d; best = { kind: 'petCow', a, label: t('prPetCow') }; }
     }
   }
   // 4. 田块
@@ -883,14 +1218,14 @@ function nearestInteract() {
     const d = dist(p.x, p.y, pl.x, pl.y);
     if (d < bestD) {
       let label = null, kind = null;
-      if (pl.state === 'grass') { kind = 'till'; label = '⛏️ 耕地'; }
+      if (pl.state === 'grass') { kind = 'till'; label = t('prTill'); }
       else if (pl.state === 'tilled') {
         const seed = Object.keys(G.inventory).find(id => ITEMS[id].seed);
-        if (seed) { kind = 'plant'; label = `🌱 播种 ${ITEMS[seed].name}`; }
-        else { kind = 'noseed'; label = '🌱 需要种子（去商店买）'; }
+        if (seed) { kind = 'plant'; label = t('prPlant', { seed: nm('item', seed) }); }
+        else { kind = 'noseed'; label = t('prNoSeed'); }
       }
-      else if (pl.state === 'seed' || pl.state === 'growing') { kind = 'water'; label = '💧 浇水'; }
-      else if (pl.state === 'ripe') { kind = 'harvest'; label = `🧺 收获 ${ITEMS[pl.crop].name}`; }
+      else if (pl.state === 'seed' || pl.state === 'growing') { kind = 'water'; label = t('prWater'); }
+      else if (pl.state === 'ripe') { kind = 'harvest'; label = t('prHarvest', { crop: nm('crop', pl.crop) }); }
       if (kind) { bestD = d; best = { kind, pl, label }; }
     }
   }
@@ -899,15 +1234,15 @@ function nearestInteract() {
     const d = dist(p.x, p.y, tr.x, tr.y);
     if (d < bestD + 10 && tr.fruits > 0) {
       bestD = Math.min(bestD, d);
-      best = { kind: 'tree', tr, label: `${ITEMS[tr.type].icon} 摇一摇${ITEMS[tr.type].name}树` };
+      best = { kind: 'tree', tr, label: `${ITEMS[tr.type].icon} ${t('prTree', { fruit: nm('item', tr.type) })}` };
     }
   }
   // 6. 设施
   const zoneChecks = [
-    ['kitchen', 'cook', '🍳 做饭'],
-    ['wardrobe', 'wardrobe', '👕 换衣服'],
-    ['bin', 'sell', '📦 卖东西'],
-    ['stall', 'shop', '🛒 打开商店'],
+    ['kitchen', 'cook', t('prCook')],
+    ['wardrobe', 'wardrobe', t('prWardrobe')],
+    ['bin', 'sell', t('prSell')],
+    ['stall', 'shop', t('prShop')],
   ];
   for (const [zk, kind, label] of zoneChecks) {
     const z = ZONES[zk];
@@ -920,7 +1255,7 @@ function nearestInteract() {
   if (!best &&
       Math.abs(p.x - pond.x) < pond.w / 2 + 40 &&
       Math.abs(p.y - pond.y) < pond.h / 2 + 40) {
-    best = { kind: 'fish', label: '🎣 钓鱼' };
+    best = { kind: 'fish', label: t('prFish') };
   }
   return best;
 }
@@ -940,6 +1275,7 @@ function doInteract() {
     case 'item': {
       G.groundItems.splice(G.groundItems.indexOf(t.it), 1);
       addItem(t.it.id); sfx.pickup();
+      note('logPickup', { item: nm('item', t.it.id) });
       spawnParticles(t.it.x, t.it.y - 10, '✨', 3);
       break;
     }
@@ -952,24 +1288,26 @@ function doInteract() {
         spawnParticles(c.x, c.y - 25, '💖', 6);
         c.state = 'leave'; c.happy = true;
         sfx.happy();
-        toast(`客人好开心！+${gain} 金币`);
+        say('logSoldCustomer', { item: nm('item', c.want), n: gain });
       } else {
         sfx.error();
-        toast(`背包里没有 ${ITEMS[c.want].name} 哦`);
+        say('noSuchItem', { item: nm('item', c.want) });
       }
       break;
     }
     case 'shear':
       t.a.wool = 0; t.a.woolT = 0;
       addItem('wool'); sfx.shear(); sfx.animalVoice('sheep', 230);
+      note('logShear');
       spawnParticles(t.a.x, t.a.y - 20, '✨', 5);
-      toast('剪到一团软软的羊毛！');
+      say('gotWool');
       break;
     case 'milk':
       t.a.milkReady = false; t.a.milkT = 0;
       addItem('milk'); sfx.milk(); sfx.animalVoice('cow', 270);
+      note('logMilk');
       spawnParticles(t.a.x, t.a.y - 20, '🥛', 4);
-      toast('挤到新鲜牛奶！');
+      say('gotMilk');
       break;
     case 'petChicken': case 'petSheep': case 'petCow':
       spawnParticles(t.a.x, t.a.y - 20, '💖', 3);
@@ -977,6 +1315,7 @@ function doInteract() {
       break;
     case 'till':
       t.pl.state = 'tilled'; sfx.till();
+      note('logTill');
       spawnParticles(t.pl.x, t.pl.y, '🟫', 3);
       break;
     case 'plant': {
@@ -984,21 +1323,23 @@ function doInteract() {
       if (seed && removeItem(seed)) {
         t.pl.state = 'seed'; t.pl.crop = ITEMS[seed].seed; t.pl.stage = 0; t.pl.timer = 0;
         sfx.plant();
+        note('logPlant', { seed: nm('item', seed) });
       }
       break;
     }
     case 'noseed':
-      sfx.error(); toast('没有种子啦，去商店买一些吧 🛒');
+      sfx.error(); say('noSeed');
       break;
     case 'water':
       t.pl.watered = true; sfx.water();
+      note('logWater');
       spawnParticles(t.pl.x, t.pl.y - 6, '💧', 4);
       break;
     case 'harvest':
       addItem(t.pl.crop, 2);
       spawnParticles(t.pl.x, t.pl.y - 10, '✨', 6);
       sfx.harvest();
-      toast(`收获 2 个${ITEMS[t.pl.crop].name}！`);
+      say('harvested', { crop: nm('crop', t.pl.crop) });
       t.pl.state = 'tilled'; t.pl.crop = null; t.pl.watered = false;
       break;
     case 'tree': {
@@ -1024,7 +1365,7 @@ function startFishing() {
   const bx = p.x + Math.cos(ang) * 70, by = p.y + Math.sin(ang) * 45;
   G.fishing = { phase: 'wait', timer: rand(2, G.weather === 'rain' ? 4 : 7), bx, by };
   sfx.cast();
-  toast('等待小鱼上钩…');
+  say('castLine');
 }
 function reelIn() {
   const f = G.fishing;
@@ -1034,10 +1375,10 @@ function reelIn() {
     sfx.catchf();
     spawnParticles(f.bx, f.by, '💦', 6);
     spawnParticles(f.bx, f.by - 10, big ? '🐠' : '🐟', 1);
-    toast(big ? '哇！钓到一条大鱼！🐠' : '钓到一条小鱼！🐟');
+    say(big ? 'caughtBig' : 'caughtSmall');
     G.pet.happy = 2;
   } else {
-    sfx.splash(); toast('收起鱼竿啦');
+    sfx.splash(); say('reelIn');
   }
   G.fishing = null;
 }
@@ -1051,7 +1392,8 @@ function spawnCustomer() {
     want, state: 'come', waitT: 25, happy: false,
     color: pick(CUSTOMER_COLORS), hair: pick(CUSTOMER_HAIRS),
   });
-  toast('🔔 有客人来买东西啦！');
+  say('customerCome');
+  note('logCustomerWant', { item: nm('item', want) });
   sfx.bell();
 }
 
@@ -1169,13 +1511,14 @@ function update(dt) {
         G.groundItems.push({ id: 'egg', x: a.x + rand(-15, 15), y: a.y + rand(5, 15), phase: rand(0, 6) });
         spawnParticles(a.x, a.y - 15, '🎵', 1);
         sfx.cluck();
+        note('logEgg');
       }
     } else if (a.type === 'sheep' && a.wool < 1) {
       a.woolT += dt;
-      if (a.woolT > 80) { a.wool = 1; spawnParticles(a.x, a.y - 20, '✨', 4); sfx.sparkle(); }
+      if (a.woolT > 80) { a.wool = 1; spawnParticles(a.x, a.y - 20, '✨', 4); sfx.sparkle(); note('logWoolBack'); }
     } else if (a.type === 'cow' && !a.milkReady) {
       a.milkT += dt;
-      if (a.milkT > 60) { a.milkReady = true; spawnParticles(a.x, a.y - 20, '🥛', 2); sfx.sparkle(); }
+      if (a.milkT > 60) { a.milkReady = true; spawnParticles(a.x, a.y - 20, '🥛', 2); sfx.sparkle(); note('logMilkBack'); }
     }
   }
 
@@ -1233,7 +1576,7 @@ function update(dt) {
         c.state = 'leave';
         spawnParticles(c.x, c.y - 30, '💦', 3);
         sfx.sad();
-        toast('客人等太久走掉了…');
+        say('customerGone');
       }
     }
   }
@@ -1248,7 +1591,7 @@ function update(dt) {
     } else if (f.phase === 'bite' && f.timer <= 0) {
       G.fishing = null;
       sfx.escape();
-      toast('小鱼跑掉了…再试一次！');
+      say('fishEscaped');
     }
   }
 
@@ -1274,7 +1617,7 @@ function update(dt) {
   // --- 自动存档 ---
   if (G.started && G.sleepFade === 0) {
     G.saveT += dt;
-    if (G.saveT >= SAVE_EVERY) saveGame();
+    if (G.saveT >= SAVE_EVERY) saveGame(true);   // 自动存档不刷日志
   }
 
   // --- 相机 ---
@@ -1286,17 +1629,17 @@ function update(dt) {
   const actionBtn = $('touch-action');
   if (G.placing && !G.modalOpen) {
     const d = DECOR_SHOP.find(v => v.id === G.placing.id);
-    pr.textContent = `放置「${d.icon} ${d.name}」：[${KEY_HINT}] 放下${isTouch ? '' : ' · [Q] 取消'}`;
+    pr.textContent = t('prPlace', { decor: `${d.icon} ${nm('decor', d.id)}`, key: KEY_HINT, extra: isTouch ? '' : ' · ' + t('cancelHint') });
     pr.classList.remove('hidden');
   } else if (!G.modalOpen && !G.fishing && G.sleepFade === 0) {
     const it = nearestInteract();
     if (it) { pr.textContent = `[${KEY_HINT}] ${it.label}`; pr.classList.remove('hidden'); }
     else pr.classList.add('hidden');
   } else if (G.fishing && G.fishing.phase === 'bite') {
-    pr.textContent = `❗ 快按 ${KEY_HINT} 收杆！`;
+    pr.textContent = t('prBite', { key: KEY_HINT });
     pr.classList.remove('hidden');
   } else if (G.fishing) {
-    pr.textContent = `🎣 等待中…（按 ${KEY_HINT} 提前收杆）`;
+    pr.textContent = t('prFishing', { key: KEY_HINT });
     pr.classList.remove('hidden');
   } else pr.classList.add('hidden');
   // 钓鱼咬钩时，动作按钮闪烁提醒（手机端一眼能看到）
@@ -1309,7 +1652,7 @@ function startSleep() {
   G.sleepFade = 0.01;
   G.sleepDawn = false;
   sfx.night();
-  toast('🌙 天黑啦，睡觉觉…');
+  say('night');
 }
 function nextDay() {
   G.day++;
@@ -1326,7 +1669,8 @@ function nextDay() {
   renderHUD();
   if (G.weather === 'rain') sfx.rain(); else sfx.morning();
   saveGame();   // 换天时存一次
-  toast(`☀️ 第 ${G.day} 天开始啦！${G.weather === 'rain' ? '今天下雨，不用浇水～' : ''}`, 2500);
+  say('morning', { day: G.day }, 2500);
+  if (G.weather === 'rain') addLog(t('rainHint'));
 }
 
 // ---------------- 渲染 ----------------
@@ -1584,17 +1928,17 @@ $('btn-start').addEventListener('click', () => {
   sfx.success();
   startMusic();
   saveGame();
-  toast(`欢迎来到快乐小牧场！去找点事情做吧 🌱`, 3000);
+  say('welcome', null, 3000);
 });
 // 继续上次的存档
 $('btn-continue').addEventListener('click', () => {
-  if (!loadGame()) { toast('存档读不出来，重新开始吧'); resetGame(); }
+  if (!loadGame()) { say('loadFailed'); resetGame(); }
   $('start-screen').classList.add('hidden');
   G.started = true;
   sfx.success();
   startMusic();
   saveGame();
-  toast(`欢迎回来！第 ${G.day} 天继续加油 🌻`, 3000);
+  say('welcomeBack', { day: G.day }, 3000);
 });
 
 // ---------------- 屏幕适配 & 触摸控件 ----------------
@@ -1694,21 +2038,16 @@ setMuted(muted);   // 同步静音按钮图标
   if (mb) syncMusicButton();
 }
 // 关页面 / 切到后台时也存一次，避免丢进度
-window.addEventListener('beforeunload', () => saveGame());
-document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+window.addEventListener('beforeunload', () => saveGame(true));
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(true); });
 // 开始界面：有存档就显示「继续上次」
 if (hasSave()) {
-  const d = readSave();
   const btn = $('btn-continue');
-  if (btn) {
-    btn.classList.remove('hidden');
-    const info = $('save-info');
-    if (info && d) {
-      info.textContent = `第 ${d.day || 1} 天 · 💰${d.coins || 0} · 上次保存 ${new Date(d.savedAt || Date.now()).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-      info.classList.remove('hidden');
-    }
-  }
+  if (btn) btn.classList.remove('hidden');
 }
+$('btn-lang').addEventListener('click', () => { sfx.click(); setLang(lang === 'en' ? 'zh' : 'en'); });
+$('btn-lang-big').addEventListener('click', () => { sfx.click(); setLang(lang === 'en' ? 'zh' : 'en'); });
+applyLang();   // 启动时按上次选择的语言显示界面
 renderInventory();
 renderHUD();
 requestAnimationFrame(loop);
