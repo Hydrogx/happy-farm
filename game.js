@@ -82,6 +82,7 @@ const G = {
   modalOpen: null,
   cam: { x: 0, y: 0 },
   sleepFade: 0,
+  sleepDawn: false,
 };
 
 // 场景交互点
@@ -90,7 +91,7 @@ const ZONES = {
   kitchen:  { x: 330, y: 540, r: 55 },
   wardrobe: { x: 90,  y: 540, r: 55 },
   bin:      { x: 350, y: 440, r: 55 },
-  stall:    { x: 1295, y: 300, r: 90 },
+  stall:    { x: 1295, y: 300, r: 70 },
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
 };
 
@@ -452,11 +453,11 @@ function nearestInteract() {
     const d = dist(p.x, p.y, it.x, it.y);
     if (d < bestD) { bestD = d; best = { kind: 'item', it, label: `捡起 ${ITEMS[it.id].icon} ${ITEMS[it.id].name}` }; }
   }
-  // 2. 等待中的客人（优先售卖）
+  // 2. 等待中的客人（优先售卖，检测范围比其它略大）
   for (const c of G.customers) {
     if (c.state !== 'wait') continue;
     const d = dist(p.x, p.y, c.x, c.y);
-    if (d < bestD + 20) {
+    if (d < bestD + 30) {
       bestD = Math.min(bestD, d);
       best = { kind: 'customer', c, label: `把 ${ITEMS[c.want].icon} 卖给客人` };
     }
@@ -653,11 +654,16 @@ function update(dt) {
     G.timeMin += dt * (DAY_END - DAY_START) / DAY_LENGTH;
     if (G.timeMin >= DAY_END) startSleep();
   }
-  // 睡觉过场
+  // 睡觉过场：用独立阶段标记区分「渐黑」和「渐亮」，
+  // 不能只靠 sleepFade 的值做判断，否则淡出时会被夹回 1.0 反复换天
   if (G.sleepFade > 0) {
-    G.sleepFade += dt * (G.sleepFade < 1 ? 1.2 : -0.8);
-    if (G.sleepFade >= 1 && G.timeMin >= DAY_END) nextDay();
-    if (G.sleepFade <= 0) G.sleepFade = 0;
+    if (!G.sleepDawn) {
+      G.sleepFade = Math.min(1, G.sleepFade + dt * 1.2);
+      if (G.sleepFade >= 1) { nextDay(); G.sleepDawn = true; }
+    } else {
+      G.sleepFade = Math.max(0, G.sleepFade - dt * 0.8);
+      if (G.sleepFade <= 0) G.sleepDawn = false;
+    }
   }
 
   // --- 玩家移动 ---
@@ -772,8 +778,9 @@ function update(dt) {
   for (let i = G.customers.length - 1; i >= 0; i--) {
     const c = G.customers[i];
     c.t += dt;
-    const targetX = c.state === 'come' ? ZONES.stall.x + 40 : WORLD_W + 40;
-    const targetY = c.state === 'come' ? ZONES.stall.y + 55 : c.y;
+    // 客人站在摊位正前方（下方），与商店触发区保持距离
+    const targetX = c.state === 'come' ? ZONES.stall.x + 5 : WORLD_W + 40;
+    const targetY = c.state === 'come' ? ZONES.stall.y + 125 : c.y;
     if (c.state === 'come' || c.state === 'leave') {
       const d = dist(c.x, c.y, targetX, targetY);
       if (d > 8) {
@@ -844,6 +851,7 @@ function update(dt) {
 
 function startSleep() {
   G.sleepFade = 0.01;
+  G.sleepDawn = false;
   toast('🌙 天黑啦，睡觉觉…');
 }
 function nextDay() {
