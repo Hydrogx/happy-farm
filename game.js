@@ -103,8 +103,17 @@ const DECOR_SHOP = [
 ];
 const DECOR_R = {};
 DECOR_SHOP.forEach(d => { DECOR_R[d.id] = d.r; });
-const CUSTOMER_COLORS = ['#7ac74f', '#ff9f43', '#5fa8e8', '#c88ae8', '#ff8f8f'];
-const CUSTOMER_HAIRS = ['#3a2a1a', '#6b4226', '#d9a62e', '#8a8a8a', '#2a2a3a'];
+// 客人的随机姓名（中英各一套）
+const CUSTOMER_NAMES = [
+  { zh: '小明', en: 'Ming' },   { zh: '小红', en: 'Hong' },   { zh: '小刚', en: 'Gang' },
+  { zh: '丽丽', en: 'Lily' },   { zh: '大力', en: 'Leo' },    { zh: '甜甜', en: 'Candy' },
+  { zh: '阿宝', en: 'Bao' },    { zh: '小雨', en: 'Rainy' },  { zh: '豆豆', en: 'Doudou' },
+  { zh: '圆圆', en: 'Yuan' },   { zh: '果果', en: 'Guo' },    { zh: '星星', en: 'Star' },
+  { zh: '乐乐', en: 'Joy' },    { zh: '妞妞', en: 'Niu' },    { zh: '虎子', en: 'Tiger' },
+  { zh: '米米', en: 'Mimi' },   { zh: '阳阳', en: 'Sunny' },  { zh: '月月', en: 'Luna' },
+];
+const HAIR_STYLES = ['short', 'long', 'pigtail', 'ponytail', 'bun', 'curly', 'bowl'];
+const HAIR_COLORS = ['#5a3a1e', '#6b4226', '#3a2a1a', '#a86a3a', '#d9a62e', '#8a5a2e', '#c88ae8', '#5fa8e8'];
 
 // ---------------- 多语言（中文 / English） ----------------
 let lang = 'zh';
@@ -151,7 +160,7 @@ const STR = {
     prTill: '⛏️ 耕地', prPlant: '🌱 播种 {seed}', prNoSeed: '🌱 需要种子（去商店买）',
     prWater: '💧 浇水', prHarvest: '🧺 收获 {crop}', prTree: '摇一摇{fruit}树',
     prCook: '🍳 做饭', prWardrobe: '👕 换衣服', prSell: '📦 卖东西', prShop: '🛒 打开商店',
-    prFish: '🎣 钓鱼', prCustomer: '把 {item} 卖给客人',
+    prFish: '🎣 钓鱼', prCustomer: '把 {item} 卖给{name}',
     prPlace: '放置「{decor}」：[{key}] 放下{extra}',
     prFishing: '🎣 等待中…（按 {key} 提前收杆）', prBite: '❗ 快按 {key} 收杆！',
     // —— 日志 / 提示 ——
@@ -185,8 +194,8 @@ const STR = {
     caughtBig: '哇！钓到一条大鱼！🐠',
     caughtSmall: '钓到一条小鱼！🐟',
     reelIn: '收起鱼竿啦',
-    customerCome: '🔔 有客人来买东西啦！',
-    customerGone: '客人等太久走掉了…',
+    customerCome: '🔔 {name} 来买东西啦！',
+    customerGone: '{name} 等太久走掉了…',
     fishEscaped: '小鱼跑掉了…再试一次！',
     notEnoughCoins: '金币不够啦',
     // —— 日志专用 ——
@@ -199,7 +208,7 @@ const STR = {
     logEgg: '小鸡下了一个蛋 🥚',
     logWoolBack: '🐑 羊毛长好啦',
     logMilkBack: '🐄 奶牛又有奶了',
-    logCustomerWant: '🔔 有客人想买 {item}',
+    logCustomerWant: '🔔 {name} 想买 {item}',
     logMusicOn: '🎵 背景音乐已打开', logMusicOff: '🔕 背景音乐已关闭',
     logSoundOn: '🔊 音效已打开', logSoundOff: '🔇 音效已关闭',
     logLang: '🌏 语言切换为中文',
@@ -221,7 +230,7 @@ const STR = {
     bookHint: '买到的观赏动物和钓到的海洋生物都会记录在这里',
     caughtTimes: '钓到过 {n} 次',
     petDuck: '小鸭',
-    logSoldCustomer: '把 {item} 卖给了客人，+{n} 金币',
+    logSoldCustomer: '把 {item} 卖给了{name}，+{n} 金币',
     rotateHint: '🔄 横过来玩，画面更大更清楚',
     logTitle2: '最近发生的事',
     owned: '已有啦 ✓', buyFor: '💰{n} 买',
@@ -272,7 +281,7 @@ const STR = {
     prTill: '⛏️ Till the soil', prPlant: '🌱 Plant {seed}', prNoSeed: '🌱 Need seeds (buy at the shop)',
     prWater: '💧 Water it', prHarvest: '🧺 Harvest {crop}', prTree: 'Shake the {fruit} tree',
     prCook: '🍳 Cook', prWardrobe: '👕 Change clothes', prSell: '📦 Sell things', prShop: '🛒 Open the shop',
-    prFish: '🎣 Go fishing', prCustomer: 'Sell {item} to the customer',
+    prFish: '🎣 Go fishing', prCustomer: 'Sell {item} to {name}',
     prPlace: 'Place "{decor}": [{key}] put down{extra}',
     prFishing: '🎣 Waiting… (press {key} to reel in)', prBite: '❗ Press {key} now!',
     welcome: 'Welcome to Happy Little Farm! Go find something to do 🌱',
@@ -305,8 +314,8 @@ const STR = {
     caughtBig: 'Wow! You caught a big fish! 🐠',
     caughtSmall: 'You caught a small fish! 🐟',
     reelIn: 'Reeled the line in',
-    customerCome: '🔔 A customer is coming!',
-    customerGone: 'The customer waited too long and left…',
+    customerCome: '🔔 {name} is here to shop!',
+    customerGone: '{name} waited too long and left…',
     fishEscaped: 'The fish got away… try again!',
     notEnoughCoins: 'Not enough coins',
     logPickup: 'Picked up {item}',
@@ -318,7 +327,7 @@ const STR = {
     logEgg: 'A chicken laid an egg 🥚',
     logWoolBack: '🐑 The wool grew back',
     logMilkBack: '🐄 The cow has milk again',
-    logCustomerWant: '🔔 A customer wants to buy {item}',
+    logCustomerWant: '🔔 {name} wants to buy {item}',
     logMusicOn: '🎵 Music on', logMusicOff: '🔕 Music off',
     logSoundOn: '🔊 Sound on', logSoundOff: '🔇 Sound off',
     logLang: '🌏 Language switched to English',
@@ -340,7 +349,7 @@ const STR = {
     bookHint: 'Zoo animals you buy and sea creatures you catch are recorded here',
     caughtTimes: 'Caught {n} times',
     petDuck: 'Duck',
-    logSoldCustomer: 'Sold {item} to the customer, +{n} coins',
+    logSoldCustomer: 'Sold {item} to {name}, +{n} coins',
     rotateHint: '🔄 Turn your phone sideways for a bigger view',
     logTitle2: 'Recent events',
     owned: 'Owned ✓', buyFor: '💰{n} Buy',
@@ -1462,7 +1471,7 @@ function nearestInteract() {
     const d = dist(p.x, p.y, c.x, c.y);
     if (d < bestD + 30) {
       bestD = Math.min(bestD, d);
-      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomer', { item: nm('item', c.want) })}` };
+      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomer', { item: nm('item', c.want), name: custName(c) })}` };
     }
   }
   // 3. 动物
@@ -1551,7 +1560,7 @@ function doInteract() {
         spawnParticles(c.x, c.y - 25, '💖', 6);
         c.state = 'leave'; c.happy = true;
         sfx.happy();
-        say('logSoldCustomer', { item: nm('item', c.want), n: gain });
+        say('logSoldCustomer', { item: nm('item', c.want), name: custName(c), n: gain });
       } else {
         sfx.error();
         say('noSuchItem', { item: nm('item', c.want) });
@@ -1666,16 +1675,36 @@ function reelIn() {
 }
 
 // ---------------- 客人系统 ----------------
+// 客人的名字按当前语言显示
+function custName(c) { return (lang === 'en' ? c.nameObj.en : c.nameObj.zh); }
+
 function spawnCustomer() {
   const want = pick(SELLABLE);
-  G.customers.push({
+  const hatKeys = Object.keys(OUTFITS.hat).filter(k => k !== 'none');
+  const c = {
+    nameObj: pick(CUSTOMER_NAMES),
+    gender: Math.random() < 0.5 ? 'boy' : 'girl',
+    hat: Math.random() < 0.35 ? 'none' : pick(hatKeys),      // 头饰
+    shirt: pick(Object.keys(OUTFITS.shirt)),                  // 上衣
+    pants: pick(Object.keys(OUTFITS.pants)),                  // 裤子
+    hairStyle: pick(HAIR_STYLES),                             // 发型
+    hairColor: pick(HAIR_COLORS),                             // 发色
     x: WORLD_W + 30, y: ZONES.stall.y + rand(-20, 40),
     dir: 'left', moving: true, walkPhase: 0, phase: rand(0, 6), t: 0,
     want, state: 'come', waitT: 25, happy: false,
-    color: pick(CUSTOMER_COLORS), hair: pick(CUSTOMER_HAIRS),
-  });
-  say('customerCome');
-  note('logCustomerWant', { item: nm('item', want) });
+    pet: null,
+  };
+  if (Math.random() < 0.7) {   // 大部分客人带一只小宠物
+    c.pet = {
+      type: pick(['dog', 'cat', 'duck']),
+      x: c.x + rand(24, 46), y: c.y + rand(8, 26), dir: 'left',
+      moving: false, walkPhase: 0, phase: rand(0, 6), happy: 0,
+      hat: Math.random() < 0.3 ? pick(Object.keys(PET_HATS)) : 'none',
+    };
+  }
+  G.customers.push(c);
+  say('customerCome', { name: custName(c) }, 2200);
+  note('logCustomerWant', { name: custName(c), item: nm('item', want) });
   sfx.bell();
 }
 
@@ -1884,8 +1913,20 @@ function update(dt) {
         c.state = 'leave';
         spawnParticles(c.x, c.y - 30, '💦', 3);
         sfx.sad();
-        say('customerGone');
+        say('customerGone', { name: custName(c) });
       }
+    }
+    // 客人的宠物跟着客人走
+    if (c.pet) {
+      const pd = dist(c.pet.x, c.pet.y, c.x, c.y);
+      if (pd > 46) {
+        const pa = Math.atan2(c.y - c.pet.y, c.x - c.pet.x);
+        const pspd = pd > 150 ? 200 : 125;
+        c.pet.x += Math.cos(pa) * pspd * dt;
+        c.pet.y += Math.sin(pa) * pspd * dt;
+        c.pet.dir = Math.cos(pa) < 0 ? 'left' : 'right';
+        c.pet.moving = true; c.pet.walkPhase += dt * 12;
+      } else c.pet.moving = false;
     }
   }
 
@@ -2088,6 +2129,18 @@ function render() {
       y: c.y + 16,
       draw: () => {
         drawCustomer(ctx, c.x, c.y, { ...c, t });
+        // 客人的名字
+        {
+          const ny = c.y - 78 + Math.sin(t * 2 + c.phase) * 1.5;
+          ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+          const nw = 34 + custName(c).length * 7;
+          ctx.fillStyle = 'rgba(255,255,255,.92)';
+          rr(ctx, c.x - nw / 2, ny - 12, nw, 17, 8); ctx.fill();
+          ctx.strokeStyle = '#ffb84d'; ctx.lineWidth = 1.8;
+          rr(ctx, c.x - nw / 2, ny - 12, nw, 17, 8); ctx.stroke();
+          ctx.fillStyle = '#c95a1a';
+          ctx.fillText(custName(c), c.x, ny);
+        }
         // 想要物品的气泡
         if (c.state === 'wait') {
           const by = c.y - 52 + Math.sin(t * 3 + c.phase) * 3;
@@ -2105,6 +2158,10 @@ function render() {
         }
       },
     });
+  }
+  // 客人带来的宠物
+  for (const c of G.customers) {
+    if (c.pet) drawables.push({ y: c.pet.y + 10, draw: () => drawPet(ctx, c.pet.x, c.pet.y, { ...c.pet, t }) });
   }
   // 宠物 & 玩家
   drawables.push({ y: G.pet.y + 10, draw: () => drawPet(ctx, G.pet.x, G.pet.y, { ...G.pet, t }) });

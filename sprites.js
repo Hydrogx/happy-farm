@@ -246,25 +246,9 @@ function drawPlayer(ctx, x, y, o) {
   ctx.fillStyle = skin;
   ellipse(ctx, 0, -27, 11, 10.5); ctx.fill();
 
-  // --- 头发（男/女不同，整体上移，给眼睛留出空隙） ---
-  ctx.fillStyle = o.gender === 'boy' ? '#5a3a1e' : '#6b4226';
-  if (o.gender === 'boy') {
-    // 顶部头发：盖住头顶并略微凸出
-    ctx.beginPath();
-    ctx.ellipse(0, -34.5, 11, 6.5, 0, Math.PI, Math.PI * 2);
-    ctx.fill();
-    // 刘海：下沿到 -32.5，和眼睛（-30.2 起）留出空隙
-    rr(ctx, -11, -35.5, 22, 3, 2); ctx.fill();
-  } else {
-    ctx.beginPath();
-    ctx.ellipse(0, -34, 11.5, 7, 0, Math.PI, Math.PI * 2);
-    ctx.fill();
-    ellipse(ctx, -12, -24, 4, 7); ctx.fill();
-    ellipse(ctx, 12, -24, 4, 7); ctx.fill();
-    ctx.fillStyle = '#ff6b8a';
-    ellipse(ctx, -12, -30, 2.2, 2.2); ctx.fill();
-    ellipse(ctx, 12, -30, 2.2, 2.2); ctx.fill();
-  }
+  // --- 头发（7 种发型，整体上移，给眼睛留出空隙） ---
+  drawHair(ctx, o.hairStyle || (o.gender === 'boy' ? 'short' : 'pigtail'),
+           o.hairColor || (o.gender === 'boy' ? '#5a3a1e' : '#6b4226'));
 
   // --- 脸（眨眼动画） ---
   const blink = (o.t % 3.2) < 0.12;
@@ -289,6 +273,56 @@ function drawPlayer(ctx, x, y, o) {
   ctx.restore();
 
   ctx.restore();
+}
+
+// 发型（头心 0,-27；刘海下沿不低于 -32.5，避免压住眼睛）
+function drawHair(ctx, style, color) {
+  ctx.fillStyle = color;
+  const dome = (ry, rx) => {
+    ctx.beginPath();
+    ctx.ellipse(0, -34.5, rx || 11, ry || 6.5, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+  };
+  switch (style) {
+    case 'long':
+      dome(7, 11.5);
+      ellipse(ctx, -11, -22, 4.5, 10); ctx.fill();
+      ellipse(ctx, 11, -22, 4.5, 10); ctx.fill();
+      rr(ctx, -11, -35.5, 22, 3, 2); ctx.fill();
+      break;
+    case 'pigtail':
+      dome(7, 11.5);
+      ellipse(ctx, -12, -24, 4, 7); ctx.fill();
+      ellipse(ctx, 12, -24, 4, 7); ctx.fill();
+      ctx.fillStyle = '#ff6b8a';
+      ellipse(ctx, -12, -30, 2.2, 2.2); ctx.fill();
+      ellipse(ctx, 12, -30, 2.2, 2.2); ctx.fill();
+      break;
+    case 'ponytail':
+      dome(6.8, 11.5);
+      ellipse(ctx, -13, -22, 4, 9); ctx.fill();
+      ctx.fillStyle = '#ff6b8a';
+      ellipse(ctx, -13, -29, 2, 2); ctx.fill();
+      rr(ctx, -11, -35.5, 22, 3, 2); ctx.fill();
+      break;
+    case 'bun':
+      dome(6.5, 10.5);
+      ellipse(ctx, 0, -43, 5.5, 5); ctx.fill();
+      rr(ctx, -10.5, -35.5, 21, 3, 2); ctx.fill();
+      break;
+    case 'curly':
+      [[-8, -36, 5], [0, -39, 5.5], [8, -36, 5], [-5, -34, 4.5], [5, -34, 4.5]].forEach(c => {
+        ellipse(ctx, c[0], c[1], c[2], c[2]); ctx.fill();
+      });
+      break;
+    case 'bowl':
+      dome(6.5, 11.5);
+      rr(ctx, -11, -36, 22, 5.5, 3); ctx.fill();
+      break;
+    default:  // short
+      dome(6.5, 11);
+      rr(ctx, -11, -35.5, 22, 3, 2); ctx.fill();
+  }
 }
 
 function drawHat(ctx, hat, t) {
@@ -675,33 +709,14 @@ function drawPet(ctx, x, y, p) {
 /* ------------------------------------------------------------
  * 客人 NPC
  * ---------------------------------------------------------- */
+// 客人：复用主角的绘制（随机性别/发型/头饰/上衣/裤子）
 function drawCustomer(ctx, x, y, c) {
-  const bob = c.moving ? Math.abs(Math.sin(c.walkPhase)) * 3 : Math.sin(c.t * 2 + c.phase) * 1.2;
-  const swing = c.moving ? Math.sin(c.walkPhase) * 5 : 0;
-  ctx.save();
-  ctx.translate(x, y - bob);
-  if (c.dir === 'left') ctx.scale(-1, 1);
-  drawShadow(ctx, 0, bob, 13);
-  ctx.fillStyle = '#5a6a8a';
-  rr(ctx, -7 + swing * 0.5, 2, 6, 13, 3); ctx.fill();
-  rr(ctx, 1 - swing * 0.5, 2, 6, 13, 3); ctx.fill();
-  ctx.fillStyle = c.color;
-  rr(ctx, -10, -15, 20, 19, 6); ctx.fill();
-  ctx.strokeStyle = c.color; ctx.lineWidth = 5; ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(-10, -10); ctx.lineTo(-14, -1 + swing * 0.4);
-  ctx.moveTo(10, -10); ctx.lineTo(14, -1 - swing * 0.4);
-  ctx.stroke();
-  ctx.fillStyle = '#ffdbac';
-  ellipse(ctx, 0, -25, 10, 9.5); ctx.fill();
-  ctx.fillStyle = c.hair;
-  ctx.beginPath(); ctx.ellipse(0, -29, 10, 6.5, 0, Math.PI, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#333';
-  ellipse(ctx, -3.5, -26, 1.5, 1.9); ctx.fill();
-  ellipse(ctx, 3.5, -26, 1.5, 1.9); ctx.fill();
-  ctx.strokeStyle = '#b5673a'; ctx.lineWidth = 1.3;
-  ctx.beginPath(); ctx.arc(0, -22.5, 2.6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
-  ctx.restore();
+  drawPlayer(ctx, x, y, {
+    gender: c.gender, dir: c.dir, walkPhase: c.walkPhase, moving: c.moving,
+    outfit: { hat: c.hat, shirt: c.shirt, pants: c.pants },
+    hairStyle: c.hairStyle, hairColor: c.hairColor,
+    actionT: 0, t: c.t,
+  });
 }
 
 /* ------------------------------------------------------------
