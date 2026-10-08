@@ -872,7 +872,7 @@ function drawStall(ctx, x, y, t) {
   ctx.fillText('🛒', x + 45, y - 53);
 }
 
-function drawPond(ctx, x, y, w, h, t) {
+function drawPond(ctx, x, y, w, h, t, label) {
   ctx.fillStyle = '#c9b280';
   ellipse(ctx, x, y, w / 2 + 12, h / 2 + 10); ctx.fill();
   ctx.fillStyle = '#5fb8e8';
@@ -887,6 +887,18 @@ function drawPond(ctx, x, y, w, h, t) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+  // 水坑名牌
+  if (label) {
+    const sw = Math.max(58, label.length * 15 + 20);
+    const sx = x - sw / 2, sy = y - h / 2 - 36 + Math.sin(t * 1.8) * 1.5;
+    ctx.fillStyle = '#fff3d6';
+    rr(ctx, sx, sy, sw, 20, 6); ctx.fill();
+    ctx.strokeStyle = '#5fb8e8'; ctx.lineWidth = 2.5;
+    rr(ctx, sx, sy, sw, 20, 6); ctx.stroke();
+    ctx.fillStyle = '#2a6a95';
+    ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('💧 ' + label, x, sy + 15);
+  }
 }
 
 function drawBin(ctx, x, y, t) {

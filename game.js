@@ -56,21 +56,28 @@ const RECIPES = [
 ];
 const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry'];
 // ---------------- 钓鱼：5 种大小的水波纹，每种 3 种渔获 ----------------
-const RIPPLE_SIZES = [
-  { lv: 1, name: '小水波',   nameEn: 'Small Ripple',  r: 11, color: '#cdeeff', w: 34 },
-  { lv: 2, name: '中水波',   nameEn: 'Medium Ripple', r: 18, color: '#9adcff', w: 26 },
-  { lv: 3, name: '大水波',   nameEn: 'Big Ripple',    r: 26, color: '#63c6f7', w: 20 },
-  { lv: 4, name: '巨水波',   nameEn: 'Huge Ripple',   r: 36, color: '#2f9fdc', w: 13 },
-  { lv: 5, name: '传说水波', nameEn: 'Legend Ripple', r: 48, color: '#9a7cf0', w: 7 },
+// 三个不同位置的水坑：小水坑 / 中水坑 / 大水坑，每个水坑 5 种渔获
+const PONDS = [
+  { id: 'small',  name: '小水坑', nameEn: 'Small Puddle', x: 1250, y: 600, w: 132, h: 76,
+    rip: { lv: 1, r: 12, color: '#cdeeff', w: 34, name: '小水波', nameEn: 'Small ripple' },
+    pool: ['fish', 'shrimp', 'shell', 'goldfish', 'crab'] },
+  { id: 'medium', name: '中水坑', nameEn: 'Medium Pond',  x: 1420, y: 706, w: 186, h: 104,
+    rip: { lv: 3, r: 24, color: '#63c6f7', w: 20, name: '中水波', nameEn: 'Medium ripple' },
+    pool: ['squid', 'puffer', 'octopus', 'lobster', 'seaturtle'] },
+  { id: 'large',  name: '大水坑', nameEn: 'Large Pond',   x: 1300, y: 884, w: 286, h: 142,
+    rip: { lv: 5, r: 44, color: '#9a7cf0', w: 7,  name: '大水波', nameEn: 'Big ripple' },
+    pool: ['croc', 'seal', 'dolphin', 'shark', 'whale'] },
 ];
-const SEA_POOL = {
-  1: ['fish', 'shrimp', 'shell'],
-  2: ['goldfish', 'crab', 'squid'],
-  3: ['puffer', 'octopus', 'lobster'],
-  4: ['seaturtle', 'croc', 'seal'],
-  5: ['dolphin', 'shark', 'whale'],
-};
-const SEA_ALL = Object.keys(SEA_POOL).reduce(function (a, k) { return a.concat(SEA_POOL[k]); }, []);
+const POND_MAP = {};
+PONDS.forEach(p => { POND_MAP[p.id] = p; });
+const SEA_ALL = PONDS.reduce(function (a, p) { return a.concat(p.pool); }, []);
+function pondName(p) { return lang === 'en' ? p.nameEn : p.name; }
+// 离水坑边缘的距离（负数表示站在水里）
+function pondDist(p, x, y) {
+  const ex = (x - p.x) / (p.w / 2), ey = (y - p.y) / (p.h / 2);
+  const d = Math.sqrt(ex * ex + ey * ey);
+  return (d - 1) * Math.min(p.w, p.h) / 2;
+}
 
 const SELLABLE = ['egg','milk','wool','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,'fried_egg','salad','fish_grill','pudding','fruit_cake'];
 const PET_HATS = {
@@ -214,9 +221,9 @@ const STR = {
     logLang: '🌏 语言切换为中文',
     logDecor: '摆放了{decor}',
     cancelHint: '（按 Q 取消）',
-    ripple1: '小水波', ripple2: '中水波', ripple3: '大水波', ripple4: '巨水波', ripple5: '传说水波',
-    caught: '🎣 钓到了{fish}！（{size}）',
-    logRipple: '水面出现{size}…',
+    caught: '🎣 在{pond}钓到了{fish}！',
+    logRipple: '{pond}泛起{size}…',
+    prFishAt: '🎣 在{pond}钓鱼',
     zooHead: '农场里有 {n} 只观赏动物（最多 {max} 只）',
     zooNote: '观赏动物·不产出',
     tooManyZoo: '观赏动物太多啦，先让它们散散步吧！',
@@ -340,9 +347,9 @@ const STR = {
     logLang: '🌏 Language switched to English',
     logDecor: 'Placed {decor}',
     cancelHint: ' (press Q to cancel)',
-    ripple1: 'Small ripple', ripple2: 'Medium ripple', ripple3: 'Big ripple', ripple4: 'Huge ripple', ripple5: 'Legendary ripple',
-    caught: '🎣 You caught {fish}! ({size})',
-    logRipple: 'A {size} appears on the water…',
+    caught: '🎣 You caught {fish} at the {pond}!',
+    logRipple: 'A {size} on the {pond}…',
+    prFishAt: '🎣 Fish at the {pond}',
     zooHead: 'You have {n} zoo animals (max {max})',
     zooNote: 'Ornamental · no produce',
     tooManyZoo: 'Too many zoo animals — let them roam first!',
@@ -805,7 +812,9 @@ function initWorld() {
   const avoid = [
     { x: 890, y: 90, w: 330, h: 460 },    // 房子区（近商店）
     { x: 470, y: 570, w: 240, h: 190 },   // 田地
-    { x: 1120, y: 660, w: 360, h: 280 },  // 池塘
+    { x: 1170, y: 545, w: 250, h: 120 },  // 小水坑
+    { x: 1310, y: 640, w: 250, h: 135 },  // 中水坑
+    { x: 1140, y: 800, w: 340, h: 180 },  // 大水坑
     { x: 1180, y: 190, w: 240, h: 180 },  // 摊位
     { x: 190, y: 690, w: 240, h: 170 },   // 鸡棚
     { x: 510, y: 780, w: 260, h: 180 },   // 羊棚
@@ -1020,9 +1029,12 @@ function zooRandomSpot(home) {
   for (let i = 0; i < 12; i++) {
     const x = Math.max(40, Math.min(WORLD_W - 40, home.x + rand(-home.r, home.r)));
     const y = Math.max(150, Math.min(WORLD_H - 30, home.y + rand(-home.r, home.r)));
-    const pc = ZONES.pond;
-    const ex = (x - pc.x) / (pc.w / 2 + 40), ey = (y - pc.y) / (pc.h / 2 + 40);
-    if (ex * ex + ey * ey > 1) return { x, y };
+    let wet = false;
+    for (const pc of PONDS) {
+      const ex = (x - pc.x) / (pc.w / 2 + 40), ey = (y - pc.y) / (pc.h / 2 + 40);
+      if (ex * ex + ey * ey <= 1) { wet = true; break; }
+    }
+    if (!wet) return { x, y };
   }
   return { x: home.x, y: home.y };
 }
@@ -1047,9 +1059,10 @@ function setPet(type) {
 function canPlaceAt(id, x, y) {
   const d = DECOR_SHOP.find(v => v.id === id);
   if (!d) return 'tooCrowded';
-  const pc = ZONES.pond;
-  const ex = (x - pc.x) / (pc.w / 2 + 20), ey = (y - pc.y) / (pc.h / 2 + 20);
-  if (ex * ex + ey * ey < 1) return 'inWater';
+  for (const pc of PONDS) {
+    const ex = (x - pc.x) / (pc.w / 2 + 20), ey = (y - pc.y) / (pc.h / 2 + 20);
+    if (ex * ex + ey * ey < 1) return 'inWater';
+  }
   for (const dd of G.decorations) {
     const need = (d.r + (DECOR_R[dd.id] || 20)) * 0.75;
     if (dist(x, y, dd.x, dd.y) < need) return 'tooCrowded';
@@ -1492,12 +1505,12 @@ function renderBook() {
          n > 0 ? t('bookOwned', { n }) : t('bookNone'));
     }
   } else {
-    for (const lv of RIPPLE_SIZES) {
+    for (const pond of PONDS) {
       const head = document.createElement('div');
       head.style.cssText = 'grid-column:1/-1;font-size:13px;font-weight:bold;color:#3a7fbf;margin-top:4px;';
-      head.textContent = t('ripple' + lv.lv);
+      head.textContent = pondName(pond) + ' 💧';
       box.appendChild(head);
-      for (const id of SEA_POOL[lv.lv]) {
+      for (const id of pond.pool) {
         const n = G.seaCaught[id] || 0;
         mk(emojiImgHTML(ITEMS[id].cp, ITEMS[id].icon, 'emoji-img big'), nm('item', id),
            n > 0 ? t('caughtTimes', { n }) : t('bookNone'));
@@ -1609,12 +1622,15 @@ function nearestInteract() {
   }
   // 7. 池塘钓鱼：附近没有别的可交互对象时，才提示钓鱼
   //    （捡蛋、挤奶、种地这些操作优先，避免在岸边抢走交互）
-  const pond = ZONES.pond;
-  if (!best &&
-      Math.abs(p.x - pond.x) < pond.w / 2 + 40 &&
-      Math.abs(p.y - pond.y) < pond.h / 2 + 40) {
-    best = { kind: 'fish', label: t('prFish') };
+  // 站在水坑边：附近没有别的可交互对象时，才提示钓鱼（取最近的那个水坑）
+  let nearPond = null, nearPondD = Infinity;
+  for (const pond of PONDS) {
+    if (Math.abs(p.x - pond.x) < pond.w / 2 + 44 && Math.abs(p.y - pond.y) < pond.h / 2 + 44) {
+      const d = Math.max(0, pondDist(pond, p.x, p.y));
+      if (d < nearPondD) { nearPondD = d; nearPond = pond; }
+    }
   }
+  if (!best && nearPond) best = { kind: 'fish', pond: nearPond, label: t('prFishAt', { pond: pondName(nearPond) }) };
   return best;
 }
 
@@ -1713,46 +1729,39 @@ function doInteract() {
     case 'sell': renderSell(); sfx.open(); openModal('sell-modal'); break;
     case 'shop': renderShop(); sfx.open(); openModal('shop-modal'); break;
     case 'tank': renderTank(); sfx.open(); openModal('tank-modal'); break;
-    case 'fish': startFishing(); break;
+    case 'fish': startFishing(t.pond); break;
   }
 }
 
 // ---------------- 钓鱼 ----------------
-// 按权重随机水波纹大小（下雨天更容易出大波纹）
-function pickRipple() {
-  const rain = G.weather === 'rain';
-  const w = RIPPLE_SIZES.map(r => rain && r.lv >= 3 ? r.w * 1.9 : (rain ? r.w * 0.85 : r.w));
-  let x = Math.random() * w.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return RIPPLE_SIZES[i]; }
-  return RIPPLE_SIZES[0];
-}
-function startFishing() {
-  const p = G.player, pond = ZONES.pond;
+// 在指定水坑抛竿（水坑越大等得越久、咬钩窗口越短、鱼越值钱）
+function startFishing(pond) {
+  if (!pond) pond = PONDS[0];
+  const p = G.player;
   const ang = Math.atan2(pond.y - p.y, pond.x - p.x);
   const bx = p.x + Math.cos(ang) * 70, by = p.y + Math.sin(ang) * 45;
-  const rip = pickRipple();
-  // 波纹越大等得越久，但咬钩后给的时间窗口越短
-  const wait = rip.lv <= 2 ? rand(1.5, 3.5) : rip.lv === 3 ? rand(2.5, 5) : rand(3.5, 6.5);
+  const rip = pond.rip;
+  const wait = rip.lv <= 1 ? rand(1.2, 3) : rip.lv === 3 ? rand(2.2, 4.5) : rand(3.2, 6);
   G.fishing = {
-    phase: 'wait', timer: wait, bx, by,
-    lv: rip.lv, rip, biteWin: 1.45 - rip.lv * 0.13, ripple: 0,
+    phase: 'wait', timer: wait, bx, by, pond,
+    lv: rip.lv, rip, biteWin: 1.45 - rip.lv * 0.12, ripple: 0,
   };
-  p.dir = pond.x < p.x ? 'left' : 'right';   // 面朝池塘，鱼竿握在手里
+  p.dir = pond.x < p.x ? 'left' : 'right';   // 面朝水坑，鱼竿握在手里
   sfx.cast();
   say('castLine');
-  note('logRipple', { size: t('ripple' + rip.lv) });
+  note('logRipple', { pond: pondName(pond), size: lang === 'en' ? rip.nameEn : rip.name });
 }
 function reelIn() {
   const f = G.fishing;
   if (f.phase === 'bite') {
-    const pool = SEA_POOL[f.lv] || SEA_POOL[1];
-    const id = pick(pool);
+    const pond = f.pond || PONDS[0];
+    const id = pick(pond.pool);
     addItem(id);
     G.seaCaught[id] = (G.seaCaught[id] || 0) + 1;   // 记进图鉴
     sfx.catchf();
     spawnParticles(f.bx, f.by, '💦', 8);
     spawnParticles(f.bx, f.by - 12, ITEMS[id].icon, 1);
-    say('caught', { fish: nm('item', id), size: t('ripple' + f.lv) }, 2600);
+    say('caught', { fish: nm('item', id), pond: pondName(pond) }, 2600);
     G.pet.happy = 2;
     saveGame(true);
   } else {
@@ -1869,9 +1878,8 @@ function update(dt) {
   }
   if (p.actionT > 0) p.actionT -= dt;
 
-  // 池塘不能踩水：走到水边会被轻轻推回岸上
-  {
-    const pc = ZONES.pond;
+  // 水坑不能踩水：走到水边会被轻轻推回岸上（三个水坑都要判定）
+  for (const pc of PONDS) {
     const ex = (p.x - pc.x) / (pc.w / 2 + 8);
     const ey = (p.y - pc.y) / (pc.h / 2 + 8);
     const eD = ex * ex + ey * ey;
@@ -2186,7 +2194,7 @@ function render() {
   }
 
   // 池塘
-  drawPond(ctx, ZONES.pond.x, ZONES.pond.y, ZONES.pond.w, ZONES.pond.h, t);
+  for (const pond of PONDS) drawPond(ctx, pond.x, pond.y, pond.w, pond.h, t, pondName(pond));
 
   // 动物棚舍：后半栅栏（画在动物后面）
   drawFenceBack(ctx, PENS.chicken.x, PENS.chicken.y, PENS.chicken.w, PENS.chicken.h);
