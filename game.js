@@ -225,6 +225,13 @@ const STR = {
     petSwitched: '宠物换成小{pet}啦！',
     charSection: '👦 角色与宠物',
     tabZoo: '🦁 观赏动物',
+    tankTitle: '🐠 大型水族箱', tankCount: '水族箱里 {n}/{max} 条',
+    tankBagTitle: '🎣 我的鱼篓', tankEmpty: '水族箱还是空的，去钓几条鱼吧 🎣',
+    bagNoFish: '还没有钓到鱼呢，去池塘边钓鱼吧',
+    putIn: '放入', takeOut: '取出', tankFull2: '放不下了',
+    tankFull: '水族箱满了（最多 {max} 条），先取出几条吧！',
+    tankPut: '{fish} 放进水族箱啦 🐠', tankTake: '把 {fish} 取出来了',
+    prTank: '🐠 打开水族箱',
     bookTitle: '📖 动物图鉴', bookZoo: '🦁 动物园', bookSea: '🐟 海洋馆',
     bookOwned: '已拥有 {n} 只', bookNone: '还没收集到',
     bookHint: '买到的观赏动物和钓到的海洋生物都会记录在这里',
@@ -344,6 +351,13 @@ const STR = {
     petSwitched: 'Your pet is now a {pet}!',
     charSection: '👦 Character & Pet',
     tabZoo: '🦁 Zoo Animals',
+    tankTitle: '🐠 Big Aquarium', tankCount: '{n}/{max} in the tank',
+    tankBagTitle: '🎣 My Catch', tankEmpty: 'The tank is empty — go catch some fish! 🎣',
+    bagNoFish: 'No fish yet — try fishing at the pond',
+    putIn: 'Put in', takeOut: 'Take out', tankFull2: 'Tank full',
+    tankFull: 'The tank is full (max {max})! Take some out first.',
+    tankPut: '{fish} is now in the tank 🐠', tankTake: 'Took {fish} out',
+    prTank: '🐠 Open the aquarium',
     bookTitle: '📖 Animal Book', bookZoo: '🦁 Zoo', bookSea: '🐟 Aquarium',
     bookOwned: '{n} owned', bookNone: 'Not collected yet',
     bookHint: 'Zoo animals you buy and sea creatures you catch are recorded here',
@@ -494,6 +508,7 @@ const G = {
   animals: [],
   groundItems: [],
   zoo: [],                // 动物园观赏动物（只看不产出）
+  tank: [],               // 大型水族箱里养的鱼（最多 20）
   seaCaught: {},          // 钓鱼图鉴：已钓到的种类
   decorations: [],        // 自己摆放的庭院装饰
   placing: null,          // 放置模式：{ id }
@@ -521,6 +536,7 @@ const ZONES = {
   wardrobe: { x: 930,  y: 370, r: 55 },
   bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 70 },
+  tank:     { x: 730, y: 470, r: 95 },
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
 };
 
@@ -795,6 +811,7 @@ function initWorld() {
     { x: 510, y: 780, w: 260, h: 180 },   // 羊棚
     { x: 830, y: 770, w: 280, h: 190 },   // 牛棚
     { x: 160, y: 120, w: 500, h: 320 },   // 果树区（房子左侧）
+    { x: 610, y: 345, w: 250, h: 140 },   // 水族箱
   ];
   const okSpot = (x, y) => !avoid.some(a => x > a.x - 20 && x < a.x + a.w + 20 && y > a.y - 20 && y < a.y + a.h + 20);
   for (let i = 0; i < 60; i++) {
@@ -841,6 +858,7 @@ function saveGame(silent = false) {
     items: G.groundItems.map(i => ({ id: i.id, x: i.x, y: i.y })),
     decorations: G.decorations.map(d => ({ id: d.id, x: d.x, y: d.y })),
     zoo: G.zoo.map(z => ({ type: z.type, x: z.x, y: z.y })),
+    tank: G.tank.slice(0, TANK_MAX),
     seaCaught: G.seaCaught,
     music: musicOn, muted,
     savedAt: Date.now(),
@@ -936,6 +954,8 @@ function loadGame() {
       G.zoo = d.zoo.filter(z => z && ZOO_MAP[z.type] && Number.isFinite(z.x) && Number.isFinite(z.y))
                    .map(z => newZoo(z.type, z.x, z.y));
     }
+    // 水族箱（只收鱼类/海洋生物，最多 20）
+    G.tank = Array.isArray(d.tank) ? d.tank.filter(id => SEA_SET[id]).slice(0, TANK_MAX) : [];
     // 钓鱼图鉴
     G.seaCaught = (d.seaCaught && typeof d.seaCaught === 'object') ? d.seaCaught : {};
     for (const k in G.seaCaught) if (!ITEMS[k]) delete G.seaCaught[k];
@@ -977,7 +997,7 @@ function resetGame() {
   G.pet.x = 380; G.pet.y = 530;
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = [];
-  G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {};
+  G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
   G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
   initWorld();
@@ -1086,6 +1106,7 @@ function applyLang() {
   else if (G.modalOpen === 'cook-modal') renderCook();
   else if (G.modalOpen === 'sell-modal') renderSell();
   else if (G.modalOpen === 'book-modal') renderBook();
+  else if (G.modalOpen === 'tank-modal') renderTank();
 }
 function setLang(l) {
   lang = (l === 'en') ? 'en' : 'zh';
@@ -1388,6 +1409,70 @@ function renderCook() {
   }
 }
 
+// ---------------- 大型水族箱 ----------------
+const TANK_MAX = 20;
+function putInTank(id) {
+  if (!SEA_SET[id]) return;
+  if (G.tank.length >= TANK_MAX) { sfx.error(); say('tankFull', { max: TANK_MAX }); return; }  // 超过就提示放不下
+  if (!removeItem(id)) return;
+  G.tank.push(id);
+  sfx.water();
+  say('tankPut', { fish: nm('item', id) });
+  saveGame(true); renderTank();
+}
+function takeFromTank(i) {
+  const id = G.tank[i];
+  if (!id) return;
+  G.tank.splice(i, 1);
+  addItem(id);
+  sfx.pop();
+  say('tankTake', { fish: nm('item', id) });
+  saveGame(true); renderTank();
+}
+function renderTank() {
+  const cnt = $('tank-count'), list = $('tank-list'), bag = $('tank-bag');
+  if (!cnt || !list || !bag) return;
+  cnt.textContent = t('tankCount', { n: G.tank.length, max: TANK_MAX });
+  const bagTitle = $('tank-bag-title');
+  if (bagTitle) bagTitle.textContent = t('tankBagTitle');
+  list.innerHTML = '';
+  if (!G.tank.length) {
+    list.innerHTML = `<div style="grid-column:1/-1;color:#a8906a">${t('tankEmpty')}</div>`;
+  } else {
+    G.tank.forEach((id, i) => {
+      const it = ITEMS[id];
+      if (!it) return;
+      const d = document.createElement('div');
+      d.className = 'shop-item';
+      d.innerHTML = `<div class="icon">${emojiImgHTML(it.cp, it.icon, 'emoji-img big')}</div><div>${nm('item', id)}</div>`;
+      const b = document.createElement('button');
+      b.textContent = t('takeOut');
+      b.onclick = () => takeFromTank(i);
+      d.appendChild(b);
+      list.appendChild(d);
+    });
+  }
+  bag.innerHTML = '';
+  const mine = Object.keys(G.inventory).filter(id => SEA_SET[id] && G.inventory[id] > 0);
+  const full = G.tank.length >= TANK_MAX;
+  if (!mine.length) {
+    bag.innerHTML = `<div style="grid-column:1/-1;color:#a8906a">${t('bagNoFish')}</div>`;
+  } else {
+    for (const id of mine) {
+      const it = ITEMS[id];
+      const d = document.createElement('div');
+      d.className = 'shop-item';
+      d.innerHTML = `<div class="icon">${emojiImgHTML(it.cp, it.icon, 'emoji-img big')}</div><div>${nm('item', id)} ×${G.inventory[id]}</div>`;
+      const b = document.createElement('button');
+      b.textContent = full ? t('tankFull2') : t('putIn');
+      b.disabled = full;
+      b.onclick = () => putInTank(id);
+      d.appendChild(b);
+      bag.appendChild(d);
+    }
+  }
+}
+
 // ---------------- 动物图鉴 ----------------
 let bookTab = 'zoo';
 function renderBook() {
@@ -1515,6 +1600,7 @@ function nearestInteract() {
     ['wardrobe', 'wardrobe', t('prWardrobe')],
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
+    ['tank', 'tank', t('prTank')],
   ];
   for (const [zk, kind, label] of zoneChecks) {
     const z = ZONES[zk];
@@ -1626,6 +1712,7 @@ function doInteract() {
     case 'wardrobe': renderWardrobe(); sfx.open(); openModal('wardrobe-modal'); break;
     case 'sell': renderSell(); sfx.open(); openModal('sell-modal'); break;
     case 'shop': renderShop(); sfx.open(); openModal('shop-modal'); break;
+    case 'tank': renderTank(); sfx.open(); openModal('tank-modal'); break;
     case 'fish': startFishing(); break;
   }
 }
@@ -1675,11 +1762,40 @@ function reelIn() {
 }
 
 // ---------------- 客人系统 ----------------
+// 客人只会买「农场能产出」的东西：已采摘的、还能摘/挤/剪的、材料够做的菜
+// 鱼类和海洋生物不在此列（准备太久、太随机）
+const FARM_GOODS = ['egg', 'milk', 'wool', 'carrot', 'tomato', 'corn', ...FRUIT_IDS];
+const SEA_SET = {};
+SEA_ALL.forEach(id => { SEA_SET[id] = true; });
+
+function customerPool() {
+  const inv = G.inventory || {};
+  const pool = [];
+  const add = (id) => { if (ITEMS[id] && !SEA_SET[id] && pool.indexOf(id) < 0) pool.push(id); };
+  // ① 背包里已有的农场货
+  for (const id of FARM_GOODS) if ((inv[id] || 0) > 0) add(id);
+  // ② 农场上还能拿到的（还没采摘/挤奶/剪毛也算）
+  if (G.animals.some(a => a.type === 'chicken')) add('egg');
+  if (G.animals.some(a => a.type === 'sheep')) add('wool');
+  if (G.animals.some(a => a.type === 'cow')) add('milk');
+  for (const tr of G.trees) if (tr.fruits > 0) add(tr.type);          // 树上还有果子
+  for (const pl of G.plots) if (pl.crop) add(pl.crop);                 // 田里种着的
+  for (const id in inv) if (ITEMS[id] && ITEMS[id].seed) add(ITEMS[id].seed);
+  // ③ 材料已经够做的菜（需要鱼的菜不算）
+  for (const r of RECIPES) {
+    const needsSea = Object.keys(r.needs).some(k => SEA_SET[k] || k === 'fish');
+    if (!needsSea && hasItems(r.needs)) add(r.id);
+  }
+  if (!pool.length) add('egg');   // 兜底，保证客人总有东西能买
+  return pool;
+}
+
 // 客人的名字按当前语言显示
 function custName(c) { return (lang === 'en' ? c.nameObj.en : c.nameObj.zh); }
 
 function spawnCustomer() {
-  const want = pick(SELLABLE);
+  const pool = customerPool();
+  const want = pick(pool);
   const hatKeys = Object.keys(OUTFITS.hat).filter(k => k !== 'none');
   const c = {
     nameObj: pick(CUSTOMER_NAMES),
@@ -2102,6 +2218,8 @@ function render() {
   for (const dc of G.decorations) {
     drawables.push({ y: dc.y + 4, draw: () => drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase) });
   }
+  // 大型水族箱
+  drawables.push({ y: ZONES.tank.y + 6, draw: () => drawAquarium(ctx, ZONES.tank.x, ZONES.tank.y, t, G.tank) });
   // 动物园的观赏动物（动画 emoji 图）
   for (const z of G.zoo) {
     const zd = ZOO_MAP[z.type] || ZOO_SHOP[0];

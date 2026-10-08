@@ -1047,6 +1047,79 @@ function drawCowBarn(ctx, x, y, t) {
   ctx.fillText('🐮', x + 34, y - 38 + Math.sin(t * 2) * 1);
 }
 
+// 大型水族箱（里面养的鱼会游动，用动画 emoji 图）
+function drawAquarium(ctx, x, y, t, fish) {
+  const W = 210, H = 96;
+  fish = fish || [];
+  drawShadow(ctx, x, y + 6, W / 2);
+  // 木架
+  ctx.fillStyle = '#a57c4a';
+  rr(ctx, x - W / 2 - 8, y - 18, W + 16, 20, 5); ctx.fill();
+  ctx.fillStyle = '#8a5f36';
+  rr(ctx, x - W / 2 - 2, y - 4, 16, 12, 3); ctx.fill();
+  rr(ctx, x + W / 2 - 14, y - 4, 16, 12, 3); ctx.fill();
+  // 玻璃箱
+  ctx.fillStyle = 'rgba(180,225,245,.65)';
+  rr(ctx, x - W / 2, y - H - 14, W, H, 10); ctx.fill();
+  // 水
+  ctx.fillStyle = 'rgba(95,184,232,.55)';
+  rr(ctx, x - W / 2 + 5, y - H - 6, W - 10, H - 12, 8); ctx.fill();
+  // 底砂
+  ctx.fillStyle = '#e0cfa8';
+  ctx.beginPath();
+  ctx.moveTo(x - W / 2 + 6, y - 18);
+  ctx.quadraticCurveTo(x, y - 30, x + W / 2 - 6, y - 18);
+  ctx.lineTo(x + W / 2 - 6, y - 12); ctx.lineTo(x - W / 2 + 6, y - 12);
+  ctx.closePath(); ctx.fill();
+  // 水草
+  ctx.strokeStyle = '#3f9e63'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i++) {
+    const bx = x + i * 34, sway = Math.sin(t * 1.6 + i) * 5;
+    ctx.beginPath();
+    ctx.moveTo(bx, y - 20);
+    ctx.quadraticCurveTo(bx + sway, y - 40, bx + sway * 1.4, y - 58);
+    ctx.stroke();
+  }
+  // 气泡
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  for (let i = 0; i < 7; i++) {
+    const ph = ((t * 0.35 + i * 0.19) % 1);
+    const bx = x - W / 2 + 22 + ((i * 37) % (W - 44));
+    ellipse(ctx, bx, y - 16 - ph * (H - 30), 1.8 + (1 - ph) * 2, 1.8 + (1 - ph) * 2);
+    ctx.fill();
+  }
+  // 里面的鱼（沿椭圆轨迹游动，用动画图）
+  fish.forEach((id, i) => {
+    const it = ITEMS[id];
+    if (!it) return;
+    const rec = loadEmoji(it.cp);
+    const a = t * (0.55 + (i % 4) * 0.13) + i * 1.7;
+    const fx = x + Math.cos(a) * (W / 2 - 30);
+    const fy = y - H / 2 - 16 + Math.sin(a * 1.6) * 22;
+    ctx.save();
+    ctx.translate(fx, fy);
+    if (Math.sin(a) > 0) ctx.scale(-1, 1);     // 朝游动方向
+    if (rec && rec.ok && rec.img) ctx.drawImage(rec.img, -15, -15, 30, 30);
+    else { ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, 8); }
+    ctx.restore();
+  });
+  // 玻璃高光 + 边框
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
+  rr(ctx, x - W / 2, y - H - 14, W, H, 10); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(x - W / 2 + 12, y - H - 4); ctx.lineTo(x - W / 2 + 40, y - H + 34);
+  ctx.stroke();
+  // 小招牌
+  ctx.fillStyle = '#fff3d6';
+  rr(ctx, x - 26, y - H - 34, 52, 20, 6); ctx.fill();
+  ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
+  rr(ctx, x - 26, y - H - 34, 52, 20, 6); ctx.stroke();
+  ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('🐠 ' + fish.length, x, y - H - 19);
+}
+
 /* ------------------------------------------------------------
  * 动物园观赏动物（用 Noto Emoji Animation 的动画图）
  * ---------------------------------------------------------- */
