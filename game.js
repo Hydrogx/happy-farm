@@ -19,27 +19,36 @@ const ITEMS = {
   tomato:     { name: '番茄',     icon: '🍅', price: 20 },
   corn:       { name: '玉米',     icon: '🌽', price: 25 },
   apple:      { name: '苹果',     icon: '🍎', price: 12 },
+  orange:     { name: '橘子',     icon: '🍊', price: 14 },
+  pear:       { name: '梨子',     icon: '🍐', price: 16 },
+  peach:      { name: '桃子',     icon: '🍑', price: 20 },
+  strawberry: { name: '草莓',     icon: '🍓', price: 25 },
   fish:       { name: '小鱼',     icon: '🐟', price: 22 },
   bigfish:    { name: '大鱼',     icon: '🐠', price: 50 },
   fried_egg:  { name: '煎蛋',     icon: '🍳', price: 26 },
-  salad:      { name: '水果沙拉', icon: '🥗', price: 32 },
+  salad:      { name: '水果沙拉', icon: '🥗', price: 40 },
   fish_grill: { name: '烤鱼',     icon: '🍢', price: 55 },
   pudding:    { name: '蛋奶布丁', icon: '🍮', price: 65 },
+  fruit_cake: { name: '草莓蛋糕', icon: '🍰', price: 90 },
   seed_carrot:{ name: '胡萝卜种子', icon: '🌱', price: 5,  seed: 'carrot' },
   seed_tomato:{ name: '番茄种子',  icon: '🫘', price: 8,  seed: 'tomato' },
   seed_corn:  { name: '玉米种子',  icon: '🌾', price: 12, seed: 'corn' },
 };
 const RECIPES = [
   { id: 'fried_egg',  needs: { egg: 1 } },
-  { id: 'salad',      needs: { apple: 2 } },
+  { id: 'salad',      needs: { fruit: 2 } },               // 任意 2 个水果
   { id: 'fish_grill', needs: { fish: 1 } },
   { id: 'pudding',    needs: { egg: 1, milk: 1 } },
+  { id: 'fruit_cake', needs: { strawberry: 2, egg: 1, milk: 1 } },
 ];
-const SELLABLE = ['egg','milk','wool','carrot','tomato','corn','apple','fish','bigfish','fried_egg','salad','fish_grill','pudding'];
+const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry'];
+const SELLABLE = ['egg','milk','wool','carrot','tomato','corn',...FRUIT_IDS,'fish','bigfish','fried_egg','salad','fish_grill','pudding','fruit_cake'];
 const PET_HATS = {
-  bow:   { name: '宠物蝴蝶结', icon: '🎀', price: 30 },
-  straw: { name: '宠物草帽',   icon: '👒', price: 30 },
-  crown: { name: '宠物皇冠',   icon: '👑', price: 90 },
+  bow:    { name: '宠物蝴蝶结', icon: '🎀', price: 30 },
+  straw:  { name: '宠物草帽',   icon: '👒', price: 30 },
+  cap:    { name: '宠物棒球帽', icon: '🧢', price: 50 },
+  flower: { name: '宠物花环',   icon: '🌸', price: 60 },
+  crown:  { name: '宠物皇冠',   icon: '👑', price: 90 },
 };
 const CUSTOMER_COLORS = ['#7ac74f', '#ff9f43', '#5fa8e8', '#c88ae8', '#ff8f8f'];
 const CUSTOMER_HAIRS = ['#3a2a1a', '#6b4226', '#d9a62e', '#8a8a8a', '#2a2a3a'];
@@ -83,6 +92,13 @@ const ZONES = {
   bin:      { x: 350, y: 440, r: 55 },
   stall:    { x: 1295, y: 300, r: 90 },
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
+};
+
+// 动物棚舍区域（每种动物一个独立围栏）
+const PENS = {
+  chicken: { x: 200, y: 700, w: 220, h: 150, home: { x: 310, y: 790, r: 75 } },
+  sheep:   { x: 520, y: 790, w: 240, h: 160, home: { x: 640, y: 885, r: 80 } },
+  cow:     { x: 840, y: 780, w: 260, h: 170, home: { x: 975, y: 880, r: 85 } },
 };
 
 // ---------------- 音效（WebAudio 小蜂鸣） ----------------
@@ -136,8 +152,22 @@ function removeItem(id, n = 1) {
   renderInventory();
   return true;
 }
+function countFruits() {
+  return FRUIT_IDS.reduce((s, id) => s + (G.inventory[id] || 0), 0);
+}
 function hasItems(needs) {
-  return Object.entries(needs).every(([id, n]) => (G.inventory[id] || 0) >= n);
+  return Object.entries(needs).every(([id, n]) =>
+    id === 'fruit' ? countFruits() >= n : (G.inventory[id] || 0) >= n);
+}
+function consumeItems(needs) {
+  for (const [id, n] of Object.entries(needs)) {
+    if (id === 'fruit') {
+      let left = n;
+      for (const fid of FRUIT_IDS) {
+        while (left > 0 && (G.inventory[fid] || 0) > 0) { removeItem(fid); left--; }
+      }
+    } else removeItem(id, n);
+  }
 }
 
 function spawnParticles(x, y, icon, n = 5) {
@@ -160,31 +190,38 @@ function initWorld() {
   for (let r = 0; r < 3; r++)
     for (let c = 0; c < 4; c++)
       G.plots.push({ x: 520 + c * 46, y: 620 + r * 46, state: 'grass', crop: null, stage: 0, watered: false, timer: 0 });
-  // 果树
+  // 果树（5 种水果各一：苹果/橘子/梨/桃 + 草莓丛）
+  const mkTree = (type, x, y) => ({ type, x, y, fruits: 3, timer: 0, phase: rand(0, 6) });
   G.trees = [
-    { x: 700, y: 300, fruits: 3, timer: 0, phase: rand(0, 6) },
-    { x: 870, y: 330, fruits: 2, timer: 0, phase: rand(0, 6) },
-    { x: 780, y: 470, fruits: 3, timer: 0, phase: rand(0, 6) },
+    mkTree('apple', 700, 300),
+    mkTree('orange', 890, 320),
+    mkTree('pear', 760, 470),
+    mkTree('peach', 960, 440),
+    mkTree('strawberry', 1060, 330),
   ];
-  // 动物
+  // 动物（各自住在自己的棚舍里）
   const mk = (type, x, y) => ({
     type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
     moving: false, walkPhase: 0, phase: rand(0, 6),
     tx: x, ty: y, waitT: rand(1, 3), peck: 0,
     wool: 1, woolT: 0, milkReady: true, milkT: 0, eggT: rand(15, 40),
-    home: { x, y, r: 120 },
+    home: { ...PENS[type].home },
   });
   G.animals = [
-    mk('chicken', 300, 720), mk('chicken', 340, 780), mk('chicken', 270, 800),
-    mk('sheep', 620, 830), mk('sheep', 720, 870),
-    mk('cow', 480, 900),
+    mk('chicken', 270, 780), mk('chicken', 320, 810), mk('chicken', 350, 770),
+    mk('sheep', 600, 870), mk('sheep', 690, 900),
+    mk('cow', 970, 870),
   ];
-  // 装饰（避开建筑/田地/池塘）
+  // 装饰（避开建筑/田地/池塘/棚舍）
   const avoid = [
     { x: 120, y: 300, w: 220, h: 320 },   // 房子区域
     { x: 470, y: 570, w: 240, h: 190 },   // 田地
     { x: 1120, y: 660, w: 360, h: 280 },  // 池塘
     { x: 1180, y: 190, w: 240, h: 180 },  // 摊位
+    { x: 190, y: 690, w: 240, h: 170 },   // 鸡棚
+    { x: 510, y: 780, w: 260, h: 180 },   // 羊棚
+    { x: 830, y: 770, w: 280, h: 190 },   // 牛棚
+    { x: 660, y: 240, w: 450, h: 260 },   // 果园区
   ];
   const okSpot = (x, y) => !avoid.some(a => x > a.x - 20 && x < a.x + a.w + 20 && y > a.y - 20 && y < a.y + a.h + 20);
   for (let i = 0; i < 60; i++) {
@@ -298,7 +335,8 @@ let wTab = 'hat';
 function renderWardrobe() {
   const box = $('wardrobe-items');
   box.innerHTML = '';
-  const list = ['none', ...G.owned[wTab]].filter((v, i, a) => a.indexOf(v) === i);
+  // 帽子可以有「不戴」选项；上衣/裤子必须穿，初始的破衣服/破裤子也在列表里
+  const list = wTab === 'hat' ? ['none', ...G.owned.hat] : [...G.owned[wTab]];
   for (const key of list) {
     const o = OUTFITS[wTab][key];
     const d = document.createElement('div');
@@ -356,7 +394,8 @@ function renderCook() {
   for (const r of RECIPES) {
     const out = ITEMS[r.id];
     const can = hasItems(r.needs);
-    const needStr = Object.entries(r.needs).map(([id, n]) => `${ITEMS[id].icon}×${n}`).join(' + ');
+    const needStr = Object.entries(r.needs).map(([id, n]) =>
+      id === 'fruit' ? `🍎任意水果×${n}` : `${ITEMS[id].icon}×${n}`).join(' + ');
     const d = document.createElement('div');
     d.className = 'shop-item';
     d.innerHTML = `<div class="icon">${out.icon}</div><div>${out.name}</div><div style="font-size:12px">需要 ${needStr}</div>`;
@@ -364,7 +403,7 @@ function renderCook() {
     b.textContent = can ? '🍳 做一份' : '材料不够';
     b.disabled = !can;
     b.onclick = () => {
-      for (const [id, n] of Object.entries(r.needs)) removeItem(id, n);
+      consumeItems(r.needs);
       addItem(r.id);
       sfx.success();
       spawnParticles(G.player.x, G.player.y - 30, '✨', 6);
@@ -452,7 +491,10 @@ function nearestInteract() {
   // 5. 果树
   for (const tr of G.trees) {
     const d = dist(p.x, p.y, tr.x, tr.y);
-    if (d < bestD + 10 && tr.fruits > 0) { bestD = Math.min(bestD, d); best = { kind: 'tree', tr, label: '🍎 摇一摇果树' }; }
+    if (d < bestD + 10 && tr.fruits > 0) {
+      bestD = Math.min(bestD, d);
+      best = { kind: 'tree', tr, label: `${ITEMS[tr.type].icon} 摇一摇${ITEMS[tr.type].name}树` };
+    }
   }
   // 6. 设施
   const zoneChecks = [
@@ -550,7 +592,7 @@ function doInteract() {
     case 'tree': {
       t.tr.fruits--;
       const fx = t.tr.x + rand(-30, 30), fy = t.tr.y + rand(-5, 15);
-      G.groundItems.push({ id: 'apple', x: fx, y: fy, phase: rand(0, 6) });
+      G.groundItems.push({ id: t.tr.type, x: fx, y: fy, phase: rand(0, 6) });
       spawnParticles(t.tr.x, t.tr.y - 40, '🍃', 4);
       sfx.pop();
       break;
@@ -869,14 +911,32 @@ function render() {
   // 池塘
   drawPond(ctx, ZONES.pond.x, ZONES.pond.y, ZONES.pond.w, ZONES.pond.h, t);
 
+  // 动物棚舍：后半栅栏（画在动物后面）
+  drawFenceBack(ctx, PENS.chicken.x, PENS.chicken.y, PENS.chicken.w, PENS.chicken.h);
+  drawFenceBack(ctx, PENS.sheep.x, PENS.sheep.y, PENS.sheep.w, PENS.sheep.h);
+  drawFenceBack(ctx, PENS.cow.x, PENS.cow.y, PENS.cow.w, PENS.cow.h);
+
   // y 排序渲染的实体集合
   const drawables = [];
+  // 棚舍小窝（鸡棚/羊棚/牛棚）
+  drawables.push({ y: PENS.chicken.y + 28, draw: () => drawCoopHouse(ctx, PENS.chicken.x + 52, PENS.chicken.y + 28, t) });
+  drawables.push({ y: PENS.sheep.y + 30, draw: () => drawSheepShed(ctx, PENS.sheep.x + 75, PENS.sheep.y + 30, t) });
+  drawables.push({ y: PENS.cow.y + 34, draw: () => drawCowBarn(ctx, PENS.cow.x + 72, PENS.cow.y + 34, t) });
+  // 前半栅栏（画在动物前面）
+  drawables.push({ y: PENS.chicken.y + PENS.chicken.h, draw: () => drawFenceFront(ctx, PENS.chicken.x, PENS.chicken.y + PENS.chicken.h, PENS.chicken.w) });
+  drawables.push({ y: PENS.sheep.y + PENS.sheep.h, draw: () => drawFenceFront(ctx, PENS.sheep.x, PENS.sheep.y + PENS.sheep.h, PENS.sheep.w) });
+  drawables.push({ y: PENS.cow.y + PENS.cow.h, draw: () => drawFenceFront(ctx, PENS.cow.x, PENS.cow.y + PENS.cow.h, PENS.cow.w) });
   drawables.push({ y: 496, draw: () => drawHouse(ctx, 150, 440, t) });
   drawables.push({ y: ZONES.stall.y + 40, draw: () => drawStall(ctx, ZONES.stall.x - 45, ZONES.stall.y - 20, t) });
   drawables.push({ y: ZONES.kitchen.y + 12, draw: () => drawKitchenProp(ctx, ZONES.kitchen.x, ZONES.kitchen.y, t) });
   drawables.push({ y: ZONES.wardrobe.y + 14, draw: () => drawWardrobeProp(ctx, ZONES.wardrobe.x, ZONES.wardrobe.y, t) });
   drawables.push({ y: ZONES.bin.y + 16, draw: () => drawBin(ctx, ZONES.bin.x, ZONES.bin.y, t) });
-  for (const tr of G.trees) drawables.push({ y: tr.y + 4, draw: () => drawTree(ctx, tr.x, tr.y, t, tr.phase, tr.fruits) });
+  for (const tr of G.trees) drawables.push({
+    y: tr.y + 4,
+    draw: () => tr.type === 'strawberry'
+      ? drawStrawberryBush(ctx, tr.x, tr.y, t, tr.phase, tr.fruits)
+      : drawTree(ctx, tr.x, tr.y, t, tr.phase, tr.fruits, tr.type),
+  });
   for (const a of G.animals) {
     drawables.push({
       y: a.y + 14,

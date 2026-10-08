@@ -27,39 +27,76 @@ function drawShadow(ctx, x, y, w) {
 }
 
 /* ------------------------------------------------------------
- * 纸娃娃数据：帽子 / 上衣 / 裤子
+ * 纸娃娃数据：帽子×11 / 上衣×11 / 裤子×11
  * ---------------------------------------------------------- */
 const OUTFITS = {
   hat: {
-    none:   { name: '不戴帽子', icon: '🚫', price: 0 },
-    ragged: { name: '破帽子',   icon: '🧢', price: 0 },
-    straw:  { name: '草帽',     icon: '👒', price: 30 },
-    bow:    { name: '蝴蝶结',   icon: '🎀', price: 50 },
-    crown:  { name: '小皇冠',   icon: '👑', price: 120 },
+    none:    { name: '不戴帽子', icon: '🚫', price: 0 },
+    ragged:  { name: '破帽子',   icon: '🧢', price: 0 },
+    straw:   { name: '草帽',     icon: '👒', price: 30 },
+    bow:     { name: '蝴蝶结',   icon: '🎀', price: 50 },
+    cap:     { name: '棒球帽',   icon: '🧢', price: 60 },
+    beanie:  { name: '毛线帽',   icon: '🎅', price: 70 },
+    bandana: { name: '海盗头巾', icon: '🏴‍☠️', price: 80 },
+    flower:  { name: '花环',     icon: '🌸', price: 90 },
+    chef:    { name: '厨师帽',   icon: '👨‍🍳', price: 100 },
+    wizard:  { name: '巫师帽',   icon: '🧙', price: 120 },
+    frog:    { name: '青蛙帽',   icon: '🐸', price: 130 },
+    crown:   { name: '小皇冠',   icon: '👑', price: 150 },
   },
   shirt: {
     ragged:   { name: '破衣服',     icon: '👕', price: 0 },
+    stripes:  { name: '黄条纹衫',   icon: '🟡', price: 40 },
     overalls: { name: '蓝色背带装', icon: '🩵', price: 60 },
+    dotty:    { name: '粉波点衫',   icon: '🌸', price: 70 },
+    hoodie:   { name: '绿连帽衫',   icon: '🧥', price: 80 },
     dress:    { name: '粉色裙子',   icon: '👗', price: 80 },
+    sailor:   { name: '水手服',     icon: '⚓', price: 90 },
+    vest:     { name: '小马甲',     icon: '🤎', price: 90 },
     star:     { name: '星星T恤',    icon: '⭐', price: 100 },
+    pumpkin:  { name: '南瓜装',     icon: '🎃', price: 110 },
+    rainbow:  { name: '彩虹T恤',    icon: '🌈', price: 120 },
   },
   pants: {
-    ragged: { name: '破裤子', icon: '👖', price: 0 },
-    jeans:  { name: '牛仔裤', icon: '💙', price: 40 },
-    shorts: { name: '红短裤', icon: '🩳', price: 40 },
+    ragged:      { name: '破裤子',   icon: '👖', price: 0 },
+    brown:       { name: '工装裤',   icon: '🟤', price: 30 },
+    jeans:       { name: '牛仔裤',   icon: '💙', price: 40 },
+    shorts:      { name: '红短裤',   icon: '🩳', price: 40 },
+    green:       { name: '绿长裤',   icon: '💚', price: 50 },
+    orange:      { name: '橙短裤',   icon: '🧡', price: 50 },
+    white:       { name: '白裤子',   icon: '🤍', price: 60 },
+    pink:        { name: '粉裤子',   icon: '🩷', price: 60 },
+    purple:      { name: '紫长裤',   icon: '💜', price: 70 },
+    stripepants: { name: '条纹裤',   icon: '🦓', price: 80 },
+    polka:       { name: '波点裤',   icon: '🔵', price: 90 },
   },
 };
 
 const SHIRT_COLORS = {
   ragged:   { main: '#9a938a', patch: '#6e675f' },
+  stripes:  { main: '#fff6d8', patch: '#ffb84d' },
   overalls: { main: '#4d8fd6', patch: '#2f6bb0' },
+  dotty:    { main: '#ffc4d6', patch: '#ff6fa5' },
+  hoodie:   { main: '#6fbf5a', patch: '#4a9e3f' },
   dress:    { main: '#ff9fc0', patch: '#ff6fa5' },
+  sailor:   { main: '#ffffff', patch: '#3a6fd8' },
+  vest:     { main: '#b58452', patch: '#8a5f36' },
   star:     { main: '#fff2f2', patch: '#ffd23e' },
+  pumpkin:  { main: '#ff9a3e', patch: '#e07b1e' },
+  rainbow:  { main: '#ffffff', patch: '#ffd23e' },
 };
 const PANTS_COLORS = {
-  ragged: { main: '#8a8378', patch: '#5f594f' },
-  jeans:  { main: '#3f6fb5', patch: '#2c4f86' },
-  shorts: { main: '#e05252', patch: '#b03636' },
+  ragged:      { main: '#8a8378', patch: '#5f594f' },
+  brown:       { main: '#a07848', patch: '#7a5630' },
+  jeans:       { main: '#3f6fb5', patch: '#2c4f86' },
+  shorts:      { main: '#e05252', patch: '#b03636' },
+  green:       { main: '#5aa84f', patch: '#3f7a38' },
+  orange:      { main: '#ff9a3e', patch: '#d97b1e' },
+  white:       { main: '#f2f2ee', patch: '#c9c9c0' },
+  pink:        { main: '#ffb0c8', patch: '#e08aa8' },
+  purple:      { main: '#9a7ac7', patch: '#6f4fa0' },
+  stripepants: { main: '#f2e8d8', patch: '#d86a6a' },
+  polka:       { main: '#7ac7e8', patch: '#ffffff' },
 };
 
 /* ------------------------------------------------------------
@@ -70,7 +107,7 @@ function drawPlayer(ctx, x, y, o) {
   const bob = o.moving ? Math.abs(Math.sin(o.walkPhase)) * 3 : Math.sin(o.t * 2) * 1.2;
   const swing = o.moving ? Math.sin(o.walkPhase) * 6 : 0;
   const yy = y - bob;
-  const dirX = o.dir === 'left' ? -1 : 1;   // 左右镜像
+  const dirX = o.dir === 'left' ? -1 : 1;
   const skin = '#ffdbac';
   const shirt = SHIRT_COLORS[o.outfit.shirt] || SHIRT_COLORS.ragged;
   const pants = PANTS_COLORS[o.outfit.pants] || PANTS_COLORS.ragged;
@@ -85,9 +122,23 @@ function drawPlayer(ctx, x, y, o) {
   ctx.fillStyle = pants.main;
   rr(ctx, -9 + swing * 0.5, 2, 8, 15, 3); ctx.fill();
   rr(ctx, 1 - swing * 0.5, 2, 8, 15, 3); ctx.fill();
-  if (o.outfit.pants === 'ragged') { // 破洞补丁
-    ctx.fillStyle = pants.patch;
+  // 裤子花纹
+  ctx.fillStyle = pants.patch;
+  if (o.outfit.pants === 'ragged') {
     rr(ctx, -8 + swing * 0.5, 8, 4, 4, 1); ctx.fill();
+  } else if (o.outfit.pants === 'stripepants') {
+    rr(ctx, -9 + swing * 0.5, 5, 8, 2.5, 1); ctx.fill();
+    rr(ctx, -9 + swing * 0.5, 11, 8, 2.5, 1); ctx.fill();
+    rr(ctx, 1 - swing * 0.5, 5, 8, 2.5, 1); ctx.fill();
+    rr(ctx, 1 - swing * 0.5, 11, 8, 2.5, 1); ctx.fill();
+  } else if (o.outfit.pants === 'polka') {
+    ellipse(ctx, -5 + swing * 0.5, 7, 1.8, 1.8); ctx.fill();
+    ellipse(ctx, -5 + swing * 0.5, 13, 1.8, 1.8); ctx.fill();
+    ellipse(ctx, 5 - swing * 0.5, 7, 1.8, 1.8); ctx.fill();
+    ellipse(ctx, 5 - swing * 0.5, 13, 1.8, 1.8); ctx.fill();
+  } else if (o.outfit.pants === 'jeans' || o.outfit.pants === 'brown') {
+    rr(ctx, -9 + swing * 0.5, 3, 8, 2, 1); ctx.fill(); // 裤兜线
+    rr(ctx, 1 - swing * 0.5, 3, 8, 2, 1); ctx.fill();
   }
   // 鞋子
   ctx.fillStyle = '#7a5230';
@@ -103,19 +154,62 @@ function drawPlayer(ctx, x, y, o) {
   } else {
     rr(ctx, -11, -16, 22, 21, 6); ctx.fill();
   }
-  if (o.outfit.shirt === 'ragged') { // 破补丁
-    ctx.fillStyle = shirt.patch;
-    rr(ctx, -8, -10, 6, 6, 1); ctx.fill();
-    rr(ctx, 3, -2, 5, 5, 1); ctx.fill();
-  }
-  if (o.outfit.shirt === 'star') { // 胸前星星
-    ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('⭐', 0, -3);
-  }
-  if (o.outfit.shirt === 'overalls') { // 背带
-    ctx.strokeStyle = shirt.patch; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(-7, -15); ctx.lineTo(-7, 4);
-    ctx.moveTo(7, -15); ctx.lineTo(7, 4); ctx.stroke();
+  // 上衣花纹
+  switch (o.outfit.shirt) {
+    case 'ragged':
+      ctx.fillStyle = shirt.patch;
+      rr(ctx, -8, -10, 6, 6, 1); ctx.fill();
+      rr(ctx, 3, -2, 5, 5, 1); ctx.fill();
+      break;
+    case 'star':
+      ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#7a5a2a';
+      ctx.fillText('⭐', 0, -3);
+      break;
+    case 'stripes':
+      ctx.fillStyle = shirt.patch;
+      rr(ctx, -11, -11, 22, 4, 2); ctx.fill();
+      rr(ctx, -11, -3, 22, 4, 2); ctx.fill();
+      break;
+    case 'rainbow': {
+      const cols = ['#ff6b6b', '#ffb84d', '#ffe66d', '#6fbf5a', '#5fa8e8'];
+      cols.forEach((c, i) => { ctx.fillStyle = c; rr(ctx, -11, -14 + i * 4, 22, 4, 2); ctx.fill(); });
+      break;
+    }
+    case 'sailor':
+      ctx.fillStyle = shirt.patch;
+      ctx.beginPath(); ctx.moveTo(-8, -16); ctx.lineTo(8, -16); ctx.lineTo(0, -6); ctx.closePath(); ctx.fill();
+      rr(ctx, -11, -15, 22, 2.5, 1); ctx.fill();
+      break;
+    case 'dotty':
+      ctx.fillStyle = shirt.patch;
+      ellipse(ctx, -6, -10, 2, 2); ctx.fill();
+      ellipse(ctx, 5, -8, 2, 2); ctx.fill();
+      ellipse(ctx, -2, -1, 2, 2); ctx.fill();
+      ellipse(ctx, 7, 1, 2, 2); ctx.fill();
+      break;
+    case 'hoodie':
+      ctx.strokeStyle = shirt.patch; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, -15, 8, Math.PI * 0.1, Math.PI * 0.9, true); ctx.stroke(); // 帽兜
+      ctx.fillStyle = shirt.patch;
+      rr(ctx, -6, -4, 12, 7, 3); ctx.fill(); // 口袋
+      break;
+    case 'pumpkin':
+      ctx.strokeStyle = shirt.patch; ctx.lineWidth = 2;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath(); ctx.moveTo(i * 6, -15); ctx.quadraticCurveTo(i * 8, -5, i * 6, 4); ctx.stroke();
+      }
+      break;
+    case 'overalls':
+      ctx.strokeStyle = shirt.patch; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-7, -15); ctx.lineTo(-7, 4);
+      ctx.moveTo(7, -15); ctx.lineTo(7, 4); ctx.stroke();
+      break;
+    case 'vest':
+      ctx.fillStyle = shirt.patch;
+      rr(ctx, -11, -16, 6, 20, 3); ctx.fill();
+      rr(ctx, 5, -16, 6, 20, 3); ctx.fill();
+      break;
   }
 
   // --- 手臂（动作时举起来） ---
@@ -125,7 +219,6 @@ function drawPlayer(ctx, x, y, o) {
   ctx.moveTo(-11, -11); ctx.lineTo(-16, -2 + swing * 0.4 - armRaise);
   ctx.moveTo(11, -11); ctx.lineTo(16, -2 - swing * 0.4 - armRaise);
   ctx.stroke();
-  // 手
   ctx.fillStyle = skin;
   ellipse(ctx, -16, -2 + swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
   ellipse(ctx, 16, -2 - swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
@@ -145,7 +238,6 @@ function drawPlayer(ctx, x, y, o) {
     ctx.beginPath();
     ctx.ellipse(0, -31, 11.5, 7.5, 0, Math.PI, Math.PI * 2);
     ctx.fill();
-    // 双马尾
     ellipse(ctx, -12, -24, 4, 7); ctx.fill();
     ellipse(ctx, 12, -24, 4, 7); ctx.fill();
     ctx.fillStyle = '#ff6b8a';
@@ -163,7 +255,6 @@ function drawPlayer(ctx, x, y, o) {
     ellipse(ctx, -4, -28, 1.7, 2.2); ctx.fill();
     ellipse(ctx, 4, -28, 1.7, 2.2); ctx.fill();
   }
-  // 腮红 + 微笑
   ctx.fillStyle = 'rgba(255,120,120,.5)';
   ellipse(ctx, -7.5, -24.5, 2, 1.4); ctx.fill();
   ellipse(ctx, 7.5, -24.5, 2, 1.4); ctx.fill();
@@ -178,32 +269,101 @@ function drawPlayer(ctx, x, y, o) {
 
 function drawHat(ctx, hat, t) {
   const flop = Math.sin(t * 2) * 1;
-  if (hat === 'ragged') { // 破帽子：灰褐色软帽 + 补丁
-    ctx.fillStyle = '#8f8578';
-    ctx.beginPath(); ctx.ellipse(0, -34, 13, 5.5, 0, Math.PI, Math.PI * 2); ctx.fill();
-    rr(ctx, -14, -35, 28, 3.5, 2); ctx.fill();
-    ctx.fillStyle = '#6e675f';
-    rr(ctx, 4, -37.5, 5, 4, 1); ctx.fill(); // 补丁
-  } else if (hat === 'straw') {
-    ctx.fillStyle = '#f4d35e';
-    ctx.beginPath(); ctx.ellipse(0, -33.5, 16, 4.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, -35.5, 9, 6, 0, Math.PI, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-9, -34.5); ctx.lineTo(9, -34.5); ctx.stroke();
-  } else if (hat === 'bow') {
-    ctx.fillStyle = '#ff6fa5';
-    ctx.save(); ctx.translate(-3, -37 + flop);
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, -4); ctx.lineTo(-7, 4); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, -4); ctx.lineTo(7, 4); ctx.closePath(); ctx.fill();
-    ellipse(ctx, 0, 0, 2.4, 2.4); ctx.fill();
-    ctx.restore();
-  } else if (hat === 'crown') {
-    ctx.fillStyle = '#ffd23e';
-    ctx.beginPath();
-    ctx.moveTo(-8, -34); ctx.lineTo(-8, -40); ctx.lineTo(-4, -36.5);
-    ctx.lineTo(0, -42); ctx.lineTo(4, -36.5); ctx.lineTo(8, -40);
-    ctx.lineTo(8, -34); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#ff6b8a'; ellipse(ctx, 0, -37.5, 1.6, 1.6); ctx.fill();
+  switch (hat) {
+    case 'ragged': // 破帽子：灰褐色软帽 + 补丁
+      ctx.fillStyle = '#8f8578';
+      ctx.beginPath(); ctx.ellipse(0, -34, 13, 5.5, 0, Math.PI, Math.PI * 2); ctx.fill();
+      rr(ctx, -14, -35, 28, 3.5, 2); ctx.fill();
+      ctx.fillStyle = '#6e675f';
+      rr(ctx, 4, -37.5, 5, 4, 1); ctx.fill();
+      break;
+    case 'straw':
+      ctx.fillStyle = '#f4d35e';
+      ctx.beginPath(); ctx.ellipse(0, -33.5, 16, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, -35.5, 9, 6, 0, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-9, -34.5); ctx.lineTo(9, -34.5); ctx.stroke();
+      break;
+    case 'bow':
+      ctx.fillStyle = '#ff6fa5';
+      ctx.save(); ctx.translate(-3, -37 + flop);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, -4); ctx.lineTo(-7, 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, -4); ctx.lineTo(7, 4); ctx.closePath(); ctx.fill();
+      ellipse(ctx, 0, 0, 2.4, 2.4); ctx.fill();
+      ctx.restore();
+      break;
+    case 'crown':
+      ctx.fillStyle = '#ffd23e';
+      ctx.beginPath();
+      ctx.moveTo(-8, -34); ctx.lineTo(-8, -40); ctx.lineTo(-4, -36.5);
+      ctx.lineTo(0, -42); ctx.lineTo(4, -36.5); ctx.lineTo(8, -40);
+      ctx.lineTo(8, -34); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff6b8a'; ellipse(ctx, 0, -37.5, 1.6, 1.6); ctx.fill();
+      break;
+    case 'cap': // 棒球帽
+      ctx.fillStyle = '#4d8fd6';
+      ctx.beginPath(); ctx.ellipse(0, -33.5, 11.5, 6.5, 0, Math.PI, Math.PI * 2); ctx.fill();
+      rr(ctx, 2, -34.5, 13, 3, 1.5); ctx.fill(); // 帽檐朝前
+      ctx.fillStyle = '#fff';
+      ellipse(ctx, 0, -39.5, 1.8, 1.8); ctx.fill();
+      break;
+    case 'beanie': // 毛线帽
+      ctx.fillStyle = '#e05252';
+      ctx.beginPath(); ctx.ellipse(0, -34, 11.5, 7, 0, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      rr(ctx, -11.5, -34.5, 23, 4, 2); ctx.fill();
+      ellipse(ctx, 0, -42 + flop, 3, 3); ctx.fill(); // 绒球
+      break;
+    case 'bandana': // 海盗头巾
+      ctx.fillStyle = '#d84040';
+      ctx.beginPath(); ctx.ellipse(0, -32.5, 11.5, 6, 0, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ellipse(ctx, -5, -34, 1.4, 1.4); ctx.fill();
+      ellipse(ctx, 2, -36, 1.4, 1.4); ctx.fill();
+      ellipse(ctx, 6, -33, 1.4, 1.4); ctx.fill();
+      ctx.fillStyle = '#d84040'; // 结
+      ctx.beginPath(); ctx.moveTo(-10, -33); ctx.lineTo(-16, -37 + flop); ctx.lineTo(-13, -31); ctx.closePath(); ctx.fill();
+      break;
+    case 'flower': // 花环
+      ctx.strokeStyle = '#5aa84f'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.ellipse(0, -33.5, 11, 4.5, 0, Math.PI, Math.PI * 2); ctx.stroke();
+      const fc = ['#ff8fb0', '#ffd23e', '#fff', '#c88ae8'];
+      for (let i = 0; i < 5; i++) {
+        const a = Math.PI + (i / 4) * Math.PI;
+        ctx.fillStyle = fc[i % 4];
+        ellipse(ctx, Math.cos(a) * 11, -33.5 + Math.sin(a) * 4.5 - 1, 2.4, 2.4); ctx.fill();
+      }
+      break;
+    case 'chef': // 厨师帽
+      ctx.fillStyle = '#fff';
+      rr(ctx, -8, -44, 16, 11, 4); ctx.fill();
+      ellipse(ctx, -5, -44, 4.5, 4); ctx.fill();
+      ellipse(ctx, 0, -46, 5, 4.5); ctx.fill();
+      ellipse(ctx, 5, -44, 4.5, 4); ctx.fill();
+      rr(ctx, -8, -35, 16, 3, 1.5); ctx.fill();
+      break;
+    case 'wizard': // 巫师帽
+      ctx.fillStyle = '#8a5fc7';
+      ctx.beginPath();
+      ctx.moveTo(-9, -34); ctx.quadraticCurveTo(-2, -46, 3 + flop * 2, -54);
+      ctx.quadraticCurveTo(6, -46, 9, -34); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, -34, 15, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffd23e';
+      ctx.font = '8px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('⭐', 1, -40);
+      break;
+    case 'frog': // 青蛙帽
+      ctx.fillStyle = '#6fbf5a';
+      ctx.beginPath(); ctx.ellipse(0, -33.5, 11.5, 6, 0, Math.PI, Math.PI * 2); ctx.fill();
+      ellipse(ctx, -6, -39, 4, 4); ctx.fill();
+      ellipse(ctx, 6, -39, 4, 4); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ellipse(ctx, -6, -39.5, 2.4, 2.4); ctx.fill();
+      ellipse(ctx, 6, -39.5, 2.4, 2.4); ctx.fill();
+      ctx.fillStyle = '#333';
+      ellipse(ctx, -6, -39.5, 1.1, 1.1); ctx.fill();
+      ellipse(ctx, 6, -39.5, 1.1, 1.1); ctx.fill();
+      break;
   }
 }
 
@@ -211,36 +371,29 @@ function drawHat(ctx, hat, t) {
  * 动物们（全部带呼吸/走动/小动作动画）
  * ---------------------------------------------------------- */
 function drawChicken(ctx, x, y, a) {
-  // a: {t, phase, dir, moving, walkPhase, peck}
   const hop = a.moving ? Math.abs(Math.sin(a.walkPhase)) * 4 : 0;
   const bob = Math.sin(a.t * 3 + a.phase) * 1;
   ctx.save();
   ctx.translate(x, y - hop);
   if (a.dir === 'left') ctx.scale(-1, 1);
   drawShadow(ctx, 0, hop, 9);
-  // 腿
   const step = a.moving ? Math.sin(a.walkPhase) * 3 : 0;
   ctx.strokeStyle = '#e8930c'; ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(-2, 4); ctx.lineTo(-2 + step, 9);
   ctx.moveTo(2, 4); ctx.lineTo(2 - step, 9);
   ctx.stroke();
-  // 身体
   ctx.fillStyle = '#fff8ee';
   ellipse(ctx, 0, -2 + bob, 10, 8.5); ctx.fill();
-  // 翅膀（拍打）
   const flap = a.moving ? Math.sin(a.walkPhase * 2) * 3 : Math.sin(a.t * 2 + a.phase) * 1.5;
   ctx.fillStyle = '#f2e6d2';
   ellipse(ctx, -2, -3 + bob + flap * 0.3, 6, 4.5); ctx.fill();
-  // 头（啄米时下低）
   const peckD = a.peck > 0 ? Math.sin(a.peck * Math.PI) * 6 : 0;
   ctx.fillStyle = '#fff8ee';
   ellipse(ctx, 7, -9 + bob + peckD, 5.5, 5); ctx.fill();
-  // 鸡冠
   ctx.fillStyle = '#ff5a5a';
   ellipse(ctx, 5.5, -14.5 + bob + peckD, 2, 2.4); ctx.fill();
   ellipse(ctx, 8.5, -14.5 + bob + peckD, 2, 2.4); ctx.fill();
-  // 眼睛 & 嘴
   ctx.fillStyle = '#333';
   ellipse(ctx, 8.5, -10 + bob + peckD, 1.1, 1.3); ctx.fill();
   ctx.fillStyle = '#ffb020';
@@ -253,13 +406,11 @@ function drawChicken(ctx, x, y, a) {
 }
 
 function drawSheep(ctx, x, y, a) {
-  // a: {t, phase, dir, moving, walkPhase, wool(0-1)}
   const bob = a.moving ? Math.abs(Math.sin(a.walkPhase)) * 2.5 : Math.sin(a.t * 2 + a.phase) * 1;
   ctx.save();
   ctx.translate(x, y - bob);
   if (a.dir === 'left') ctx.scale(-1, 1);
   drawShadow(ctx, 0, bob, 14);
-  // 腿
   const step = a.moving ? Math.sin(a.walkPhase) * 4 : 0;
   ctx.strokeStyle = '#4a4a4a'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -268,7 +419,6 @@ function drawSheep(ctx, x, y, a) {
   ctx.moveTo(-3, 5); ctx.lineTo(-3 - step, 14);
   ctx.moveTo(3, 5); ctx.lineTo(3 + step, 14);
   ctx.stroke();
-  // 身体（有羊毛=蓬松云朵，剪过=光滑粉色）
   if (a.wool > 0.5) {
     ctx.fillStyle = '#fdfdf6';
     const wob = Math.sin(a.t * 2.5 + a.phase) * 0.8;
@@ -280,13 +430,10 @@ function drawSheep(ctx, x, y, a) {
     ctx.fillStyle = '#f7c8c8';
     ellipse(ctx, 0, -3, 11, 8); ctx.fill();
   }
-  // 头
   ctx.fillStyle = '#4a4a4a';
   ellipse(ctx, 13, -6 + bob * 0.4, 5.5, 5); ctx.fill();
-  // 耳朵（抖动）
   const earW = Math.sin(a.t * 4 + a.phase) * 1.5;
   ellipse(ctx, 11, -11 + earW * 0.3, 2.6, 1.6); ctx.fill();
-  // 眼睛
   ctx.fillStyle = '#fff'; ellipse(ctx, 14.5, -7, 1.8, 1.8); ctx.fill();
   ctx.fillStyle = '#333'; ellipse(ctx, 15, -7, 0.9, 0.9); ctx.fill();
   ctx.restore();
@@ -298,7 +445,6 @@ function drawCow(ctx, x, y, a) {
   ctx.translate(x, y - bob);
   if (a.dir === 'left') ctx.scale(-1, 1);
   drawShadow(ctx, 0, bob, 19);
-  // 腿
   const step = a.moving ? Math.sin(a.walkPhase) * 4 : 0;
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -307,36 +453,28 @@ function drawCow(ctx, x, y, a) {
   ctx.moveTo(-5, 6); ctx.lineTo(-5 - step, 18);
   ctx.moveTo(5, 6); ctx.lineTo(5 + step, 18);
   ctx.stroke();
-  // 身体
   ctx.fillStyle = '#fff';
   rr(ctx, -19, -14, 36, 20, 9); ctx.fill();
-  // 棕色斑块
   ctx.fillStyle = '#b07b4f';
   ellipse(ctx, -8, -7, 6, 5); ctx.fill();
   ellipse(ctx, 8, -9, 5, 4); ctx.fill();
-  // 尾巴（摇摆）
   const tail = Math.sin(a.t * 3 + a.phase) * 6;
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(-19, -10); ctx.quadraticCurveTo(-26, 0, -23 + tail, 8); ctx.stroke();
   ctx.fillStyle = '#b07b4f'; ellipse(ctx, -23 + tail, 9, 2.5, 3); ctx.fill();
-  // 乳房（粉色，可挤奶标志）
   ctx.fillStyle = '#ffb6c9'; ellipse(ctx, 3, 6, 5, 3.5); ctx.fill();
-  // 头（咀嚼动画：上下微动）
   const chew = Math.sin(a.t * 5 + a.phase) * 1;
   ctx.fillStyle = '#fff';
   ellipse(ctx, 22, -12 + chew * 0.3, 8, 7.5); ctx.fill();
-  // 鼻子
   ctx.fillStyle = '#ffc4d0';
   ellipse(ctx, 27, -8 + chew * 0.5, 5, 4); ctx.fill();
   ctx.fillStyle = '#d98a9a';
   ellipse(ctx, 25.5, -8 + chew * 0.5, 0.9, 0.9); ctx.fill();
   ellipse(ctx, 28.5, -8 + chew * 0.5, 0.9, 0.9); ctx.fill();
-  // 角 & 耳
   ctx.fillStyle = '#e8d9b0';
   ellipse(ctx, 18, -19, 2, 3); ctx.fill();
   ctx.fillStyle = '#fff';
   ellipse(ctx, 16, -13, 3, 2); ctx.fill();
-  // 眼睛
   ctx.fillStyle = '#333'; ellipse(ctx, 21, -13.5, 1.4, 1.7); ctx.fill();
   ctx.restore();
 }
@@ -345,51 +483,42 @@ function drawCow(ctx, x, y, a) {
  * 宠物（小狗 / 小猫，跟随，可戴帽）
  * ---------------------------------------------------------- */
 function drawPet(ctx, x, y, p) {
-  // p: {type, t, phase, dir, moving, walkPhase, hat, happy}
   const hop = p.moving ? Math.abs(Math.sin(p.walkPhase)) * 5 : Math.sin(p.t * 3 + p.phase) * 1.5;
   ctx.save();
   ctx.translate(x, y - hop);
   if (p.dir === 'left') ctx.scale(-1, 1);
   drawShadow(ctx, 0, hop, 9);
-
   const body = p.type === 'dog' ? '#e8b36a' : '#b8b8c8';
   const dark = p.type === 'dog' ? '#c78f3f' : '#8a8a9e';
-  // 腿
   const step = p.moving ? Math.sin(p.walkPhase) * 3.5 : 0;
   ctx.strokeStyle = body; ctx.lineWidth = 3; ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(-5, 2); ctx.lineTo(-5 + step, 8);
   ctx.moveTo(5, 2); ctx.lineTo(5 - step, 8);
   ctx.stroke();
-  // 尾巴（开心摇尾巴）
   const wag = Math.sin(p.t * (p.happy > 0 ? 14 : 5) + p.phase) * (p.happy > 0 ? 8 : 4);
   ctx.strokeStyle = dark; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(-8, -4); ctx.quadraticCurveTo(-13, -8, -12 + wag, -11); ctx.stroke();
-  // 身体
   ctx.fillStyle = body;
   ellipse(ctx, 0, -2, 9, 7); ctx.fill();
-  // 头
   ellipse(ctx, 7, -8, 6, 5.5); ctx.fill();
-  // 耳朵
   if (p.type === 'dog') {
     ctx.fillStyle = dark;
-    ellipse(ctx, 4, -13, 2.4, 3.4); ctx.fill(); // 垂耳
+    ellipse(ctx, 4, -13, 2.4, 3.4); ctx.fill();
   } else {
-    ctx.fillStyle = body; // 三角耳
+    ctx.fillStyle = body;
     ctx.beginPath(); ctx.moveTo(3, -11); ctx.lineTo(4.5, -16); ctx.lineTo(7, -12); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(9, -12); ctx.lineTo(11, -16); ctx.lineTo(12.5, -11); ctx.closePath(); ctx.fill();
   }
-  // 眼睛 & 鼻
   ctx.fillStyle = '#333'; ellipse(ctx, 8.5, -9, 1.2, 1.5); ctx.fill();
   ctx.fillStyle = p.type === 'dog' ? '#5a3a2a' : '#ff8fa5';
   ellipse(ctx, 12.5, -6.5, 1.4, 1.1); ctx.fill();
-  if (p.type === 'cat') { // 胡须
+  if (p.type === 'cat') {
     ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 0.8;
     ctx.beginPath();
     ctx.moveTo(10, -6); ctx.lineTo(15, -5); ctx.moveTo(10, -7.5); ctx.lineTo(15, -8.5);
     ctx.stroke();
   }
-  // 宠物帽子
   if (p.hat && p.hat !== 'none') {
     ctx.save(); ctx.translate(7, -4); ctx.scale(0.55, 0.55);
     drawHat(ctx, p.hat, p.t);
@@ -408,26 +537,20 @@ function drawCustomer(ctx, x, y, c) {
   ctx.translate(x, y - bob);
   if (c.dir === 'left') ctx.scale(-1, 1);
   drawShadow(ctx, 0, bob, 13);
-  // 腿
   ctx.fillStyle = '#5a6a8a';
   rr(ctx, -7 + swing * 0.5, 2, 6, 13, 3); ctx.fill();
   rr(ctx, 1 - swing * 0.5, 2, 6, 13, 3); ctx.fill();
-  // 身体（随机颜色衣服）
   ctx.fillStyle = c.color;
   rr(ctx, -10, -15, 20, 19, 6); ctx.fill();
-  // 手臂
   ctx.strokeStyle = c.color; ctx.lineWidth = 5; ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(-10, -10); ctx.lineTo(-14, -1 + swing * 0.4);
   ctx.moveTo(10, -10); ctx.lineTo(14, -1 - swing * 0.4);
   ctx.stroke();
-  // 头
   ctx.fillStyle = '#ffdbac';
   ellipse(ctx, 0, -25, 10, 9.5); ctx.fill();
-  // 头发
   ctx.fillStyle = c.hair;
   ctx.beginPath(); ctx.ellipse(0, -29, 10, 6.5, 0, Math.PI, Math.PI * 2); ctx.fill();
-  // 眼 & 笑
   ctx.fillStyle = '#333';
   ellipse(ctx, -3.5, -26, 1.5, 1.9); ctx.fill();
   ellipse(ctx, 3.5, -26, 1.5, 1.9); ctx.fill();
@@ -439,47 +562,80 @@ function drawCustomer(ctx, x, y, c) {
 /* ------------------------------------------------------------
  * 场景物件
  * ---------------------------------------------------------- */
-function drawTree(ctx, x, y, t, phase, fruits) {
+const FRUIT_COLORS = {
+  apple: '#ff5a4e', orange: '#ffa02e', pear: '#c8e05a',
+  peach: '#ff9a90', strawberry: '#ff4e6a',
+};
+
+function drawTree(ctx, x, y, t, phase, fruits, type = 'apple') {
   drawShadow(ctx, x, y + 4, 22);
   const sway = Math.sin(t * 1.2 + phase) * 2;
-  // 树干
   ctx.fillStyle = '#8a5a2e';
   rr(ctx, x - 5, y - 26, 10, 30, 4); ctx.fill();
-  // 树冠
   ctx.fillStyle = '#5db550';
   ellipse(ctx, x - 14 + sway, y - 40, 17, 14); ctx.fill();
   ellipse(ctx, x + 14 + sway, y - 40, 17, 14); ctx.fill();
   ellipse(ctx, x + sway, y - 52, 20, 16); ctx.fill();
   ctx.fillStyle = '#6fc763';
   ellipse(ctx, x - 6 + sway, y - 50, 10, 8); ctx.fill();
-  // 果实
+  const col = FRUIT_COLORS[type] || FRUIT_COLORS.apple;
   for (let i = 0; i < fruits; i++) {
     const fx = x + [-10, 8, -1][i % 3] + sway;
     const fy = y + [-38, -42, -55][i % 3] + Math.sin(t * 2 + i) * 1;
-    ctx.fillStyle = '#ff5a4e';
-    ellipse(ctx, fx, fy, 4, 4.2); ctx.fill();
+    ctx.fillStyle = col;
+    if (type === 'pear') { // 梨子：上小下大
+      ellipse(ctx, fx, fy + 1.5, 4, 4); ctx.fill();
+      ellipse(ctx, fx, fy - 2.5, 2.4, 2.6); ctx.fill();
+    } else if (type === 'peach') { // 桃子：带小叶子
+      ellipse(ctx, fx, fy, 4.2, 4); ctx.fill();
+      ctx.fillStyle = '#5db550';
+      ellipse(ctx, fx + 2.5, fy - 4, 2, 1.2); ctx.fill();
+    } else {
+      ellipse(ctx, fx, fy, 4, 4.2); ctx.fill();
+    }
     ctx.fillStyle = 'rgba(255,255,255,.5)';
     ellipse(ctx, fx - 1.2, fy - 1.4, 1.2, 1); ctx.fill();
   }
 }
 
+// 草莓丛（低矮灌木）
+function drawStrawberryBush(ctx, x, y, t, phase, fruits) {
+  drawShadow(ctx, x, y + 3, 18);
+  const sway = Math.sin(t * 1.5 + phase) * 1.5;
+  ctx.fillStyle = '#4f9e45';
+  ellipse(ctx, x - 9 + sway, y - 8, 11, 9); ctx.fill();
+  ellipse(ctx, x + 9 + sway, y - 8, 11, 9); ctx.fill();
+  ellipse(ctx, x + sway, y - 14, 13, 10); ctx.fill();
+  ctx.fillStyle = '#61b356';
+  ellipse(ctx, x - 4 + sway, y - 14, 7, 5); ctx.fill();
+  for (let i = 0; i < fruits; i++) {
+    const fx = x + [-8, 7, 0][i % 3] + sway;
+    const fy = y + [-6, -10, -17][i % 3] + Math.sin(t * 2.2 + i) * 1;
+    ctx.fillStyle = FRUIT_COLORS.strawberry;
+    ctx.beginPath(); // 小草莓：倒三角圆润形
+    ctx.moveTo(fx - 3.4, fy - 1.5);
+    ctx.quadraticCurveTo(fx, fy + 5, fx + 3.4, fy - 1.5);
+    ctx.quadraticCurveTo(fx, fy - 4, fx - 3.4, fy - 1.5);
+    ctx.fill();
+    ctx.fillStyle = '#5db550';
+    ellipse(ctx, fx, fy - 2.5, 2.4, 1.2); ctx.fill();
+  }
+}
+
 function drawPlot(ctx, x, y, plot, t) {
-  // plot: {state, watered, crop, stage}
   const S = 34;
   if (plot.state === 'grass') return;
-  // 翻过的土
   ctx.fillStyle = plot.watered ? '#6b4a2a' : '#8a6136';
   rr(ctx, x - S / 2, y - S / 2, S, S, 6); ctx.fill();
   ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 1.5;
   ctx.strokeRect(x - S / 2 + 3, y - S / 2 + 3, S - 6, S - 6);
-  if (plot.watered) { // 水光闪闪
+  if (plot.watered) {
     ctx.fillStyle = `rgba(120,190,255,${0.15 + Math.sin(t * 3 + x) * 0.08})`;
     rr(ctx, x - S / 2 + 3, y - S / 2 + 3, S - 6, S - 6, 4); ctx.fill();
   }
   if (plot.state === 'seed' || plot.state === 'growing' || plot.state === 'ripe') {
     const g = plot.state === 'seed' ? 0.25 : plot.state === 'growing' ? 0.6 : 1;
     const sway = Math.sin(t * 2.5 + x * 0.1) * 1.5;
-    // 茎叶
     ctx.strokeStyle = '#3f9e3f'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(x, y + 8);
@@ -488,7 +644,7 @@ function drawPlot(ctx, x, y, plot, t) {
     ctx.fillStyle = '#57b857';
     ellipse(ctx, x - 4 * g, y + 2 - 8 * g, 4 * g, 2.4 * g); ctx.fill();
     ellipse(ctx, x + 4 * g, y - 4 * g, 4 * g, 2.4 * g); ctx.fill();
-    if (plot.state === 'ripe') { // 成熟果实 + 微光
+    if (plot.state === 'ripe') {
       const col = plot.crop === 'carrot' ? '#ff8c2e' : plot.crop === 'tomato' ? '#ff4e4e' : '#ffd23e';
       ctx.fillStyle = col;
       ellipse(ctx, x + sway * 1.5, y + 2 - 18 * g, 6, 6); ctx.fill();
@@ -500,17 +656,14 @@ function drawPlot(ctx, x, y, plot, t) {
 
 function drawHouse(ctx, x, y, t) {
   drawShadow(ctx, x + 60, y + 56, 70);
-  // 墙体
   ctx.fillStyle = '#ffe9c9';
   rr(ctx, x, y - 60, 120, 116, 8); ctx.fill();
-  // 屋顶
   ctx.fillStyle = '#ff7b54';
   ctx.beginPath();
   ctx.moveTo(x - 12, y - 56); ctx.lineTo(x + 60, y - 104); ctx.lineTo(x + 132, y - 56);
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#e5643f';
   rr(ctx, x - 12, y - 60, 144, 8, 4); ctx.fill();
-  // 烟囱 + 烟
   ctx.fillStyle = '#c98a5a';
   rr(ctx, x + 88, y - 96, 14, 26, 3); ctx.fill();
   for (let i = 0; i < 3; i++) {
@@ -520,12 +673,10 @@ function drawHouse(ctx, x, y, t) {
     ellipse(ctx, x + 95 + Math.sin(t + i) * 6, sy, 5 + (1 - sa) * 5, 4 + (1 - sa) * 4);
     ctx.fill();
   }
-  // 门
   ctx.fillStyle = '#a56a35';
   rr(ctx, x + 46, y + 6, 28, 50, 6); ctx.fill();
   ctx.fillStyle = '#ffd23e';
   ellipse(ctx, x + 68, y + 32, 2.4, 2.4); ctx.fill();
-  // 窗户（暖光）
   ctx.fillStyle = `rgba(255,220,120,${0.85 + Math.sin(t * 2) * 0.1})`;
   rr(ctx, x + 12, y - 30, 26, 24, 5); ctx.fill();
   rr(ctx, x + 84, y - 30, 26, 24, 5); ctx.fill();
@@ -536,12 +687,10 @@ function drawHouse(ctx, x, y, t) {
 
 function drawStall(ctx, x, y, t) {
   drawShadow(ctx, x + 45, y + 40, 55);
-  // 柜台
   ctx.fillStyle = '#c98a5a';
   rr(ctx, x, y, 90, 40, 6); ctx.fill();
   ctx.fillStyle = '#a56a35';
   rr(ctx, x, y + 32, 90, 8, 4); ctx.fill();
-  // 顶棚（条纹）
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i % 2 ? '#ff6b8a' : '#fff';
     const sx = x - 4 + i * 20;
@@ -551,29 +700,25 @@ function drawStall(ctx, x, y, t) {
     ctx.lineTo(sx + 2, y - 26 + Math.sin(t * 3 + i + 1) * 1.5);
     ctx.closePath(); ctx.fill();
   }
-  // 支柱
   ctx.fillStyle = '#8a5a2e';
   rr(ctx, x - 2, y - 44, 5, 84, 2); ctx.fill();
   rr(ctx, x + 87, y - 44, 5, 84, 2); ctx.fill();
-  // 招牌
   ctx.fillStyle = '#fff3d6';
   rr(ctx, x + 22, y - 70, 46, 22, 6); ctx.fill();
   ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
   ctx.strokeRect(x + 22, y - 70, 46, 22);
   ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
   ctx.fillText('🛒', x + 45, y - 53);
 }
 
 function drawPond(ctx, x, y, w, h, t) {
-  // 岸边
   ctx.fillStyle = '#c9b280';
   ellipse(ctx, x, y, w / 2 + 12, h / 2 + 10); ctx.fill();
-  // 水面
   ctx.fillStyle = '#5fb8e8';
   ellipse(ctx, x, y, w / 2, h / 2); ctx.fill();
   ctx.fillStyle = '#7ccbf0';
   ellipse(ctx, x - w * 0.12, y - h * 0.15, w / 2.8, h / 3); ctx.fill();
-  // 波纹
   ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
   for (let i = 0; i < 3; i++) {
     const rx = ((t * 25 + i * 40) % (w / 2 - 8));
@@ -582,7 +727,6 @@ function drawPond(ctx, x, y, w, h, t) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-  // 跳鱼动画偶尔交给 game.js 粒子
 }
 
 function drawBin(ctx, x, y, t) {
@@ -592,6 +736,7 @@ function drawBin(ctx, x, y, t) {
   ctx.fillStyle = '#7a5228';
   rr(ctx, x - 18, y - 18, 36, 8, 3); ctx.fill();
   ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#3a2a12';
   ctx.fillText('📦', x, y + 4 + Math.sin(t * 2) * 1);
 }
 
@@ -605,6 +750,7 @@ function drawWardrobeProp(ctx, x, y, t) {
   ellipse(ctx, x - 3, y - 5, 1.8, 1.8); ctx.fill();
   ellipse(ctx, x + 3, y - 5, 1.8, 1.8); ctx.fill();
   ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
   ctx.fillText('👕', x, y - 30 + Math.sin(t * 2) * 1.5);
 }
 
@@ -615,7 +761,6 @@ function drawKitchenProp(ctx, x, y, t) {
   ctx.fillStyle = '#555';
   ellipse(ctx, x - 8, y - 16, 5, 2.5); ctx.fill();
   ellipse(ctx, x + 8, y - 16, 5, 2.5); ctx.fill();
-  // 锅里热气
   for (let i = 0; i < 2; i++) {
     const sa = 1 - ((t * 15 + i * 14) % 28) / 28;
     ctx.strokeStyle = `rgba(255,255,255,${sa * 0.8})`;
@@ -627,7 +772,119 @@ function drawKitchenProp(ctx, x, y, t) {
     ctx.stroke();
   }
   ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
   ctx.fillText('🍳', x, y + 8);
+}
+
+/* ------------------------------------------------------------
+ * 动物棚舍：鸡棚 / 羊棚 / 牛棚（栅栏 + 小窝）
+ * ---------------------------------------------------------- */
+// 后半栅栏（顶部带小门缺口 + 两侧）
+function drawFenceBack(ctx, x, y, w, h) {
+  ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  const gate = 46;
+  ctx.beginPath();
+  // 顶栏（中间留门）
+  ctx.moveTo(x, y); ctx.lineTo(x + w / 2 - gate / 2, y);
+  ctx.moveTo(x + w / 2 + gate / 2, y); ctx.lineTo(x + w, y);
+  // 两侧
+  ctx.moveTo(x, y); ctx.lineTo(x, y + h);
+  ctx.moveTo(x + w, y); ctx.lineTo(x + w, y + h);
+  ctx.stroke();
+  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 8); ctx.lineTo(x + w / 2 - gate / 2, y + 8);
+  ctx.moveTo(x + w / 2 + gate / 2, y + 8); ctx.lineTo(x + w, y + 8);
+  ctx.stroke();
+  // 栅栏柱
+  ctx.fillStyle = '#b8905e';
+  for (let px = x; px <= x + w; px += Math.max(28, w / 6)) {
+    if (Math.abs(px - (x + w / 2)) < gate / 2) continue;
+    rr(ctx, px - 2.5, y - 8, 5, 18, 2); ctx.fill();
+  }
+}
+// 前半栅栏（底部，画在动物前面）
+function drawFenceFront(ctx, x, y, w) {
+  ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.stroke();
+  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, y + 8); ctx.lineTo(x + w, y + 8); ctx.stroke();
+  ctx.fillStyle = '#b8905e';
+  for (let px = x; px <= x + w; px += Math.max(28, w / 6)) {
+    rr(ctx, px - 2.5, y - 10, 5, 22, 2); ctx.fill();
+  }
+}
+
+// 鸡棚小窝
+function drawCoopHouse(ctx, x, y, t) {
+  drawShadow(ctx, x, y + 2, 34);
+  ctx.fillStyle = '#e8c88a'; // 木墙
+  rr(ctx, x - 30, y - 34, 60, 36, 5); ctx.fill();
+  ctx.strokeStyle = '#c9a86a'; ctx.lineWidth = 1.5;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath(); ctx.moveTo(x - 30, y - 34 + i * 9); ctx.lineTo(x + 30, y - 34 + i * 9); ctx.stroke();
+  }
+  ctx.fillStyle = '#e05252'; // 屋顶
+  ctx.beginPath();
+  ctx.moveTo(x - 36, y - 32); ctx.lineTo(x, y - 54); ctx.lineTo(x + 36, y - 32);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#5a3a1e'; // 圆门
+  ellipse(ctx, x, y - 12, 8, 10); ctx.fill();
+  ctx.fillStyle = '#f4d35e'; // 干草
+  ellipse(ctx, x, y - 5, 7, 3); ctx.fill();
+  // 牌子
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('🐔', x + 22, y - 40 + Math.sin(t * 2) * 1);
+}
+
+// 羊棚（草顶小棚）
+function drawSheepShed(ctx, x, y, t) {
+  drawShadow(ctx, x, y + 2, 44);
+  ctx.fillStyle = '#a57c4a'; // 立柱
+  rr(ctx, x - 38, y - 30, 6, 32, 2); ctx.fill();
+  rr(ctx, x + 32, y - 30, 6, 32, 2); ctx.fill();
+  ctx.fillStyle = '#f4d35e'; // 草顶
+  ctx.beginPath();
+  ctx.moveTo(x - 46, y - 28); ctx.quadraticCurveTo(x, y - 52 + Math.sin(t * 1.5) * 1, x + 46, y - 28);
+  ctx.lineTo(x + 40, y - 22); ctx.quadraticCurveTo(x, y - 42, x - 40, y - 22);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 1.5;
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath(); ctx.moveTo(x + i * 16, y - 30 - (2 - Math.abs(i)) * 4); ctx.lineTo(x + i * 16, y - 24); ctx.stroke();
+  }
+  ctx.fillStyle = '#f4d35e'; // 干草堆
+  ellipse(ctx, x - 18, y - 4, 12, 6); ctx.fill();
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('🐑', x + 24, y - 12 + Math.sin(t * 2) * 1);
+}
+
+// 牛棚（大红谷仓）
+function drawCowBarn(ctx, x, y, t) {
+  drawShadow(ctx, x, y + 2, 56);
+  ctx.fillStyle = '#d85a4a'; // 红墙
+  rr(ctx, x - 48, y - 50, 96, 52, 6); ctx.fill();
+  ctx.fillStyle = '#b84038'; // 屋顶
+  ctx.beginPath();
+  ctx.moveTo(x - 54, y - 48); ctx.lineTo(x, y - 78); ctx.lineTo(x + 54, y - 48);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#fff'; // 白色边框
+  rr(ctx, x - 54, y - 50, 108, 5, 2); ctx.fill();
+  ctx.fillStyle = '#8a2f28'; // 大门
+  rr(ctx, x - 16, y - 30, 32, 32, 3); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; // 门上 X
+  ctx.beginPath();
+  ctx.moveTo(x - 14, y - 28); ctx.lineTo(x + 14, y - 2);
+  ctx.moveTo(x + 14, y - 28); ctx.lineTo(x - 14, y - 2);
+  ctx.stroke();
+  ctx.fillStyle = '#fff3d6'; // 小圆窗
+  ellipse(ctx, x, y - 58, 7, 7); ctx.fill();
+  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
+  ellipse(ctx, x, y - 58, 7, 7); ctx.stroke();
+  ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('🐮', x + 34, y - 38 + Math.sin(t * 2) * 1);
 }
 
 /* ------------------------------------------------------------
@@ -638,8 +895,8 @@ function drawGroundItem(ctx, x, y, icon, t, phase) {
   drawShadow(ctx, x, y + 4, 8);
   ctx.font = '22px sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#222'; // 实色，避免继承透明 fillStyle 导致 emoji 变透明
   ctx.fillText(icon, x, y - 8 + bobY);
-  // 闪光
   const sp = (t * 1.5 + phase) % 2;
   if (sp < 0.6) {
     ctx.fillStyle = `rgba(255,255,180,${0.9 - sp})`;
