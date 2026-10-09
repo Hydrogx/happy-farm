@@ -2091,11 +2091,23 @@ function useRack() {
 // ---------------- 卖东西：找零钱小挑战（小学二年级难度） ----------------
 // 客人用整钱付款，小朋友要算「该找多少零钱」，答对才成交
 const MATH_TIME = 16;                    // 每题给 16 秒
+// 客人实际付的钱 = 基础价 × 1.5（和 resolveCustomerSale() 结算时完全一致）
+function salePriceOf(id) { return Math.round((ITEMS[id] ? ITEMS[id].price : 0) * 1.5); }
+// 挑一张「刚够付」的整钱，让找零好算：
+//   · 付款额一定是 5 / 10 / 50 / 100 这样的整钱（像真钞）
+//   · 找零是 5 的倍数（不会有零头），而且至少 5、最多 99
+// 例：梨子卖 24 → 给 50 找 26；苹果卖 18 → 给 20 找 2（太简单就换 50 找 32）
 function coinChoices(price) {
-  // 价格不可能大于 20，凑一个「整钱」付款额（5 / 10 / 20 / 50 / 100）
-  const pays = [5, 10, 20].filter(p => p > price);
-  const pay = pays.length ? pick(pays) : pick([20, 50, 100].filter(p => p > price));
-  return { pay, change: pay - price };
+  const step = price < 20 ? 5 : (price < 100 ? 10 : 50);
+  for (let k = 1; k <= 40; k++) {
+    const pay = price + k * step;                // 永远大于 price
+    const change = pay - price;
+    if (pay % 5 === 0 && change >= 5 && change <= 99 && change % 5 === 0) {
+      return { pay: pay, change: change };
+    }
+  }
+  const base = Math.ceil((price + 5) / 10) * 10;  // 兜底
+  return { pay: base, change: base - price };
 }
 // 生成四个选项：一个正确答案 + 三个贴近答案的错项
 function makeChoices(correct) {
@@ -2118,7 +2130,7 @@ function makeChoices(correct) {
   return set;
 }
 function openMathChallenge(c) {
-  const price = ITEMS[c.want].price;
+  const price = salePriceOf(c.want);          // 客人真正要付的钱
   const cc = coinChoices(price);
   G.math = {
     c: c, item: c.want, price: price, paid: cc.pay, change: cc.change,
@@ -2198,7 +2210,7 @@ function answerMath(v) {
     // 答对：成交，客人开开心心走了
     closeMathChallenge();
     if (!removeItem(c.want)) { sfx.error(); say('noSuchItem', { item: nm('item', c.want) }); return; }
-    const gain = Math.round(ITEMS[c.want].price * 1.5);
+    const gain = salePriceOf(c.want);          // 和题目里的成交价一致
     G.coins += gain; renderHUD();
     coinBurst(c.x, c.y - 30, gain);
     spawnParticles(c.x, c.y - 25, '💖', 6);
@@ -2234,7 +2246,7 @@ function mathTimeout() {
 // 客人等不及走了（没卖掉的那件东西不算）
 function resolveCustomerSale(c) {
   if (removeItem(c.want)) {
-    const gain = Math.round(ITEMS[c.want].price * 1.5);
+    const gain = salePriceOf(c.want);         // 和题目里的成交价一致
     G.coins += gain; renderHUD();
     coinBurst(c.x, c.y - 30, gain);
     c.state = 'leave'; c.happy = true;
@@ -4316,6 +4328,7 @@ window.__farm = {
   FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
   VEHICLES, VEHICLE_MAP, WALK_SPEED, useRack, mountVehicle, dismountVehicle,
   openMathChallenge, answerMath, renderMathChallenge, coinChoices, makeChoices, spawnCustomer,
+  salePriceOf, closeMathChallenge, mathTimeout,
   MATH_TIME, resolveCustomerSale,
   renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
