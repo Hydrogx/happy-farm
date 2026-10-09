@@ -601,3 +601,137 @@ body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助�
   .big-toast-title { font-size: 23px; }
   .big-toast-sub { font-size: 15px; }
 }
+
+/* ============================================================
+   设施升级 / 宠物房间 / 开放式衣帽间（新加的界面）
+   ============================================================ */
+
+/* ---------- 升级条：商店 / 厨房 / 水族箱 / 衣橱 / 宠物房间 顶部那一行 ---------- */
+.upgrade-strip {
+  width: 100%; display: flex; flex-wrap: wrap; gap: 8px;
+  align-items: center; justify-content: center;
+}
+.upgrade-strip:empty { display: none; }
+.upg-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff6d8; border: 3px solid #ffcf6a; border-radius: 14px;
+  padding: 6px 12px; font-size: 15px; font-weight: bold; color: #8a5a12;
+}
+.upg-chip .upg-lv { color: #c9750a; }
+.upg-chip button {
+  font-family: inherit; font-size: 15px; font-weight: bold; color: #fff;
+  background: #ff9f43; border: none; border-radius: 10px;
+  padding: 5px 12px; cursor: pointer; box-shadow: 0 3px 0 #d97b1e;
+}
+.upg-chip button:active { transform: translateY(2px); box-shadow: 0 1px 0 #d97b1e; }
+.upg-chip button:disabled { background: #ccc; box-shadow: 0 3px 0 #aaa; cursor: not-allowed; }
+.upg-chip.max { background: #eef9e8; border-color: #a8dd8f; color: #3f7a38; }
+
+/* ---------- 升级面板 ---------- */
+.upg-card {
+  width: 100%; background: #fffaf0; border: 3px solid #ffe3a3; border-radius: 16px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.upg-head { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: bold; color: #b8590f; }
+.upg-head .upg-icon { font-size: 30px; }
+.upg-tip { font-size: 15px; color: #8a7a52; }
+/* 三级进度：一级一个小箱子 */
+.upg-levels { display: flex; gap: 10px; flex-wrap: wrap; }
+.upg-lvbox {
+  flex: 1 1 150px; min-width: 130px; border-radius: 12px; padding: 8px 10px;
+  border: 3px dashed #d9c9a8; background: #fff; font-size: 14px; color: #9a8a6a;
+}
+.upg-lvbox.done { border-style: solid; border-color: #8fce6a; background: #f2fbe9; color: #3f7a38; }
+.upg-lvbox.now { border-style: solid; border-color: #ff9f43; background: #fff3e0; color: #b8590f; }
+.upg-lvbox b { display: block; font-size: 16px; margin-bottom: 3px; }
+.upg-area { font-size: 13px; color: #a8906a; margin-top: 4px; }
+.upg-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.upg-actions .big-btn { margin: 0; }
+.upg-short { font-size: 15px; color: #c0392b; font-weight: bold; }
+
+/* ---------- 宠物房间 ---------- */
+.pet-list { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.pet-card {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff8ee; border: 3px solid #ffd9a8; border-radius: 16px; padding: 10px 14px;
+}
+.pet-card.sad { border-color: #ff9a8a; background: #fff2ef; }
+.pet-avatar { font-size: 40px; width: 56px; text-align: center; }
+.pet-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.pet-name { font-size: 18px; font-weight: bold; color: #b8590f; }
+.pet-bars { display: flex; gap: 10px; flex-wrap: wrap; }
+.pet-bar { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #8a7a52; }
+.pet-track { width: 74px; height: 11px; background: #eee3d0; border-radius: 6px; overflow: hidden; }
+.pet-fill { height: 100%; border-radius: 6px; transition: width .25s; }
+.pet-fill.hunger { background: #ffb84d; }
+.pet-fill.clean { background: #5fb8e8; }
+.pet-need { font-size: 13px; color: #c0392b; font-weight: bold; }
+.pet-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.pet-btns button {
+  font-family: inherit; font-size: 14px; font-weight: bold; color: #fff;
+  background: #7ec96a; border: none; border-radius: 10px; padding: 6px 11px;
+  cursor: pointer; box-shadow: 0 3px 0 #5aa84f;
+}
+.pet-btns button.blue { background: #5fb8e8; box-shadow: 0 3px 0 #3f96c8; }
+.pet-btns button.pink { background: #ff9fc0; box-shadow: 0 3px 0 #e07ba0; }
+.pet-btns button:active { transform: translateY(2px); box-shadow: none; }
+.pet-btns button:disabled { background: #ccc; box-shadow: 0 3px 0 #aaa; cursor: not-allowed; }
+.pet-adopt { width: 100%; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* ---------- 开放式衣帽间 ---------- */
+.closet-card { max-width: 900px; }
+.closet-hint { font-size: 15px; color: #8a7a52; margin: 0; text-align: center; }
+.closet-scene {
+  width: 100%; display: flex; gap: 14px; align-items: stretch;
+  /* 木地板 + 背板：做出「走进衣帽间」的感觉 */
+  background:
+    repeating-linear-gradient(90deg, rgba(180,140,90,.16) 0 34px, rgba(180,140,90,.06) 34px 68px),
+    linear-gradient(180deg, #fff7e8 0%, #fdeed6 62%, #f0dcbc 62%, #e8d0a8 100%);
+  border: 4px solid #d9a066; border-radius: 18px; padding: 12px;
+}
+.closet-mirror {
+  flex: 0 0 172px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: linear-gradient(180deg, #f6fbff, #e6f3ff);
+  border: 4px solid #a8d0e8; border-radius: 50% 50% 14px 14px / 22% 22% 14px 14px;
+  padding: 10px 8px;
+}
+.closet-mirror-title { font-size: 14px; font-weight: bold; color: #3a7fbf; }
+.closet-mirror canvas { display: block; }
+.closet-mirror-name { font-size: 14px; font-weight: bold; color: #7a5a2a; }
+.closet-racks { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.closet-grid { position: relative; }
+/* 每一类衣服的「架子」稍微不一样：挂衣杆 / 层板 / 鞋架 / 抽屉 */
+.closet-grid.rail {
+  background: linear-gradient(180deg, transparent 0 12px, #c9a06a 12px 16px, transparent 16px 100%);
+}
+.closet-grid.shelf { background: linear-gradient(180deg, transparent 0 8px, #e0c090 8px 12px, transparent 12px 100%); }
+.closet-grid.shoerack { background: repeating-linear-gradient(180deg, transparent 0 22px, #e0c090 22px 25px); }
+.closet-grid.drawer { background: linear-gradient(180deg, transparent 0 6px, #d9b98a 6px 10px, transparent 10px 100%); }
+.closet-empty { grid-column: 1/-1; font-size: 15px; color: #a8906a; text-align: center; padding: 14px 0; }
+.closet-note { grid-column: 1/-1; font-size: 14px; color: #a8906a; text-align: center; }
+@media (max-width: 720px) {
+  .closet-scene { flex-direction: column; }
+  .closet-mirror { flex: none; }
+  .upg-chip { font-size: 13px; padding: 5px 9px; }
+  .upg-lvbox { flex: 1 1 100%; }
+  .pet-card { flex-wrap: wrap; }
+}
+
+/* ---------- 找零钱：算式 + 分步 ---------- */
+.math-expr {
+  font-size: 30px; font-weight: bold; color: #b8590f; letter-spacing: 2px;
+  background: #fff6d8; border: 3px solid #ffcf6a; border-radius: 14px;
+  padding: 8px 20px; margin: 2px 0 4px;
+}
+.math-expr .blank { color: #c0392b; }
+.math-steps { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.math-step {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #fffaf0; border: 3px solid #ffe3a3; border-radius: 14px; padding: 8px 12px;
+}
+.math-step .st-label { font-size: 14px; font-weight: bold; color: #8a7a52; min-width: 96px; }
+.math-step .st-expr { font-size: 22px; font-weight: bold; color: #b8590f; }
+.math-step.done { border-color: #8fce6a; background: #f2fbe9; }
+.math-step.done .st-expr { color: #3f7a38; }
+.math-step.active { border-color: #ff9f43; box-shadow: 0 0 0 3px rgba(255,159,67,.22); }
+.math-choices.small button { font-size: 20px; padding: 6px 14px; min-width: 66px; }

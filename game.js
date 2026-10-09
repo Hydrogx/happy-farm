@@ -232,7 +232,7 @@ const ANIMAL_SHOP = [
   { type: 'sheep',   name: '小绵羊', icon: '🐑', price: 320, desc: '能剪羊毛' },
   { type: 'cow',     name: '小奶牛', icon: '🐄', price: 650, desc: '能挤牛奶' },
 ];
-const MAX_ANIMALS = 24;
+// 非鸡类动物的总上限由「羊棚 + 牛棚」的等级决定：见 maxOtherAnimals()
 
 // ---------------- 交通工具（骑上以后走得快） ----------------
 const WALK_SPEED = 170;          // 走路速度（像素/秒）
@@ -302,6 +302,9 @@ const STR = {
     help11: '📦 卖货箱可以卖掉任何东西',
     help12: '🎡 商店还能买动物和庭院装饰，自己摆放！',
     help13: '🌧️ 下雨天水会自动浇好；💾 游戏会自动存档',
+    help16: '🔨 走到棚舍 / 果园 / 水坑旁的告示牌，按 E 就能「升级」——地方变大、能养更多、能买更多',
+    help17: '🐾 宠物房间要给宠物🍖喂食、🧹清理便便、🛁洗澡；升级房间能养更多只宠物',
+    help18: '👗 买到的裙子 / 头饰 / 鞋子会自动挂进「衣帽间」，点一下就能换上',
     shopTitle: '🛒 牧场商店', tabSeeds: '🌱 种子', tabClothes: '👕 服装',
     tabAnimals: '🐮 动物', tabDecor: '🎡 装饰', tabPet: '🐾 宠物装扮',
     btnLeaveShop: '离开商店',
@@ -471,6 +474,7 @@ const STR = {
     mathRight: '零钱算对啦：找了 {n} 金币 ✅',
     logCustomerLeftMath: '🧮 {name} 等太久，走了…（下次算快一点）',
     prCustomerMath: '把 {item} 卖给{name}（要算零钱）',
+    needMoreBasket: '客人要的是 {list}，先去收齐吧',
     // —— 交通工具 ——
     tabVehicles: '🛴 交通',
     prRide: '骑上{v}',
@@ -501,6 +505,92 @@ const STR = {
     saveInfo: '第 {day} 天 · 💰{coins} · 上次保存 {time}',
     switchLang: '切换中文 / English',
     saveTitle2: '自动存档', musicTitle: '背景音乐开关', muteTitle: '声音开关',
+    // —— 设施升级 ——
+    expandArea: '🔨 扩建预留区',
+    upgradeTitle: '🔨 升级设施',
+    upgNow: '现在是 {lv} 级',
+    upgNext: '升级后：{cap}',
+    upgMax: '已经是最高级啦 🎉',
+    upgBtn: '🔨 升级  💰{n}',
+    upgNoCoin: '金币不够，升级要 {n} 金币',
+    upgradeDone: '{fac} 升到 {lv} 级啦！',
+    logUpgrade: '🔨 {fac} 升到 {lv} 级',
+    upgradeHint: '升级以后地方变大，能养 / 能买的东西也更多！',
+    prUpgrade: '🔨 升级{fac}',
+    lvBadge: '⭐{lv} 级',
+    pondLocked: '这个水坑还没解锁，升级「水坑」就能来这里钓鱼',
+    // —— 商店 / 厨房 / 水族箱 / 衣橱 的升级入口 ——
+    upgFacility: '🔨 升级{fac}',
+    shopTierNote: '商店 {lv} 级 · 升级后能买到更多东西',
+    wdTierNote: '衣橱 {lv} 级 · 升级后开放更多服饰',
+    cookTierNote: '厨房 {lv} 级 · 升级后能做更多菜',
+    tankTierNote: '水族箱 {lv} 级 · 升级后能养更多鱼',
+    tierLocked: '🔒 升级后开放',
+    // —— 宠物房间 ——
+    petTitle: '🐾 宠物房间',
+    prPetRoom: '🐾 去宠物房间',
+    petRoomLv: '宠物房间 {lv} 级 · {cap}',
+    petHunger: '🍖 饱腹',
+    petClean: '🛁 清洁',
+    petPoop: '💩 便便 ×{n}',
+    petFeed: '🍖 喂食',
+    petBrush: '🧹 清理',
+    petBath: '🛁 洗澡',
+    petAdopt: '🐾 领养一只',
+    petFood: '宠物口粮',
+    petFoodDesc: '给宠物吃',
+    boughtPetFood: '买到 {n} 份宠物口粮 🍖',
+    petNoFood: '没有宠物口粮了，去商店买一些吧',
+    petFed: '{pet}吃得饱饱的 🍖',
+    petCleaned: '便便清理干净啦 🧹',
+    petBathed: '{pet}洗得香香的 🛁',
+    petFull: '宠物房间住满啦（最多 {max} 只），升级房间能多养几只',
+    petAdoptDone: '{pet}搬进宠物房间啦 🐾',
+    petNeedHungry: '肚子饿了',
+    petNeedPoop: '该清理便便了',
+    petNeedDirty: '该洗澡了',
+    petAllHappy: '宠物们都很开心 💖',
+    petRoomEmpty: '还没有宠物，去领养一只吧！',
+    petStatusOk: '开开心心 💖',
+    // —— 衣帽间 ——
+    closetTitle: '👗 我的衣帽间',
+    closetMirror: '🪞 试衣镜',
+    wtabHair: '🎀 头饰', wtabDress: '👗 裙子', wtabShoes: '👟 鞋子',
+    tabPetCare: '🍖 宠物用品',
+    shopSheepDesc: '会产羊毛 · 最多 {max} 只',
+    shopCowDesc: '会产牛奶 · 最多 {max} 头',
+    tooManySheep: '羊棚里已经有 {max} 只羊啦，先升级羊棚吧',
+    tooManyCows: '牛棚里已经有 {max} 头牛啦，先升级牛棚吧',
+    orchardShopHead: '果树园 {n}/{max} 棵（{lv} 级）· 买一棵就自动种进果园',
+    orchardFull: '果树园已经种满啦（最多 {max} 棵）',
+    saplingSuffix: '果树苗',
+    saplingDesc: '💰{n} · 种进果树园',
+    saplingSub: '过一会儿就会结果子啦',
+    plantSapling: '把{fruit}树种进果园啦！现在 {n}/{max} 棵 🌳',
+    closetHint: '买到的衣服会自动挂进衣帽间，点一下就能换上',
+    closetRail: '🧥 挂衣杆',
+    closetShelf: '🎩 帽子架',
+    closetHair: '🎀 头饰架',
+    closetDrawer: '👖 抽屉',
+    closetShoeRack: '👟 鞋架',
+    closetDress: '👗 裙子杆',
+    closetEmpty: '这里还空着，去商店买一些吧',
+    dressNote: '穿上裙子就不穿上衣和裤子啦',
+    boughtToCloset: '{name}已经挂进衣橱啦 👗',
+    tryOn: '试穿',
+    // —— 复数商品的找零 ——
+    mathAskMulti: '客人买了 {n} 个{item}（每个 {price} 金币），给了 {paid} 金币，要找他多少零钱？',
+    mathAskMix: '客人买了 {a}（{pa} 金币）和 {b}（{pb} 金币），给了 {paid} 金币，要找他多少零钱？',
+    mathStepTotal: '第一步 · 先算总价',
+    mathStepMul: '{price} × {n} = ?',
+    mathStepAdd: '{pa} + {pb} = ?',
+    mathStepChange: '第二步 · 再算找零',
+    mathStepSub: '{paid} − {total} = ?',
+    mathExpression: '列出算式',
+    mathNiceMul: '总价算对啦：{price} × {n} = {total} ✅',
+    mathNiceAdd: '总价算对啦：{pa} + {pb} = {total} ✅',
+    mathNiceSub: '找零算对啦：{paid} − {total} = {change} ✅',
+    mathStep2Now: '再算要找多少零钱吧',
   },
   en: {
     title: '🌈 Happy Little Farm',
@@ -525,6 +615,9 @@ const STR = {
     help11: '📦 The shipping bin buys anything you have',
     help12: '🎡 The shop also sells animals and yard decorations!',
     help13: '🌧️ Rain waters your crops; 💾 the game saves by itself',
+    help16: '🔨 Stand by a pen / orchard / pond sign and press E to UPGRADE — bigger area, more room, more goods',
+    help17: '🐾 At the pet room you can 🍖 feed, 🧹 clean up and 🛁 bathe your pet; upgrade it to keep more pets',
+    help18: '👗 Dresses, hair accessories and shoes you buy are hung up in the walk-in closet — tap to wear them',
     shopTitle: '🛒 Farm Shop', tabSeeds: '🌱 Seeds', tabClothes: '👕 Clothes',
     tabAnimals: '🐮 Animals', tabDecor: '🎡 Decor', tabPet: '🐾 Pet Hats',
     btnLeaveShop: 'Leave Shop',
@@ -689,6 +782,7 @@ const STR = {
     mathRight: 'Correct! You gave {n} coins change ✅',
     logCustomerLeftMath: '🧮 {name} waited too long and left… (be quicker next time)',
     prCustomerMath: 'Sell {item} to {name} (count the change)',
+    needMoreBasket: 'The customer wants {list} — go and collect it first',
     tabVehicles: '🛴 Rides',
     prRide: 'Ride the {v}',
     prPark: 'Park the {v}',
@@ -718,6 +812,92 @@ const STR = {
     saveInfo: 'Day {day} · 💰{coins} · saved {time}',
     switchLang: 'Switch 中文 / English',
     saveTitle2: 'Auto-save', musicTitle: 'Music on/off', muteTitle: 'Sound on/off',
+    // —— 设施升级 ——
+    expandArea: '🔨 Expansion space',
+    upgradeTitle: '🔨 Upgrade a building',
+    upgNow: 'Now level {lv}',
+    upgNext: 'After upgrade: {cap}',
+    upgMax: 'Already the top level 🎉',
+    upgBtn: '🔨 Upgrade  💰{n}',
+    upgNoCoin: 'Not enough coins — you need {n}',
+    upgradeDone: '{fac} is now level {lv}!',
+    logUpgrade: '🔨 {fac} upgraded to level {lv}',
+    upgradeHint: 'Upgrading makes the area bigger and lets you keep / buy more!',
+    prUpgrade: '🔨 Upgrade {fac}',
+    lvBadge: '⭐Lv.{lv}',
+    pondLocked: 'This pond is still locked — upgrade “Ponds” to fish here',
+    // —— 商店 / 厨房 / 水族箱 / 衣橱 的升级入口 ——
+    upgFacility: '🔨 Upgrade {fac}',
+    shopTierNote: 'Shop level {lv} · more goods unlock when you upgrade',
+    wdTierNote: 'Wardrobe level {lv} · unlock more clothes when you upgrade',
+    cookTierNote: 'Kitchen level {lv} · unlock more recipes when you upgrade',
+    tankTierNote: 'Aquarium level {lv} · unlock more fish space when you upgrade',
+    tierLocked: '🔒 Upgrade to unlock',
+    // —— 宠物房间 ——
+    petTitle: '🐾 Pet Room',
+    prPetRoom: '🐾 Visit the pet room',
+    petRoomLv: 'Pet room level {lv} · {cap}',
+    petHunger: '🍖 Fullness',
+    petClean: '🛁 Clean',
+    petPoop: '💩 Poop ×{n}',
+    petFeed: '🍖 Feed',
+    petBrush: '🧹 Clean up',
+    petBath: '🛁 Bathe',
+    petAdopt: '🐾 Adopt a pet',
+    petFood: 'Pet Food',
+    petFoodDesc: 'Feed your pet',
+    boughtPetFood: 'Bought {n} pet food 🍖',
+    petNoFood: 'No pet food left — buy some in the shop',
+    petFed: '{pet} is full 🍖',
+    petCleaned: 'All cleaned up 🧹',
+    petBathed: '{pet} smells lovely 🛁',
+    petFull: 'The pet room is full (max {max}) — upgrade it to keep more',
+    petAdoptDone: '{pet} moved into the pet room 🐾',
+    petNeedHungry: 'hungry',
+    petNeedPoop: 'needs cleanup',
+    petNeedDirty: 'needs a bath',
+    petAllHappy: 'All your pets are happy 💖',
+    petRoomEmpty: 'No pets yet — adopt one!',
+    petStatusOk: 'Happy 💖',
+    // —— 衣帽间 ——
+    closetTitle: '👗 My Walk-in Closet',
+    closetMirror: '🪞 Mirror',
+    wtabHair: '🎀 Hair', wtabDress: '👗 Dresses', wtabShoes: '👟 Shoes',
+    tabPetCare: '🍖 Pet Care',
+    shopSheepDesc: 'Gives wool · up to {max}',
+    shopCowDesc: 'Gives milk · up to {max}',
+    tooManySheep: 'The sheep pen already has {max} sheep — upgrade it first',
+    tooManyCows: 'The barn already has {max} cows — upgrade it first',
+    orchardShopHead: 'Orchard {n}/{max} trees (level {lv}) · a sapling is planted right away',
+    orchardFull: 'The orchard is full (max {max} trees)',
+    saplingSuffix: ' Sapling',
+    saplingDesc: '💰{n} · planted in the orchard',
+    saplingSub: 'It will bear fruit very soon',
+    plantSapling: 'Planted the {fruit} tree! Now {n}/{max} 🌳',
+    closetHint: 'Everything you buy is hung up here automatically — tap to wear it',
+    closetRail: '🧥 Hanging rail',
+    closetShelf: '🎩 Hat shelf',
+    closetHair: '🎀 Hair shelf',
+    closetDrawer: '👖 Drawer',
+    closetShoeRack: '👟 Shoe rack',
+    closetDress: '👗 Dress rail',
+    closetEmpty: 'Nothing here yet — buy some in the shop',
+    dressNote: 'Wearing a dress hides your top and pants',
+    boughtToCloset: '{name} is hanging in your closet 👗',
+    tryOn: 'Try on',
+    // —— 复数商品的找零 ——
+    mathAskMulti: 'The customer buys {n} × {item} ({price} coins each) and pays {paid} coins. How much change?',
+    mathAskMix: 'The customer buys {a} ({pa} coins) and {b} ({pb} coins), paying {paid} coins. How much change?',
+    mathStepTotal: 'Step 1 · total price',
+    mathStepMul: '{price} × {n} = ?',
+    mathStepAdd: '{pa} + {pb} = ?',
+    mathStepChange: 'Step 2 · change',
+    mathStepSub: '{paid} − {total} = ?',
+    mathExpression: 'Write the number sentence',
+    mathNiceMul: 'Great! {price} × {n} = {total} ✅',
+    mathNiceAdd: 'Great! {pa} + {pb} = {total} ✅',
+    mathNiceSub: 'And {paid} − {total} = {change} ✅',
+    mathStep2Now: 'Now work out the change',
   },
 };
 
@@ -775,6 +955,9 @@ function nm(cat, key) {
     default: return (OUTFITS[cat] && OUTFITS[cat][key] && OUTFITS[cat][key].name) || key;
   }
 }
+// translate 的小别名：render() 里有一个局部变量 `const t = G.t`（时间），
+// 会把全局的 t() 翻译函数遮住，所以 render 内部要用文字时走这个别名。
+function TXT(key, p) { return t(key, p); }
 // 翻译：t('key', {占位符: 值})
 function t(key, p) {
   const tbl = STR[lang] || STR.zh;
@@ -1329,11 +1512,9 @@ const ZOO_FACING = {
 const ZOO_FLY = { bee: 1, butterfly: 1, flamingo: 0, peacock: 0 };   // 会飞的（轻盈地飘）
 
 // ---------------- 鸡棚规则（母鸡 / 孵蛋 / 小鸡） ----------------
-const MAX_HENS = 5;              // 最多 5 只母鸡
-const MAX_CHICKS = 10;           // 最多 10 只小鸡
+// 母鸡 / 小鸡 / 孵蛋器的上限都由「鸡巢等级」决定：见 maxHens() / maxChicks() / maxIncubate()
 const HATCH_DAYS = 15;           // 鸡蛋放进孵蛋器，15 天（游戏内天数）后孵出小鸡
 const CHICK_GROW_DAYS = 30;      // 小鸡出生 30 天后长成母鸡
-const MAX_INCUBATE = 6;          // 孵蛋器最多同时放 6 个蛋
 const HEN_GROW = 1.15;           // 母鸡整体放大一点
 const CHICK_SCALE = 0.62;        // 小鸡小小一只
 
@@ -1343,6 +1524,7 @@ const FEED_PER_DAY = 1;          // 每只动物每天 1 份
 const FEED_MAX = 15;             // 每个食槽最多存 15 份（够 5 只动物吃 3 天）
 const UNFED_LIMIT = 3;           // 连续 3 天没饲料 → 饿跑
 const FEED_BUY_PRICE = 8;        // 商店里一份饲料的价格
+const SAPLING_PRICE = 130;       // 商店里一棵果树苗的价格（买回来直接种进果树园）
 const PET_SCALE = 1.3;           // 人物整体再放大一点
 const ANIMAL_SCALE = 1.3;        // 动物整体再放大一点
 // 食槽（放在各自棚舍里，走到旁边按 E 放饲料）
@@ -1439,11 +1621,16 @@ const G = {
   player: {
     x: 420, y: 500, dir: 'down', gender: 'boy',
     moving: false, walkPhase: 0, actionT: 0,
-    outfit: { hat: 'ragged', shirt: 'ragged', pants: 'ragged' },
+    // 一开始只有「破帽子 + 破衣服 + 破裤子」，鞋子是光脚，裙子不穿
+    outfit: { hat: 'ragged', hair: 'none', shirt: 'ragged', dress: 'none', pants: 'ragged', shoes: 'none' },
   },
-  owned: { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] },
-  pet: { type: 'dog', x: 380, y: 530, dir: 'right', moving: false, walkPhase: 0, phase: 0, hat: 'none', happy: 0 },
+  owned: { hat: ['ragged'], hair: [], shirt: ['ragged'], dress: [], pants: ['ragged'], shoes: [] },
+  // 宠物：一只宠物一条记录（宠物房间升级后可以多养几只）
+  pets: [],
   petHatsOwned: [],
+  // 设施等级：十个设施都是从这个初始值开始往上升
+  levels: { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 },
+  petFood: 2,             // 宠物口粮（宠物房间喂食用）
   vehicles: [],           // 已经买到的交通工具
   vehicle: null,          // 正在骑的那辆（null = 走路）
   math: null,             // 找零钱小挑战：{c, price, paid, change, choices, t, total}
@@ -1478,19 +1665,324 @@ const ZONES = {
   kitchen:  { x: 1120, y: 400, r: 55 },
   wardrobe: { x: 930,  y: 370, r: 55 },
   bin:      { x: 1020, y: 490, r: 55 },
-  stall:    { x: 1295, y: 300, r: 70 },
-  tank:     { x: 730, y: 470, r: 132 },
+  stall:    { x: 1295, y: 300, r: 78 },
+  tank:     { x: 700,  y: 520, r: 132 },  // 水族箱（升级后会变大，这里给出 3 级都够用的交互半径）
   rack:     { x: 545, y: 520, r: 86 },    // 停车架（骑上 / 停下交通工具）
-  hatchery: { x: 348, y: 742, r: 74 },    // 鸡棚里的孵蛋器
-  pond:     { x: 1300, y: 800, w: 280, h: 140 },
+  hatchery: { x: 250, y: 730, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡巢升级一起挪）
+  petroom:  { x: 780, y: 300, r: 96 },    // 宠物房间（门口）
+  orchard:  { x: 340, y: 96,  r: 84 },    // 果树园告示牌
+  pondSign: { x: 1180, y: 640, r: 78 },   // 水坑告示牌
 };
 
 // 动物棚舍区域（每种动物一个独立围栏）
+// 这里的值会被 applyLevels() 按当前等级覆写，所以只当「1 级的默认值」看
 const PENS = {
-  chicken: { x: 200, y: 700, w: 220, h: 150, home: { x: 310, y: 790, r: 75 } },
-  sheep:   { x: 520, y: 790, w: 240, h: 160, home: { x: 640, y: 885, r: 80 } },
-  cow:     { x: 840, y: 780, w: 260, h: 170, home: { x: 975, y: 880, r: 85 } },
+  chicken: { x: 120, y: 700, w: 200, h: 145, home: { x: 220, y: 800, r: 70 } },
+  sheep:   { x: 500, y: 730, w: 210, h: 145, home: { x: 605, y: 830, r: 72 } },
+  cow:     { x: 880, y: 720, w: 220, h: 150, home: { x: 990, y: 825, r: 75 } },
 };
+
+// ============================================================
+//                       设施升级系统
+// ------------------------------------------------------------
+// 十个设施各自 1~3 级。升级之后：
+//   ① 地图上的占地变大（每个等级的矩形都提前排好，互相不打架）
+//   ② 能容纳的动物 / 果树 / 鱼种 / 菜品 / 服饰变多
+//   ③ 商店里能买到的东西逐步开放
+// 地图上每一次扩建的位置都已经预留好了：1、2 级时还会用虚线画出「下次会扩到这里」。
+// ============================================================
+const MAX_LV = 3;
+
+// 每个设施的占地（按等级）。同一个设施三个等级的矩形**都在这里定死**，
+// 这样「升级以后变大」不会把邻居挤到水里或者压到别的建筑上。
+const PEN_RECTS = {
+  chicken: [
+    { x: 120, y: 700, w: 200, h: 145 },
+    { x: 110, y: 685, w: 270, h: 180 },
+    { x: 100, y: 670, w: 340, h: 215 },
+  ],
+  sheep: [
+    { x: 500, y: 730, w: 210, h: 145 },
+    { x: 490, y: 715, w: 280, h: 180 },
+    { x: 480, y: 700, w: 350, h: 215 },
+  ],
+  cow: [
+    { x: 880, y: 720, w: 220, h: 150 },
+    { x: 870, y: 705, w: 275, h: 185 },
+    { x: 860, y: 690, w: 290, h: 215 },
+  ],
+};
+const PEN_HOME = {
+  chicken: [
+    { x: 220, y: 800, r: 70 }, { x: 245, y: 810, r: 82 }, { x: 270, y: 820, r: 95 },
+  ],
+  sheep: [
+    { x: 605, y: 830, r: 72 }, { x: 630, y: 840, r: 84 }, { x: 655, y: 850, r: 97 },
+  ],
+  cow: [
+    { x: 990, y: 825, r: 75 }, { x: 1005, y: 835, r: 87 }, { x: 1005, y: 845, r: 99 },
+  ],
+};
+// 食槽跟着围栏一起挪（相对围栏左上角的偏移固定）
+const TROUGH_OFF = {
+  chicken: { x: 70, y: 62 }, sheep: { x: 46, y: 62 }, cow: { x: 46, y: 66 },
+};
+
+// 果树园：同样是三个等级三块地，13 个树坑按「先进先出」的顺序填充
+const ORCHARD_RECTS = [
+  { x: 80, y: 100, w: 320, h: 210 },
+  { x: 70, y: 95,  w: 450, h: 240 },
+  { x: 60, y: 90,  w: 550, h: 275 },
+];
+// 树坑顺序经过设计：前 2 个落在 1 级地里、前 6 个落在 2 级地里，全部 13 个落在 3 级地里
+const ORCHARD_SLOTS = [
+  { x: 150, y: 200 }, { x: 290, y: 200 },
+  { x: 150, y: 290 }, { x: 290, y: 290 }, { x: 430, y: 200 }, { x: 430, y: 290 },
+  { x: 100, y: 140 }, { x: 100, y: 340 }, { x: 240, y: 140 }, { x: 380, y: 140 },
+  { x: 520, y: 140 }, { x: 560, y: 230 }, { x: 560, y: 320 },
+];
+const ORCHARD_SIGN = [
+  { x: 348, y: 96 }, { x: 320, y: 92 }, { x: 300, y: 88 },
+];
+
+// 水坑：解锁等级 + 三个等级的尺寸（越大鱼越多、越值钱）
+const POND_SPEC = [
+  { id: 'small',  unlockLv: 1, x: 1330, y: 470,
+    sizes: [{ w: 112, h: 64 }, { w: 132, h: 76 }, { w: 152, h: 88 }] },
+  { id: 'medium', unlockLv: 2, x: 1430, y: 640,
+    sizes: [{ w: 130, h: 76 }, { w: 170, h: 100 }, { w: 212, h: 124 }] },
+  { id: 'large',  unlockLv: 3, x: 1330, y: 850,
+    sizes: [{ w: 180, h: 104 }, { w: 240, h: 140 }, { w: 300, h: 172 }] },
+];
+
+// 水族箱：三个等级的体积（画出来的玻璃箱尺寸）
+const TANK_SIZE = [{ w: 240, h: 118 }, { w: 300, h: 140 }, { w: 360, h: 164 }];
+// 商店摊位：升级后摊子变大、货架变多
+const STALL_SCALE = [1, 1.2, 1.45];
+
+// 宠物房间：三个等级的占地（房门在下方中间）
+const PETROOM_RECTS = [
+  { x: 700, y: 190, w: 170, h: 105 },
+  { x: 680, y: 165, w: 220, h: 140 },
+  { x: 655, y: 140, w: 270, h: 175 },
+];
+
+// 十个设施的等级表：费用 / 容量 / 说明
+const FACILITIES = {
+  coop: {
+    name: '鸡巢', nameEn: 'Chicken Coop', icon: '🐔',
+    tip: '母鸡和小鸡住的地方', tipEn: 'Home of the hens and chicks',
+    cost: [0, 150, 400],
+    cap: [{ hen: 3, chick: 4 }, { hen: 5, chick: 10 }, { hen: 8, chick: 16 }],
+    capText: [
+      ['母鸡 3 只 · 小鸡 4 只 · 孵蛋器 3 格', '3 hens · 4 chicks · 3 egg slots'],
+      ['母鸡 5 只 · 小鸡 10 只 · 孵蛋器 6 格', '5 hens · 10 chicks · 6 egg slots'],
+      ['母鸡 8 只 · 小鸡 16 只 · 孵蛋器 10 格', '8 hens · 16 chicks · 10 egg slots'],
+    ],
+    growText: ['围栏变大 →', 'Bigger fence →'],
+  },
+  sheep: {
+    name: '羊棚', nameEn: 'Sheep Pen', icon: '🐑',
+    tip: '养小羊、剪羊毛', tipEn: 'Raise lambs and shear wool',
+    cost: [0, 180, 450],
+    cap: [2, 4, 6],
+    capText: [['最多养 2 只羊', 'Up to 2 sheep'],
+              ['最多养 4 只羊', 'Up to 4 sheep'],
+              ['最多养 6 只羊', 'Up to 6 sheep']],
+    growText: ['羊棚变大 →', 'Bigger pen →'],
+  },
+  cow: {
+    name: '牛棚', nameEn: 'Cow Barn', icon: '🐄',
+    tip: '养奶牛、挤牛奶', tipEn: 'Raise cows and get milk',
+    cost: [0, 220, 550],
+    cap: [2, 4, 6],
+    capText: [['最多养 2 头牛', 'Up to 2 cows'],
+              ['最多养 4 头牛', 'Up to 4 cows'],
+              ['最多养 6 头牛', 'Up to 6 cows']],
+    growText: ['牛棚变大 →', 'Bigger barn →'],
+  },
+  orchard: {
+    name: '果树园', nameEn: 'Orchard', icon: '🍎',
+    tip: '种更多果树，结更多果子', tipEn: 'Plant more fruit trees',
+    cost: [0, 200, 500],
+    cap: [2, 6, 13],
+    capText: [['最多 2 棵果树', 'Up to 2 trees'],
+              ['最多 6 棵果树', 'Up to 6 trees'],
+              ['最多 13 棵果树', 'Up to 13 trees']],
+    growText: ['果园变大 →', 'Bigger orchard →'],
+  },
+  pond: {
+    name: '水坑', nameEn: 'Ponds', icon: '💧',
+    tip: '水坑越大，能钓到的鱼越多', tipEn: 'Bigger ponds, more fish',
+    cost: [0, 160, 420],
+    cap: [5, 10, 15],
+    capText: [['小水坑 · 能钓到 5 种', 'Small puddle · 5 species'],
+              ['+ 中水坑 · 能钓到 10 种', '+ medium pond · 10 species'],
+              ['+ 大水坑 · 能钓到 15 种', '+ large pond · 15 species']],
+    growText: ['水坑变大 →', 'Bigger ponds →'],
+  },
+  tank: {
+    name: '水族箱', nameEn: 'Aquarium', icon: '🐠',
+    tip: '把钓到的鱼养起来', tipEn: 'Keep the fish you catch',
+    cost: [0, 200, 520],
+    cap: [6, 12, 20],
+    capText: [['最多养 6 条鱼', 'Up to 6 fish'],
+              ['最多养 12 条鱼', 'Up to 12 fish'],
+              ['最多养 20 条鱼', 'Up to 20 fish']],
+    growText: ['水族箱变大 →', 'Bigger tank →'],
+  },
+  kitchen: {
+    name: '厨房', nameEn: 'Kitchen', icon: '🍳',
+    tip: '厨房越大，能做的菜越多', tipEn: 'Bigger kitchen, more recipes',
+    cost: [0, 240, 580],
+    cap: [6, 12, 18],
+    capText: [['能做 6 道菜', '6 recipes'],
+              ['能做 12 道菜', '12 recipes'],
+              ['能做全部 18 道菜', 'All 18 recipes']],
+    growText: ['灶台变大 →', 'Bigger stove →'],
+  },
+  wardrobe: {
+    name: '衣橱', nameEn: 'Wardrobe', icon: '👗',
+    tip: '衣橱越大，能买到的衣服越多', tipEn: 'Bigger closet, more clothes',
+    cost: [0, 180, 460],
+    cap: [1, 2, 3],
+    capText: [['开放「基础」服饰', 'Basic clothes unlocked'],
+              ['开放「漂亮」服饰', 'Pretty clothes unlocked'],
+              ['开放「华丽」服饰', 'Fancy clothes unlocked']],
+    growText: ['衣帽间变大 →', 'Bigger closet →'],
+  },
+  shop: {
+    name: '商店', nameEn: 'Shop', icon: '🛒',
+    tip: '商店越大，卖的东西越多', tipEn: 'Bigger shop, more goods',
+    cost: [0, 250, 600],
+    cap: [1, 2, 3],
+    capText: [['卖「基础」商品', 'Basic goods'],
+              ['开放「进阶」商品', 'Advanced goods unlocked'],
+              ['开放「高级」商品', 'Premium goods unlocked']],
+    growText: ['摊位变大 →', 'Bigger stall →'],
+  },
+  petroom: {
+    name: '宠物房间', nameEn: 'Pet Room', icon: '🐾',
+    tip: '给宠物喂食、清理便便、洗澡', tipEn: 'Feed, clean and bathe your pets',
+    cost: [0, 200, 500],
+    cap: [1, 2, 4],
+    capText: [['最多养 1 只宠物', 'Up to 1 pet'],
+              ['最多养 2 只宠物', 'Up to 2 pets'],
+              ['最多养 4 只宠物', 'Up to 4 pets']],
+    growText: ['宠物房变大 →', 'Bigger pet room →'],
+  },
+};
+const FACILITY_ORDER = ['coop', 'sheep', 'cow', 'orchard', 'pond', 'tank', 'kitchen', 'wardrobe', 'shop', 'petroom'];
+
+// 设施名字（中/英）
+function facName(f) { const d = FACILITIES[f]; return lang === 'en' ? d.nameEn : d.name; }
+function facTip(f) { const d = FACILITIES[f]; return lang === 'en' ? d.tipEn : d.tip; }
+function facCapText(f, lv) {
+  const d = FACILITIES[f];
+  return d.capText[Math.max(0, Math.min(2, (lv || 1) - 1))][lang === 'en' ? 1 : 0];
+}
+// 当前等级（没记录过就是 1 级）
+function lvOf(f) { return (G.levels && G.levels[f]) || 1; }
+function isMaxLv(f) { return lvOf(f) >= MAX_LV; }
+function upgradeCost(f) { if (isMaxLv(f)) return 0; return FACILITIES[f].cost[lvOf(f)]; }
+function canUpgradeFacility(f) { return !isMaxLv(f) && G.coins >= upgradeCost(f); }
+// 这个设施离下一级还差多少钱（升级面板上显示用）
+function upgradeShort(f) { return isMaxLv(f) ? 0 : Math.max(0, upgradeCost(f) - G.coins); }
+
+// 地图上的「升级告示牌」位置（画牌子和判断交互都用同一份，避免对不上）
+function upgradeSignSpots() {
+  return [
+    ['coop',    PENS.chicken.x + PENS.chicken.w / 2, PENS.chicken.y - 26, '🐔'],
+    ['sheep',   PENS.sheep.x + PENS.sheep.w / 2,     PENS.sheep.y - 26,   '🐑'],
+    ['cow',     PENS.cow.x + PENS.cow.w / 2,         PENS.cow.y - 26,     '🐄'],
+    ['orchard', ZONES.orchard.x, ZONES.orchard.y,                         '🍎'],
+    ['pond',    ZONES.pondSign.x, ZONES.pondSign.y,                       '💧'],
+  ];
+}
+
+// 容量查询：到处都用这几个函数，改等级就自动生效
+function maxHens() { return FACILITIES.coop.cap[lvOf('coop') - 1].hen; }
+function maxChicks() { return FACILITIES.coop.cap[lvOf('coop') - 1].chick; }
+function maxIncubate() { return [3, 6, 10][lvOf('coop') - 1]; }
+function maxSheep() { return FACILITIES.sheep.cap[lvOf('sheep') - 1]; }
+function maxCows() { return FACILITIES.cow.cap[lvOf('cow') - 1]; }
+function maxOtherAnimals() { return maxSheep() + maxCows(); }   // 非鸡类动物的总上限
+function maxOrchard() { return FACILITIES.orchard.cap[lvOf('orchard') - 1]; }
+function maxTank() { return FACILITIES.tank.cap[lvOf('tank') - 1]; }
+function tankSize() { return TANK_SIZE[lvOf('tank') - 1]; }
+function maxRecipes() { return FACILITIES.kitchen.cap[lvOf('kitchen') - 1]; }
+function maxPets() { return FACILITIES.petroom.cap[lvOf('petroom') - 1]; }
+function outfitTierMax() { return FACILITIES.wardrobe.cap[lvOf('wardrobe') - 1]; }
+function shopTierMax() { return FACILITIES.shop.cap[lvOf('shop') - 1]; }
+function pondUnlocked(p) { return lvOf('pond') >= p.unlockLv; }
+function unlockedPonds() { return PONDS.filter(pondUnlocked); }
+function orchardRect() { return ORCHARD_RECTS[lvOf('orchard') - 1]; }
+function orchardSign() { return ORCHARD_SIGN[lvOf('orchard') - 1]; }
+function penRect(type) { return PEN_RECTS[type][lvOf(FACILITY_OF_PEN[type]) - 1]; }
+function penHome(type) { return PEN_HOME[type][lvOf(FACILITY_OF_PEN[type]) - 1]; }
+function petRoomRect() { return PETROOM_RECTS[lvOf('petroom') - 1]; }
+const FACILITY_OF_PEN = { chicken: 'coop', sheep: 'sheep', cow: 'cow' };
+// 棚舍对应的设施 id（鸡巢 / 羊棚 / 牛棚）
+function facOfPen(type) { return FACILITY_OF_PEN[type]; }
+
+// 把当前等级「写进」各种数据结构里：
+// PENS / PONDS / ZONES / TROUGHS 会被就地改写，这样其它地方照旧读它们就行。
+function applyLevels() {
+  // ① 三种棚舍的围栏 + 小窝 + 食槽
+  for (const type of ['chicken', 'sheep', 'cow']) {
+    const r = penRect(type), h = penHome(type), pen = PENS[type];
+    pen.x = r.x; pen.y = r.y; pen.w = r.w; pen.h = r.h;
+    pen.home = { x: h.x, y: h.y, r: h.r };
+  }
+  const off = TROUGH_OFF;
+  const ct = troughOf('chicken'), st = troughOf('sheep'), wt = troughOf('cow');
+  if (ct) { ct.x = PENS.chicken.x + off.chicken.x; ct.y = PENS.chicken.y + off.chicken.y; }
+  if (st) { st.x = PENS.sheep.x + off.sheep.x;     st.y = PENS.sheep.y + off.sheep.y; }
+  if (wt) { wt.x = PENS.cow.x + off.cow.x;         wt.y = PENS.cow.y + off.cow.y; }
+  // 孵蛋器放在鸡巢里（跟着围栏走）
+  ZONES.hatchery.x = PENS.chicken.x + 130;
+  ZONES.hatchery.y = PENS.chicken.y + 30;
+  // ② 水坑的尺寸
+  const pl = lvOf('pond') - 1;
+  for (const p of PONDS) {
+    const spec = POND_SPEC.find(s => s.id === p.id);
+    if (!spec) continue;
+    const sz = spec.sizes[pl];
+    p.x = spec.x; p.y = spec.y; p.w = sz.w; p.h = sz.h;
+    p.unlockLv = spec.unlockLv;
+    p.locked = !pondUnlocked(p);
+  }
+  // ③ 果树园告示牌
+  const sg = orchardSign();
+  ZONES.orchard.x = sg.x; ZONES.orchard.y = sg.y;
+  // ④ 水族箱 / 宠物房间的交互半径跟着体积走一点
+  const ts = tankSize();
+  ZONES.tank.r = Math.max(120, ts.w / 2 + 8);
+  const pr = petRoomRect();
+  ZONES.petroom.x = pr.x + pr.w / 2;
+  ZONES.petroom.y = pr.y + pr.h + 6;
+  ZONES.petroom.r = Math.max(80, pr.w / 2);
+  // ⑤ 农场动物（按等级）出生 / 散步的活动范围
+  G.animalArea = { sheep: PENS.sheep, cow: PENS.cow, chicken: PENS.chicken };
+}
+
+// 升一级（扣钱、扩容、写日志、存档）
+function doUpgrade(f) {
+  if (!FACILITIES[f] || isMaxLv(f)) { sfx.error(); return false; }
+  const cost = upgradeCost(f);
+  if (G.coins < cost) { sfx.error(); say('upgradeNoCoin', { n: cost }); return false; }
+  G.coins -= cost;
+  G.levels[f] = lvOf(f) + 1;
+  applyLevels();
+  sfx.success(); sfx.till();
+  spawnParticles(G.player.x, G.player.y - 24, '✨', 10);
+  note('logUpgrade', { fac: facName(f), lv: lvOf(f) });
+  bigToast(FACILITIES[f].icon, t('upgradeDone', { fac: facName(f), lv: lvOf(f) }),
+           facCapText(f, lvOf(f)), 2800);
+  saveGame(true);
+  renderHUD();
+  return true;
+}
 
 // ---------------- 音效引擎（WebAudio 全合成，无外部音频文件） ----------------
 let AC = null, master = null, noiseBuf = null;
@@ -1737,45 +2229,33 @@ function initWorld() {
   for (let r = 0; r < 3; r++)
     for (let c = 0; c < 4; c++)
       G.plots.push({ x: 520 + c * 46, y: 620 + r * 46, state: 'grass', crop: null, stage: 0, watered: false, timer: 0 });
-  // 果树（5 种水果各一，集中在房子左侧）
-  const mkTree = (type, x, y) => ({ type, x, y, fruits: 3, timer: 0, phase: rand(0, 6) });
-  G.trees = [
-    mkTree('apple', 220, 180),
-    mkTree('orange', 400, 210),
-    mkTree('pear', 280, 360),
-    mkTree('peach', 470, 380),
-    mkTree('strawberry', 600, 250),
-    // 新增的果树（排在果园右侧那片空地）
-    mkTree('cherry', 180, 300),
-    mkTree('lemon', 350, 320),
-    mkTree('kiwi', 480, 300),
-    mkTree('melon', 250, 250),
-    mkTree('watermelon', 420, 130),
-    mkTree('grape', 560, 380),
-    mkTree('mango', 190, 460),
-    mkTree('pineapple', 320, 460),
-  ];
-  // 动物（各自住在自己的棚舍里）：一开始是 2 只母鸡 + 1 只小鸡
+  // 果树园：一开始只有 2 棵（苹果 + 橘子），其它树苗要去商店买
+  G.trees = [];
+  addOrchardTree('apple');
+  addOrchardTree('orange');
+  // 动物（各自住在自己的棚舍里）：一开始只有 1 只鸡 + 1 只羊 + 1 只牛
+  const ch = PENS.chicken.home, sp = PENS.sheep.home, cw = PENS.cow.home;
   G.animals = [
-    newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810),
-    newAnimal('chicken', 350, 770, 'chick'),
-    newAnimal('sheep', 600, 870), newAnimal('sheep', 690, 900),
-    newAnimal('cow', 970, 870),
+    newAnimal('chicken', ch.x - 26, ch.y + 10),
+    newAnimal('sheep', sp.x - 22, sp.y + 14),
+    newAnimal('cow', cw.x - 24, cw.y + 12),
   ];
   G.incubating = [];
-  // 装饰（避开建筑/田地/池塘/棚舍/果树/森林）
+  // 装饰（避开建筑/田地/池塘/棚舍/果树园/森林）——用的是「3 级时最大」的范围，
+  // 这样以后升级扩建时，草和花不会长到新围栏里面去
   const avoid = [
-    { x: 890, y: 90, w: 330, h: 460 },    // 房子区（近商店）
-    { x: 470, y: 570, w: 240, h: 190 },   // 田地
-    { x: 1170, y: 545, w: 250, h: 120 },  // 小水坑
-    { x: 1310, y: 640, w: 250, h: 135 },  // 中水坑
-    { x: 1140, y: 800, w: 340, h: 180 },  // 大水坑
-    { x: 1180, y: 190, w: 240, h: 180 },  // 摊位
-    { x: 190, y: 690, w: 240, h: 170 },   // 鸡棚
-    { x: 510, y: 780, w: 260, h: 180 },   // 羊棚
-    { x: 830, y: 770, w: 280, h: 190 },   // 牛棚
-    { x: 160, y: 120, w: 500, h: 320 },   // 果树区（房子左侧）
-    { x: 610, y: 345, w: 250, h: 140 },   // 水族箱
+    { x: 1180, y: 90, w: 300, h: 460 },   // 房子区（近商店）
+    { x: 460, y: 560, w: 290, h: 190 },   // 田地
+    { x: 1230, y: 400, w: 330, h: 140 },  // 小水坑
+    { x: 1300, y: 560, w: 260, h: 160 },  // 中水坑
+    { x: 1150, y: 750, w: 350, h: 200 },  // 大水坑
+    { x: 1190, y: 180, w: 250, h: 190 },  // 摊位
+    { x: 80,  y: 650, w: 380, h: 245 },   // 鸡巢（3 级最大范围）
+    { x: 460, y: 680, w: 390, h: 245 },   // 羊棚
+    { x: 840, y: 670, w: 330, h: 245 },   // 牛棚
+    { x: ORCHARD_RECTS[2].x, y: ORCHARD_RECTS[2].y, w: ORCHARD_RECTS[2].w, h: ORCHARD_RECTS[2].h }, // 果树园
+    { x: 620, y: 360, w: 340, h: 200 },   // 水族箱（水族箱在 700,520，玻璃箱往上延伸）
+    { x: 640, y: 130, w: 300, h: 200 },   // 宠物房间（3 级最大范围）
     { x: FOREST.x, y: FOREST.y, w: FOREST.w, h: FOREST.h },   // 森林
   ];
   const okSpot = (x, y) => !avoid.some(a => x > a.x - 20 && x < a.x + a.w + 20 && y > a.y - 20 && y < a.y + a.h + 20);
@@ -1790,6 +2270,29 @@ function initWorld() {
     G.decor.push({ kind: 'flower', x, y, phase: rand(0, 6), color: pick(['#ff8fb0', '#fff', '#c88ae8', '#ffb84d']) });
   }
 }
+
+// 果树园的树坑：第 i 个坑（i 从 0 开始）
+function orchardTree(type, i) {
+  const slot = ORCHARD_SLOTS[i];
+  if (!slot) return null;
+  return { type, x: slot.x, y: slot.y, fruits: 3, timer: 0, phase: rand(0, 6) };
+}
+// 往果树园里加一棵树（初始的 2 棵、商店买的树苗都用它）
+// 返回 null 表示果园满了或者位置不对
+function addOrchardTree(type) {
+  if (FRUIT_IDS.indexOf(type) < 0) return null;
+  if (G.trees.length >= maxOrchard()) return null;
+  const tr = orchardTree(type, G.trees.length);
+  if (!tr) return null;
+  G.trees.push(tr);
+  return tr;
+}
+// 果树苗商店里还没种下的水果种类
+function missingFruitTypes() {
+  const have = G.trees.map(t => t.type);
+  return FRUIT_IDS.filter(id => have.indexOf(id) < 0);
+}
+
 
 // 创建一只动物（初始动物和商店买的动物都用它）
 // stage: 'hen'（母鸡，会下蛋）/ 'chick'（小鸡，出生 5 天后长成母鸡）
@@ -1815,7 +2318,7 @@ function chickenSpot(r) {
 }
 // 孵蛋器里孵出一只小鸡（超过 10 只就不孵了）
 function spawnChick() {
-  if (countChicks() >= MAX_CHICKS) { note('logChicksFull', { max: MAX_CHICKS }); return null; }
+  if (countChicks() >= maxChicks()) { note('logChicksFull', { max: maxChicks() }); return null; }
   const sp = chickenSpot(46);
   const c = newAnimal('chicken', sp.x, sp.y, 'chick');
   G.animals.push(c);
@@ -1857,14 +2360,14 @@ function dailyChickenUpdate() {
     if (!isChick(a)) continue;
     a.growT++;
     if (a.growT >= CHICK_GROW_DAYS) {
-      if (countHens() < MAX_HENS) {
+      if (countHens() < maxHens()) {
         a.stage = 'hen'; a.growT = 0; a.eggT = rand(20, 45);
         spawnParticles(a.x, a.y - 18, '✨', 6);
         sfx.sparkle();
         note('logChickGrew');
       } else {
         a.growT = CHICK_GROW_DAYS;   // 保持原样，等母鸡位置空出来
-        note('logHensFull', { max: MAX_HENS });
+        note('logHensFull', { max: maxHens() });
       }
     }
   }
@@ -1873,7 +2376,7 @@ function dailyChickenUpdate() {
     const e = G.incubating[i];
     e.left--;
     if (e.left <= 0) {
-      if (countChicks() >= MAX_CHICKS) { e.left = 1; continue; }   // 小鸡满了，再等等
+      if (countChicks() >= maxChicks()) { e.left = 1; continue; }   // 小鸡满了，再等等
       G.incubating.splice(i, 1);
       const c = spawnChick();
       if (c) {
@@ -1885,7 +2388,7 @@ function dailyChickenUpdate() {
 }
 // 拿一个鸡蛋放进孵蛋器
 function putEggInHatchery() {
-  if (G.incubating.length >= MAX_INCUBATE) { sfx.error(); say('hatchFull', { max: MAX_INCUBATE }); return; }
+  if (G.incubating.length >= maxIncubate()) { sfx.error(); say('hatchFull', { max: maxIncubate() }); return; }
   if (!removeItem('egg')) { sfx.error(); say('noEggForHatch'); return; }
   G.incubating.push({ left: HATCH_DAYS });
   sfx.pop();
@@ -2043,11 +2546,14 @@ function saveGame(silent = true) {
     profile: { name: playerName },
     coins: G.coins, day: G.day, timeMin: G.timeMin, weather: G.weather,
     inventory: G.inventory, owned: G.owned, petHatsOwned: G.petHatsOwned,
+    levels: { ...G.levels },
+    petFood: G.petFood,
     player: {
       x: G.player.x, y: G.player.y, dir: G.player.dir,
       gender: G.player.gender, outfit: { ...G.player.outfit },
     },
-    pet: { type: G.pet.type, hat: G.pet.hat },
+    pets: G.pets.map(p => ({ type: p.type, hat: p.hat, hunger: p.hunger, poop: p.poop,
+                             clean: p.clean, x: p.x, y: p.y })),
     animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady,
                                    stage: a.stage, growT: a.growT, tired: a.tired })),
     troughs: TROUGHS.map(tr => ({ id: tr.id, feed: tr.feed, unfed: tr.unfed })),
@@ -2060,7 +2566,7 @@ function saveGame(silent = true) {
     items: G.groundItems.map(i => ({ id: i.id, x: i.x, y: i.y })),
     decorations: G.decorations.map(d => ({ id: d.id, x: d.x, y: d.y })),
     zoo: G.zoo.map(z => ({ type: z.type, x: z.x, y: z.y })),
-    tank: G.tank.slice(0, TANK_MAX),
+    tank: G.tank.slice(0, maxTank()),
     seaCaught: G.seaCaught,
     hive: { honey: HIVE.honey, honeyT: HIVE.honeyT },
     music: musicOn, muted,
@@ -2102,6 +2608,22 @@ function loadGame(name) {
     G.inventory = (d.inventory && typeof d.inventory === 'object') ? d.inventory : {};
     for (const k in G.inventory) if (!ITEMS[k] || !(G.inventory[k] > 0)) delete G.inventory[k];   // 丢掉旧版本残留物品
     G.owned = d.owned || { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
+    // 服饰分类多了头饰 / 裙子 / 鞋子三种，老存档按新结构补齐
+    for (const cat of ['hat', 'hair', 'shirt', 'dress', 'pants', 'shoes']) {
+      if (!Array.isArray(G.owned[cat])) G.owned[cat] = [];
+      G.owned[cat] = G.owned[cat].filter(k => OUTFITS[cat] && OUTFITS[cat][k]);
+    }
+    if (G.owned.hat.indexOf('ragged') < 0) G.owned.hat.push('ragged');
+    if (G.owned.shirt.indexOf('ragged') < 0) G.owned.shirt.push('ragged');
+    if (G.owned.pants.indexOf('ragged') < 0) G.owned.pants.push('ragged');
+    // 设施等级（老存档没有这个字段 → 全部按 1 级）
+    G.levels = {};
+    for (const f of FACILITY_ORDER) {
+      const v = d.levels && Number(d.levels[f]);
+      G.levels[f] = Number.isFinite(v) ? Math.max(1, Math.min(MAX_LV, Math.round(v))) : 1;
+    }
+    G.petFood = Number.isFinite(d.petFood) ? Math.max(0, Math.round(d.petFood)) : 2;
+    applyLevels();          // ★ 先把等级写进地图，后面恢复动物/果树坐标才对得上
     G.petHatsOwned = Array.isArray(d.petHatsOwned) ? d.petHatsOwned : [];
     G.vehicles = Array.isArray(d.vehicles) ? d.vehicles.filter(function (v) { return VEHICLE_MAP[v]; }) : [];
     G.vehicle = (d.vehicle && G.vehicles.indexOf(d.vehicle) >= 0) ? d.vehicle : null;
@@ -2111,18 +2633,29 @@ function loadGame(name) {
       G.player.dir = d.player.dir || 'down';
       G.player.gender = d.player.gender === 'girl' ? 'girl' : 'boy';
       if (d.player.outfit) {
+        const of = d.player.outfit;
         G.player.outfit = {
-          hat: OUTFITS.hat[d.player.outfit.hat] ? d.player.outfit.hat : 'ragged',
-          shirt: OUTFITS.shirt[d.player.outfit.shirt] ? d.player.outfit.shirt : 'ragged',
-          pants: OUTFITS.pants[d.player.outfit.pants] ? d.player.outfit.pants : 'ragged',
+          hat: OUTFITS.hat[of.hat] ? of.hat : 'ragged',
+          hair: (OUTFITS.hair && OUTFITS.hair[of.hair]) ? of.hair : 'none',
+          shirt: OUTFITS.shirt[of.shirt] ? of.shirt : 'ragged',
+          dress: (OUTFITS.dress && OUTFITS.dress[of.dress]) ? of.dress : 'none',
+          pants: OUTFITS.pants[of.pants] ? of.pants : 'ragged',
+          shoes: (OUTFITS.shoes && OUTFITS.shoes[of.shoes]) ? of.shoes : 'none',
         };
       }
     }
-    if (d.pet) {
-      G.pet.type = ['cat', 'duck', 'goose'].includes(d.pet.type) ? d.pet.type : 'dog';
-      G.pet.hat = (d.pet.hat && OUTFITS.hat[d.pet.hat]) ? d.pet.hat : 'none';
-      G.pet.x = G.player.x - 40; G.pet.y = G.player.y + 30;
-    }
+    // 宠物：新存档是数组；老存档只有一只，搬进来
+    G.pets = [];
+    const petSrc = Array.isArray(d.pets) ? d.pets : (d.pet ? [d.pet] : []);
+    petSrc.slice(0, maxPets()).forEach(function (sp, i) {
+      const p = newPet(sp.type, G.player.x - 40 - i * 34, G.player.y + 30 + i * 16);
+      p.hat = (sp.hat && OUTFITS.hat[sp.hat]) ? sp.hat : 'none';
+      if (Number.isFinite(sp.hunger)) p.hunger = Math.max(0, Math.min(100, sp.hunger));
+      if (Number.isFinite(sp.poop)) p.poop = Math.max(0, Math.min(3, Math.round(sp.poop)));
+      if (Number.isFinite(sp.clean)) p.clean = Math.max(0, Math.min(100, sp.clean));
+      G.pets.push(p);
+    });
+    if (!G.pets.length) G.pets.push(newPet(chosenPet, G.player.x - 40, G.player.y + 30));
     // 动物（老存档里的鸡都是成年母鸡；小鸡记录生长天数）
     if (Array.isArray(d.animals) && d.animals.length) {
       G.animals = d.animals.filter(a => a && PENS[a.type]).map(a => {
@@ -2135,7 +2668,10 @@ function loadGame(name) {
         na.tired = a.tired === true;
         return na;
       });
-      if (!G.animals.length) G.animals = [newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810)];
+      if (!G.animals.length) {
+        const h = PENS.chicken.home;
+        G.animals = [newAnimal('chicken', h.x, h.y)];
+      }
     }
     // 森林蘑菇（哪些被采走了）
     freshMushroom();
@@ -2151,7 +2687,7 @@ function loadGame(name) {
     }
     // 孵蛋器
     G.incubating = Array.isArray(d.incubating)
-      ? d.incubating.filter(e => e && Number.isFinite(e.left)).slice(0, MAX_INCUBATE)
+      ? d.incubating.filter(e => e && Number.isFinite(e.left)).slice(0, maxIncubate())
                     .map(e => ({ left: Math.max(1, Math.min(HATCH_DAYS, Math.round(e.left))) }))
       : [];
     // 蜂巢（森林里的蜂蜜）
@@ -2170,14 +2706,18 @@ function loadGame(name) {
         pl.watered = !!p.watered;
       });
     }
-    // 果树
-    if (Array.isArray(d.trees)) {
-      d.trees.forEach((t, i) => {
-        const tr = G.trees[i];
-        if (!tr || !t) return;
+    // 果树：按存档里的顺序重新落到果树园的树坑里（升级后树坑变多）
+    if (Array.isArray(d.trees) && d.trees.length) {
+      G.trees = [];
+      d.trees.slice(0, maxOrchard()).forEach(function (t) {
+        if (!t || FRUIT_IDS.indexOf(t.type) < 0) return;
+        const tr = orchardTree(t.type, G.trees.length);
+        if (!tr) return;
         tr.fruits = Number.isFinite(t.fruits) ? Math.max(0, Math.min(3, t.fruits)) : tr.fruits;
         tr.timer = Number.isFinite(t.timer) ? t.timer : 0;
+        G.trees.push(tr);
       });
+      if (!G.trees.length) G.trees.push(orchardTree('apple', 0));
     }
     // 地上的物品
     G.groundItems = Array.isArray(d.items)
@@ -2190,7 +2730,7 @@ function loadGame(name) {
                    .map(z => newZoo(z.type, z.x, z.y));
     }
     // 水族箱（只收鱼类/海洋生物，最多 20）
-    G.tank = Array.isArray(d.tank) ? d.tank.filter(id => SEA_SET[id]).slice(0, TANK_MAX) : [];
+    G.tank = Array.isArray(d.tank) ? d.tank.filter(id => SEA_SET[id]).slice(0, maxTank()) : [];
     // 钓鱼图鉴
     G.seaCaught = (d.seaCaught && typeof d.seaCaught === 'object') ? d.seaCaught : {};
     for (const k in G.seaCaught) if (!ITEMS[k]) delete G.seaCaught[k];
@@ -2223,14 +2763,18 @@ function flashSaveIcon() {
 function resetGame() {
   G.coins = 20; G.day = 1; G.timeMin = DAY_START; G.weather = 'sunny';
   G.inventory = { seed_carrot: 2 };
-  G.owned = { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
+  // 一开始只有「破帽子 + 破衣服 + 破裤子」，头饰 / 裙子 / 鞋子都还没有
+  G.owned = { hat: ['ragged'], hair: [], shirt: ['ragged'], dress: [], pants: ['ragged'], shoes: [] };
   G.petHatsOwned = [];
   G.vehicles = []; G.vehicle = null;
+  // 十个设施全部从 1 级开始
+  G.levels = { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 };
+  G.petFood = 2;
   G.player.x = 420; G.player.y = 500; G.player.dir = 'down';
   G.player.gender = chosenGender;
-  G.player.outfit = { hat: 'ragged', shirt: 'ragged', pants: 'ragged' };
-  G.pet.type = chosenPet; G.pet.hat = 'none'; G.pet.happy = 0;
-  G.pet.x = 380; G.pet.y = 530;
+  G.player.outfit = { hat: 'ragged', hair: 'none', shirt: 'ragged', dress: 'none', pants: 'ragged', shoes: 'none' };
+  // 一只初始宠物
+  G.pets = [newPet(chosenPet, 380, 530)];
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = []; G.incubating = [];
   TROUGHS.forEach(tr => { tr.feed = 8; tr.unfed = 0; });
@@ -2239,6 +2783,7 @@ function resetGame() {
   HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
   G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
+  applyLevels();          // ★ 先把等级写进地图（围栏/水坑/水族箱尺寸）
   initWorld();
   renderInventory(); renderHUD();
 }
@@ -2295,36 +2840,41 @@ function useRack() {
 }
 
 // ---------------- 卖东西：找零钱小挑战（小学二年级难度） ----------------
-// 客人用整钱付款，小朋友要算「该找多少零钱」，答对才成交
-const MATH_TIME = 16;                    // 每题给 16 秒
+// 客人可能一次买**好几件**东西（比如「2 个苹果」或者「1 个苹果 + 1 个鸡蛋」），
+// 流程和老师教的一样：
+//   ① 先把算式写出来 —— 屏幕上给出完整的算式，比如 `100 − 38 × 2 = ?`
+//   ② 再一步一步算 —— 先算总价（乘 / 加），再算找零（减）
+// 每一步答对才进入下一步，全部答对才成交。
+const MATH_TIME = 26;                    // 两步题给 26 秒
 // 客人实际付的钱 = 基础价 × 1.5（和 resolveCustomerSale() 结算时完全一致）
 function salePriceOf(id) { return Math.round((ITEMS[id] ? ITEMS[id].price : 0) * 1.5); }
-// 挑一张「刚够付」的整钱，让找零好算：
-//   · 付款额一定是 5 / 10 / 50 / 100 这样的整钱（像真钞）
-//   · 找零是 5 的倍数（不会有零头），而且至少 5、最多 99
-// 例：梨子卖 24 → 给 50 找 26；苹果卖 18 → 给 20 找 2（太简单就换 50 找 32）
+
+// 购物篮：{ items: [{id, qty}], total }
+function basketTotal(items) {
+  return items.reduce(function (s, it) { return s + salePriceOf(it.id) * it.qty; }, 0);
+}
+// 挑一张「刚够付」的整钱：付款额一定是 5 的倍数，找零至少 5、最多 99
 function coinChoices(price) {
   const step = price < 20 ? 5 : (price < 100 ? 10 : 50);
   for (let k = 1; k <= 40; k++) {
-    const pay = price + k * step;                // 永远大于 price
+    const pay = price + k * step;
     const change = pay - price;
     if (pay % 5 === 0 && change >= 5 && change <= 99 && change % 5 === 0) {
       return { pay: pay, change: change };
     }
   }
-  const base = Math.ceil((price + 5) / 10) * 10;  // 兜底
+  const base = Math.ceil((price + 5) / 10) * 10;
   return { pay: base, change: base - price };
 }
 // 生成四个选项：一个正确答案 + 三个贴近答案的错项
 function makeChoices(correct) {
   const set = [correct];
-  const near = [1, 2, 5, 10, 3, 4, 20];
+  const near = [1, 2, 5, 10, 3, 4, 20, 6, 8];
   const cand = [];
   for (let i = 0; i < near.length; i++) {
     cand.push(correct + near[i]);
     if (correct - near[i] > 0) cand.push(correct - near[i]);
   }
-  // 打乱候选，挑三个不重复、不为负的
   cand.sort(function () { return Math.random() - 0.5; });
   for (let i = 0; i < cand.length && set.length < 4; i++) {
     const v = cand[i];
@@ -2335,13 +2885,53 @@ function makeChoices(correct) {
   set.sort(function () { return Math.random() - 0.5; });
   return set;
 }
+
+// 把购物篮翻译成「算式 + 分步」。
+//   1 件 × n 个 ： 100 − 38 × 2 = ?   → 第一步 38×2，第二步 100−76
+//   2 件各 1 个 ： 100 − (24 + 15) = ? → 第一步 24+15，第二步 100−39
+//   1 件 × 1 个 ： 50 − 24 = ?         → 只有一步 50−24
+function buildMathSteps(items, total, paid) {
+  const steps = [];
+  if (items.length === 1 && items[0].qty > 1) {
+    const it = items[0], unit = salePriceOf(it.id);
+    steps.push({ kind: 'mul', expr: unit + ' × ' + it.qty, plain: unit + ' × ' + it.qty,
+                 answer: unit * it.qty, choices: makeChoices(unit * it.qty) });
+  } else if (items.length > 1) {
+    const a = salePriceOf(items[0].id), b = salePriceOf(items[1].id);
+    steps.push({ kind: 'add', expr: a + ' + ' + b, plain: a + ' + ' + b,
+                 answer: a + b, choices: makeChoices(a + b) });
+  }
+  const sub = { kind: 'sub', expr: paid + ' − ' + total, plain: paid + ' − ' + total,
+                answer: paid - total, choices: makeChoices(paid - total) };
+  steps.push(sub);
+  return steps;
+}
+// 完整算式的字符串（第一步的结果先留着空位）
+function mathExpressionText(m) {
+  const items = m.items || [{ id: m.item, qty: 1 }];
+  if (items.length === 1 && items[0].qty > 1) {
+    return m.paid + ' − ' + salePriceOf(items[0].id) + ' × ' + items[0].qty + ' = ?';
+  }
+  if (items.length > 1) {
+    const parts = items.map(it => salePriceOf(it.id) + (it.qty > 1 ? ' × ' + it.qty : ''));
+    return m.paid + ' − (' + parts.join(' + ') + ') = ?';
+  }
+  return m.paid + ' − ' + salePriceOf(items[0].id) + ' = ?';
+}
 function openMathChallenge(c) {
-  const price = salePriceOf(c.want);          // 客人真正要付的钱
-  const cc = coinChoices(price);
+  const items = (c.items && c.items.length) ? c.items.map(it => ({ id: it.id, qty: it.qty }))
+                                            : [{ id: c.want, qty: 1 }];
+  const total = basketTotal(items);
+  const cc = coinChoices(total);
+  const steps = buildMathSteps(items, total, cc.pay);
   G.math = {
-    c: c, item: c.want, price: price, paid: cc.pay, change: cc.change,
-    choices: makeChoices(cc.change), t: MATH_TIME,
-    payLabel: t('coinUnit', { n: cc.pay }),   // 用「50 金币」这种说法
+    c: c, item: items[0].id, items: items,
+    price: items.length === 1 ? salePriceOf(items[0].id) : total,
+    total: total, paid: cc.pay, change: cc.change,
+    steps: steps, step: 0,
+    choices: steps[0].choices,
+    t: MATH_TIME,
+    payLabel: t('coinUnit', { n: cc.pay }),
   };
   G.modalOpen = 'math-modal';
   renderMathChallenge();
@@ -2359,9 +2949,40 @@ function renderMathChallenge() {
   const q = $('math-question'), box = $('math-choices'), info = $('math-info'), bar = $('math-bar');
   if (!q || !box || !G.math) return;
   const m = G.math;
-  q.innerHTML = t('mathAsk', { item: nm('item', m.item), price: m.price, paid: m.paid });
-  if (info) info.innerHTML = numberLineHTML(m.price, m.paid);
+  // 题目：把「买了几件、每件多少钱、给了多少」讲清楚
+  if (m.items.length > 1) {
+    q.innerHTML = t('mathAskMix', {
+      a: nm('item', m.items[0].id) + '×' + m.items[0].qty,
+      pa: salePriceOf(m.items[0].id),
+      b: nm('item', m.items[1].id) + '×' + m.items[1].qty,
+      pb: salePriceOf(m.items[1].id),
+      paid: m.paid,
+    });
+  } else if (m.items[0].qty > 1) {
+    q.innerHTML = t('mathAskMulti', {
+      n: m.items[0].qty, item: nm('item', m.items[0].id),
+      price: salePriceOf(m.items[0].id), paid: m.paid,
+    });
+  } else {
+    q.innerHTML = t('mathAsk', { item: nm('item', m.item), price: m.price, paid: m.paid });
+  }
+  // 算式 + 分步（数轴留作直观辅助）
+  const step = m.steps[m.step];
+  const stepHtml = m.steps.map(function (s, i) {
+    const cls = i < m.step ? 'done' : i === m.step ? 'active' : '';
+    const shown = i < m.step ? (s.expr + ' = ' + s.answer) : (s.expr + ' = ?');
+    const label = i < m.steps.length - 1 ? t('mathStepTotal') : t('mathStepChange');
+    return '<div class="math-step ' + cls + '"><span class="st-label">' + label +
+           '</span><span class="st-expr">' + shown + '</span></div>';
+  }).join('');
+  if (info) {
+    info.innerHTML =
+      '<div class="math-expr">' + mathExpressionText(m) + '</div>' +
+      '<div class="math-steps">' + stepHtml + '</div>' +
+      numberLineHTML(m.step === 0 ? 0 : m.total, m.paid);
+  }
   box.innerHTML = '';
+  box.classList.add('small');
   m.choices.forEach(function (v) {
     const b = document.createElement('button');
     b.className = 'math-choice';
@@ -2369,14 +2990,16 @@ function renderMathChallenge() {
     b.onclick = function () { answerMath(v); };
     box.appendChild(b);
   });
+  if (m.step === 0 && m.steps.length > 1) box.classList.add('small');
   if (bar) bar.style.width = '100%';
 }
-// 数轴：把「价格」和「付的钱」标在一条线上，小朋友一眼看出要往前跳多少
+// 数轴：把「已经算出来的总价」和「付的钱」标在一条线上，一眼看出要往前跳多少
 function numberLineHTML(price, paid) {
   const max = Math.max(paid, price) + 5;
   const pPct = (price / max) * 100, dPct = (paid / max) * 100;
   let ticks = '';
-  for (let v = 0; v <= max; v += 5) {
+  const stepV = max <= 60 ? 5 : 10;
+  for (let v = 0; v <= max; v += stepV) {
     const pct = (v / max) * 100;
     ticks += '<span class="nl-tick" style="left:' + pct + '%"></span>' +
              '<span class="nl-label" style="left:' + pct + '%">' + v + '</span>';
@@ -2396,7 +3019,7 @@ function numberLineHTML(price, paid) {
 function coinHTML(n) {
   let left = n, out = '';
   const coins = [[10, '#ffd23e', '#d9a62e', '10'], [5, '#ffb84d', '#e09a2f', '5'], [1, '#e8d9b0', '#c9a86a', '1']];
-  const MAX = 6;                        // 最多画 6 枚，剩下用数字表示
+  const MAX = 6;
   let drawn = 0;
   for (let i = 0; i < coins.length; i++) {
     const [val, fill, edge, label] = coins[i];
@@ -2408,27 +3031,37 @@ function coinHTML(n) {
   if (left > 0) out += '<i class="coin more">+' + left + '</i>';
   return out;
 }
+// 客人到底要买哪些东西（成交 / 离开时都要按这个扣货）
+function basketOf(c) {
+  return (c.items && c.items.length) ? c.items : [{ id: c.want, qty: 1 }];
+}
+function canFulfillBasket(c) {
+  const b = basketOf(c);
+  return b.every(function (it) { return (G.inventory[it.id] || 0) >= it.qty; });
+}
+// 还差哪些东西（客人点单了、小朋友还没收齐的时候提示用）
+function basketMissing(c) {
+  const b = basketOf(c);
+  const miss = [];
+  b.forEach(function (it) {
+    const have = G.inventory[it.id] || 0;
+    if (have < it.qty) miss.push(nm('item', it.id) + ' ' + have + '/' + it.qty);
+  });
+  return miss.join('、');
+}
+function takeBasket(c) {
+  const b = basketOf(c);
+  if (!canFulfillBasket(c)) return false;
+  b.forEach(function (it) { removeItem(it.id, it.qty); });
+  return true;
+}
+// 一步一步答题：第一步答对 → 进入第二步；第二步答对 → 成交
 function answerMath(v) {
   const m = G.math;
   if (!m) return;
   const c = m.c;
-  if (v === m.change) {
-    // 答对：成交，客人开开心心走了
-    closeMathChallenge();
-    if (!removeItem(c.want)) { sfx.error(); say('noSuchItem', { item: nm('item', c.want) }); return; }
-    const gain = salePriceOf(c.want);          // 和题目里的成交价一致
-    G.coins += gain; renderHUD();
-    coinBurst(c.x, c.y - 30, gain);
-    spawnParticles(c.x, c.y - 25, '💖', 6);
-    c.state = 'leave'; c.happy = true;
-    sfx.happy(); sfx.coin();
-    const msg = t('logSoldCustomer', { item: nm('item', c.want), name: custName(c), n: gain });
-    toast(msg, 2200);
-    addLog(msg);
-    addLog(t('mathRight', { n: m.change }));
-    saveGame(true);
-  } else {
-    // 答错：再给一次机会，时间也在走
+  const step = m.steps[m.step];
+  if (v !== step.answer) {
     sfx.error();
     const box = $('math-choices');
     if (box) {
@@ -2436,7 +3069,42 @@ function answerMath(v) {
       setTimeout(function () { box.classList.remove('shake'); }, 420);
     }
     toast(t('mathWrong'), 1500);
+    return;
   }
+  // 这一步对了
+  sfx.coin();
+  if (m.step < m.steps.length - 1) {
+    // 还有下一步（先算总价，再算找零）
+    addLog(step.kind === 'mul' ? t('mathNiceMul', { price: salePriceOf(m.items[0].id), n: m.items[0].qty, total: step.answer })
+         : step.kind === 'add' ? t('mathNiceAdd', { pa: salePriceOf(m.items[0].id), pb: salePriceOf(m.items[1].id), total: step.answer })
+         : '');
+    m.step++;
+    m.choices = m.steps[m.step].choices;
+    renderMathChallenge();
+    toast(t('mathStep2Now'), 1400);
+    return;
+  }
+  // 全部算对：成交
+  closeMathChallenge();
+  if (!takeBasket(c)) { sfx.error(); say('noSuchItem', { item: nm('item', c.want) }); return; }
+  const gain = m.total;                       // 和题目里的成交价完全一致
+  G.coins += gain; renderHUD();
+  coinBurst(c.x, c.y - 30, gain);
+  spawnParticles(c.x, c.y - 25, '💖', 6);
+  c.state = 'leave'; c.happy = true;
+  sfx.happy(); sfx.coin();
+  const msg = t('logSoldCustomer', { item: basketLabel(c), name: custName(c), n: gain });
+  toast(msg, 2200);
+  addLog(msg);
+  addLog(t('mathNiceSub', { paid: m.paid, total: m.total, change: m.change }));
+  saveGame(true);
+}
+// 「2 个苹果」/「苹果 + 鸡蛋」这种购物清单的说法
+function basketLabel(c) {
+  const b = basketOf(c);
+  return b.map(function (it) {
+    return nm('item', it.id) + (it.qty > 1 ? '×' + it.qty : '');
+  }).join(' + ');
 }
 // 时间到 = 客人等太久，走了
 function mathTimeout() {
@@ -2449,19 +3117,47 @@ function mathTimeout() {
   sfx.sad();
   say('logCustomerLeftMath', { name: custName(c) }, 2400);
 }
-// 客人等不及走了（没卖掉的那件东西不算）
+// 客人等不及走了（没卖掉的东西不算）
 function resolveCustomerSale(c) {
-  if (removeItem(c.want)) {
-    const gain = salePriceOf(c.want);         // 和题目里的成交价一致
+  if (takeBasket(c)) {
+    const gain = basketTotal(basketOf(c));
     G.coins += gain; renderHUD();
     coinBurst(c.x, c.y - 30, gain);
     c.state = 'leave'; c.happy = true;
   }
 }
 
+// ---------------- 宠物房间：宠物模型 ----------------
+// 一只宠物有「饱腹度 / 便便数 / 清洁度」三个需要照顾的指标。
+// 宠物房间 1 级只能养 1 只，升级后能养 2 只、4 只。
+function newPet(type, x, y) {
+  return {
+    type: (type === 'cat' || type === 'duck' || type === 'goose') ? type : 'dog',
+    x, y, dir: 'right', moving: false, walkPhase: 0, phase: rand(0, 6),
+    hat: 'none', happy: 0, mood: 0,
+    hunger: 65,          // 0~100：越低越饿
+    poop: 0,             // 0~3：地上的便便
+    clean: 100,          // 0~100：越低越脏
+    poopT: rand(40, 80), // 下一次拉便便的倒计时（秒）
+    sadT: 0,
+  };
+}
+// 这只宠物现在最需要什么（给提示和头顶小图标用）
+function petNeed(p) {
+  if (p.hunger <= 25) return 'hungry';
+  if (p.poop >= 2) return 'poop';
+  if (p.clean <= 35) return 'dirty';
+  return null;
+}
+function petNeedIcon(p) {
+  const n = petNeed(p);
+  return n === 'hungry' ? '🍖' : n === 'poop' ? '💩' : n === 'dirty' ? '🛁' : null;
+}
+function petIsSad(p) { return petNeed(p) !== null; }
+
 // 宠物的名字（狗 / 猫 / 鸭 / 鹅）
-function petName() {
-  const ty = G.pet.type;
+function petName(p) {
+  const ty = (p && p.type) || (G.pets[0] && G.pets[0].type) || 'dog';
   if (ty === 'dog') return t('dog');
   if (ty === 'cat') return t('cat');
   if (ty === 'goose') return t('petGoose');
@@ -2476,11 +3172,13 @@ function setGender(g) {
   saveGame(true); renderWardrobe();
 }
 function setPet(type) {
-  G.pet.type = ['cat', 'duck', 'goose'].includes(type) ? type : 'dog';
-  G.pet.happy = 3;
-  sfx.petVoice(G.pet.type);
-  spawnParticles(G.pet.x, G.pet.y - 20, '💖', 5);
-  say('petSwitched', { pet: petName() }, 2200, false, { icon: '🐾', sub: t('petSwitchSub') });
+  const p = G.pets[0];
+  if (!p) return;
+  p.type = ['cat', 'duck', 'goose'].includes(type) ? type : 'dog';
+  p.happy = 3;
+  sfx.petVoice(p.type);
+  spawnParticles(p.x, p.y - 20, '💖', 5);
+  say('petSwitched', { pet: petName(p) }, 2200, false, { icon: '🐾', sub: t('petSwitchSub') });
   saveGame(true); renderWardrobe();
 }
 
@@ -2771,6 +3469,265 @@ function playerTyping() {
 
 // ---------------- 商店 ----------------
 let shopTab = 'seeds';
+
+// ============================================================
+//                    设施升级界面
+// ============================================================
+// 每个可以升级的「面板」（商店 / 厨房 / 水族箱 / 衣橱 / 宠物房间）顶部都有
+// 一条升级条：显示现在的等级、现在的容量，以及一颗「升级」按钮。
+function renderUpgradeStrip(el, f) {
+  if (!el) return;
+  el.innerHTML = '';
+  const lv = lvOf(f);
+  const top = isMaxLv(f);
+  const chip = document.createElement('div');
+  chip.className = 'upg-chip' + (top ? ' max' : '');
+  const ic = document.createElement('span');
+  ic.textContent = FACILITIES[f].icon;
+  chip.appendChild(ic);
+  const nameEl = document.createElement('span');
+  nameEl.textContent = facName(f);
+  chip.appendChild(nameEl);
+  const lvEl = document.createElement('span');
+  lvEl.className = 'upg-lv';
+  lvEl.textContent = t('lvBadge', { lv: lv });
+  chip.appendChild(lvEl);
+  if (top) {
+    const s = document.createElement('span');
+    s.textContent = t('upgMax');
+    chip.appendChild(s);
+  } else {
+    const b = document.createElement('button');
+    b.textContent = t('upgBtn', { n: upgradeCost(f) });
+    b.disabled = G.coins < upgradeCost(f);
+    b.onclick = function () {
+      if (doUpgrade(f)) refreshAllPanels();
+    };
+    chip.appendChild(b);
+  }
+  el.appendChild(chip);
+  const tip = document.createElement('div');
+  tip.className = 'upg-tip';
+  tip.textContent = facCapText(f, lv);
+  el.appendChild(tip);
+}
+// 升级成功之后，所有打开着的面板都要重新画一遍
+function refreshAllPanels() {
+  renderUpgradeStrip($('shop-upgrade'), 'shop');
+  renderUpgradeStrip($('cook-upgrade'), 'kitchen');
+  renderUpgradeStrip($('wd-upgrade'), 'wardrobe');
+  renderUpgradeStrip($('pet-upgrade'), 'petroom');
+  if (!$('shop-modal').classList.contains('hidden')) renderShop();
+  if (!$('cook-modal').classList.contains('hidden')) renderCook();
+  if (!$('tank-modal').classList.contains('hidden')) renderTank();
+  if (!$('wardrobe-modal').classList.contains('hidden')) renderWardrobe();
+  if (!$('pet-modal').classList.contains('hidden')) renderPetRoom();
+  if (!$('upgrade-modal').classList.contains('hidden')) renderUpgradeModal(upgradeTarget);
+  renderHUD();
+}
+// 「🔨 升级 X」的通用面板（点地图上的告示牌打开）
+let upgradeTarget = 'coop';
+function openUpgrade(f) {
+  if (!FACILITIES[f]) return;
+  upgradeTarget = f;
+  renderUpgradeModal(f);
+  sfx.open();
+  openModal('upgrade-modal');
+}
+function renderUpgradeModal(f) {
+  const box = $('upgrade-body');
+  if (!box) return;
+  const title = $('upgrade-title');
+  if (title) title.textContent = '🔨 ' + facName(f);
+  box.innerHTML = '';
+  const lv = lvOf(f);
+  const wrap = document.createElement('div');
+  wrap.className = 'upg-card';
+  wrap.innerHTML =
+    '<div class="upg-head"><span class="upg-icon">' + FACILITIES[f].icon + '</span>' +
+    '<span>' + facName(f) + ' · ' + t('upgNow', { lv: lv }) + '</span></div>' +
+    '<div class="upg-tip">' + facTip(f) + '</div>';
+  // 三个等级的小方块
+  const row = document.createElement('div');
+  row.className = 'upg-levels';
+  for (let i = 1; i <= MAX_LV; i++) {
+    const b = document.createElement('div');
+    b.className = 'upg-lvbox' + (i < lv ? ' done' : i === lv ? ' now' : '');
+    b.innerHTML = '<b>' + (i < lv ? '✅ ' : i === lv ? '⭐ ' : '🔒 ') + t('lvBadge', { lv: i }) + '</b>'
+                + facCapText(f, i)
+                + (i > 1 ? '<div class="upg-area">' + t('expandArea') + '</div>' : '');
+    row.appendChild(b);
+  }
+  wrap.appendChild(row);
+  // 升级按钮
+  const acts = document.createElement('div');
+  acts.className = 'upg-actions';
+  if (isMaxLv(f)) {
+    const s = document.createElement('div');
+    s.className = 'upg-tip';
+    s.textContent = t('upgMax');
+    acts.appendChild(s);
+  } else {
+    const cost = upgradeCost(f);
+    const b = document.createElement('button');
+    b.className = 'big-btn';
+    b.textContent = t('upgBtn', { n: cost });
+    b.disabled = G.coins < cost;
+    b.onclick = function () { if (doUpgrade(f)) renderUpgradeModal(f); };
+    acts.appendChild(b);
+    const s = document.createElement('div');
+    s.className = 'upg-short';
+    s.textContent = t('upgNext', { cap: facCapText(f, lv + 1) });
+    acts.appendChild(s);
+  }
+  wrap.appendChild(acts);
+  box.appendChild(wrap);
+}
+
+// ============================================================
+//                    🐾 宠物房间
+// ============================================================
+// 宠物口粮在商店的「🍖 宠物用品」里买；喂食要消耗口粮，
+// 清理便便和洗澡是免费的，但不做的话宠物会不开心。
+const PET_FOOD_PRICE = 15;     // 一份宠物口粮
+const PET_ADOPT_PRICE = 120;   // 领养一只新宠物
+const PET_TYPES = ['dog', 'cat', 'duck', 'goose'];
+const PET_EMOJI = { dog: '🐶', cat: '🐱', duck: '🦆', goose: '🦢' };
+
+function renderPetRoom() {
+  const box = $('pet-list');
+  renderUpgradeStrip($('pet-upgrade'), 'petroom');
+  const sub = $('pet-room-sub');
+  if (sub) sub.textContent = t('petRoomLv', { lv: lvOf('petroom'), cap: facCapText('petroom', lvOf('petroom')) });
+  if (!box) return;
+  box.innerHTML = '';
+  if (!G.pets.length) {
+    const e = document.createElement('div');
+    e.className = 'closet-empty';
+    e.textContent = t('petRoomEmpty');
+    box.appendChild(e);
+  }
+  G.pets.forEach(function (p, i) {
+    const card = document.createElement('div');
+    card.className = 'pet-card' + (petIsSad(p) ? ' sad' : '');
+    const av = document.createElement('div');
+    av.className = 'pet-avatar';
+    av.textContent = PET_EMOJI[p.type] || '🐶';
+    card.appendChild(av);
+
+    const body = document.createElement('div');
+    body.className = 'pet-body';
+    const nmEl = document.createElement('div');
+    nmEl.className = 'pet-name';
+    nmEl.textContent = '#' + (i + 1) + ' ' + petName(p) + (p.hat && p.hat !== 'none' ? ' 🎩' : '');
+    body.appendChild(nmEl);
+
+    // 三条状态：饱腹 / 清洁 / 便便
+    const bars = document.createElement('div');
+    bars.className = 'pet-bars';
+    const mk = (label, val, cls) => {
+      const d = document.createElement('div');
+      d.className = 'pet-bar';
+      d.innerHTML = '<span>' + label + '</span><span class="pet-track">' +
+        '<span class="pet-fill ' + cls + '" style="width:' + Math.round(val) + '%"></span></span>';
+      return d;
+    };
+    bars.appendChild(mk(t('petHunger'), p.hunger, 'hunger'));
+    bars.appendChild(mk(t('petClean'), p.clean, 'clean'));
+    const poopEl = document.createElement('div');
+    poopEl.className = 'pet-bar';
+    poopEl.textContent = t('petPoop', { n: p.poop });
+    bars.appendChild(poopEl);
+    body.appendChild(bars);
+
+    const need = petNeed(p);
+    const needEl = document.createElement('div');
+    needEl.className = 'pet-need';
+    needEl.textContent = need === 'hungry' ? '🍖 ' + t('petNeedHungry')
+                       : need === 'poop' ? '💩 ' + t('petNeedPoop')
+                       : need === 'dirty' ? '🛁 ' + t('petNeedDirty')
+                       : t('petStatusOk');
+    body.appendChild(needEl);
+    card.appendChild(body);
+
+    const btns = document.createElement('div');
+    btns.className = 'pet-btns';
+    const feed = document.createElement('button');
+    feed.textContent = t('petFeed') + ' (🍖' + G.petFood + ')';
+    feed.disabled = G.petFood <= 0 || p.hunger >= 100;
+    feed.onclick = function () { feedPet(p); };
+    const clean = document.createElement('button');
+    clean.className = 'blue';
+    clean.textContent = t('petBrush');
+    clean.disabled = p.poop <= 0;
+    clean.onclick = function () { cleanPet(p); };
+    const bath = document.createElement('button');
+    bath.className = 'pink';
+    bath.textContent = t('petBath');
+    bath.disabled = p.clean >= 100;
+    bath.onclick = function () { bathePet(p); };
+    btns.appendChild(feed); btns.appendChild(clean); btns.appendChild(bath);
+    card.appendChild(btns);
+    box.appendChild(card);
+  });
+  // 领养
+  const adopt = document.createElement('div');
+  adopt.className = 'pet-adopt';
+  if (G.pets.length >= maxPets()) {
+    const e = document.createElement('div');
+    e.className = 'closet-note';
+    e.textContent = t('petFull', { max: maxPets() });
+    adopt.appendChild(e);
+  } else {
+    PET_TYPES.forEach(function (ty) {
+      const b = document.createElement('button');
+      b.className = 'big-btn';
+      b.style.fontSize = '17px';
+      b.textContent = (PET_EMOJI[ty] || '') + ' ' + t(ty === 'goose' ? 'petGoose' : ty === 'duck' ? 'petDuck' : ty) + ' 💰' + PET_ADOPT_PRICE;
+      b.disabled = G.coins < PET_ADOPT_PRICE;
+      b.onclick = function () { adoptPet(ty); };
+      adopt.appendChild(b);
+    });
+  }
+  box.appendChild(adopt);
+}
+function feedPet(p) {
+  if (G.petFood <= 0) { sfx.error(); say('petNoFood'); return; }
+  G.petFood--;
+  p.hunger = Math.min(100, p.hunger + 45);
+  p.happy = 3;
+  sfx.pet(); sfx.pickup();
+  spawnParticles(p.x, p.y - 18, '💖', 4);
+  say('petFed', { pet: petName(p) }, 2000);
+  saveGame(true); renderPetRoom();
+}
+function cleanPet(p) {
+  p.poop = 0; p.poopT = rand(70, 130); p.happy = 3;
+  sfx.water(); sfx.sparkle();
+  spawnParticles(p.x, p.y + 4, '✨', 5);
+  say('petCleaned', null, 2000);
+  saveGame(true); renderPetRoom();
+}
+function bathePet(p) {
+  p.clean = 100; p.happy = 3;
+  sfx.water(); sfx.sparkle();
+  spawnParticles(p.x, p.y - 10, '🫧', 6);
+  say('petBathed', { pet: petName(p) }, 2200);
+  saveGame(true); renderPetRoom();
+}
+function adoptPet(type) {
+  if (G.pets.length >= maxPets()) { sfx.error(); say('petFull', { max: maxPets() }); return; }
+  if (G.coins < PET_ADOPT_PRICE) { sfx.error(); say('upgradeNoCoin', { n: PET_ADOPT_PRICE }); return; }
+  G.coins -= PET_ADOPT_PRICE;
+  const z = ZONES.petroom;
+  const p = newPet(type, z.x + rand(-40, 40), z.y + rand(6, 30));
+  G.pets.push(p);
+  sfx.buy(); sfx.petVoice(type, 260);
+  spawnParticles(p.x, p.y - 20, '💖', 6);
+  say('petAdoptDone', { pet: petName(p) }, 2600, false, { icon: PET_EMOJI[type] || '🐾', sub: t('petFoodDesc') });
+  saveGame(true); renderPetRoom(); renderHUD();
+}
+
 // 图标容器：服饰用「画出来的真实样式」，其它用 emoji
 function iconBox(kind, keyOrEmoji) {
   const d = document.createElement('div');
@@ -2786,9 +3743,30 @@ function iconBox(kind, keyOrEmoji) {
   return d;
 }
 
+// 商店等级决定「能买到哪一档的东西」：
+//   1 级只卖基础款，2 级开放进阶，3 级全部开放。
+// tier 是怎么分的：种子 / 观赏动物 / 装饰 / 交通 都按列表顺序三等分；
+// 衣服按 OUTFITS 里每件的 tier；果树苗跟着商店等级走。
+function shopTierOfIndex(i, total) { return Math.min(3, Math.floor(i / Math.ceil(total / 3)) + 1); }
+// 某一件商品是不是因为商店等级不够而锁着
+function tierLocked(tier) { return tier > shopTierMax(); }
+
 function renderShop() {
   const box = $('shop-items');
   box.innerHTML = '';
+  renderUpgradeStrip($('shop-upgrade'), 'shop');
+  const lockedCard = (icon, name, tier) => {
+    const d = document.createElement('div');
+    d.className = 'shop-item locked';
+    d.appendChild(icon);
+    const info = document.createElement('div');
+    info.innerHTML = `<div>${name}</div><div class="sub">${t('tierLocked')}</div>`;
+    d.appendChild(info);
+    const b = document.createElement('button');
+    b.textContent = '🔒'; b.disabled = true;
+    d.appendChild(b);
+    box.appendChild(d);
+  };
   const mkCard = (icon, name, price, onBuy, owned, sub) => {
     const d = document.createElement('div');
     d.className = 'shop-item';
@@ -2808,39 +3786,111 @@ function renderShop() {
     box.appendChild(d);
   };
   if (shopTab === 'seeds') {
-    for (const c of CROPS) {
+    // 种子按商店等级分批开放
+    CROPS.forEach(function (c, ci) {
       const id = 'seed_' + c.id;
+      const tier = shopTierOfIndex(ci, CROPS.length);
+      if (tierLocked(tier)) { lockedCard(iconBox('item', id), c.name + '种子', tier); return; }
       mkCard(iconBox('item', id), c.name + '种子', ITEMS[id].price, () => {
         G.coins -= ITEMS[id].price; addItem(id); sfx.buy();
         say('bought', { item: nm('item', id) }, 2200, false, { icon: id, sub: t('boughtCardSub') });
         renderShop(); renderHUD();
       }, false, t('cropInfo', { sec: Math.round(55 / c.rate) }));
-    }
+    });
     // 动物饲料：一次买 5 份，够喂几天
     mkCard(iconBox('item', 'feed'), nm('item', 'feed'), ITEMS.feed.price * 5, () => {
       G.coins -= ITEMS.feed.price * 5; addItem('feed', 5); sfx.buy();
       say('boughtFeed', { n: 5 }, 2200, false, { icon: 'feed', sub: t('feedCardSub') });
       renderShop(); renderHUD();
     }, false, t('feedShopDesc', { n: FEED_PER_DAY, max: FEED_MAX }));
+    // 🌳 果树苗：买一棵就种进果树园（果园升级后能种更多棵）
+    const fhead = document.createElement('div');
+    fhead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;margin-top:4px;';
+    fhead.textContent = t('orchardShopHead', { n: G.trees.length, max: maxOrchard(), lv: lvOf('orchard') });
+    box.appendChild(fhead);
+    const missing = missingFruitTypes();
+    if (G.trees.length >= maxOrchard()) {
+      const e = document.createElement('div');
+      e.style.cssText = 'grid-column:1/-1;font-size:14px;color:#c0392b;font-weight:bold;';
+      e.textContent = t('orchardFull', { max: maxOrchard() }) + ' ' + t('upgradeHint');
+      box.appendChild(e);
+    }
+    for (const f of FRUIT_IDS) {
+      if (missing.indexOf(f) < 0) continue;
+      if (tierLocked(shopTierOfIndex(FRUIT_IDS.indexOf(f), FRUIT_IDS.length))) {
+        lockedCard(iconBox('item', f), nm('item', f) + t('saplingSuffix'),
+                   shopTierOfIndex(FRUIT_IDS.indexOf(f), FRUIT_IDS.length));
+        continue;
+      }
+      mkCard(iconBox('item', f), nm('item', f) + t('saplingSuffix'), SAPLING_PRICE, () => {
+        if (G.trees.length >= maxOrchard()) { sfx.error(); say('orchardFull', { max: maxOrchard() }); return; }
+        if (G.coins < SAPLING_PRICE) { sfx.error(); say('upgradeNoCoin', { n: SAPLING_PRICE }); return; }
+        G.coins -= SAPLING_PRICE;
+        const tr = addOrchardTree(f);
+        sfx.plant(); sfx.success();
+        if (tr) spawnParticles(tr.x, tr.y - 30, '🌱', 8);
+        say('plantSapling', { fruit: nm('item', f), n: G.trees.length, max: maxOrchard() }, 2800, false,
+            { icon: f, sub: t('saplingSub') });
+        renderShop(); renderHUD();
+      }, false, t('saplingDesc', { n: SAPLING_PRICE }));
+    }
   } else if (shopTab === 'clothes') {
-    for (const cat of ['hat', 'shirt', 'pants']) {
+    // 服装：帽子 / 头饰 / 裙子 / 上衣 / 裤子 / 鞋子 六类，
+    // 每一类里都有「衣橱等级」还没开放的部分（显示成 🔒）。
+    const wmax = outfitTierMax();
+    const whead = document.createElement('div');
+    whead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    whead.textContent = t('wdTierNote', { lv: lvOf('wardrobe') });
+    box.appendChild(whead);
+    for (const cat of OUTFIT_CATS) {
+      const catHead = document.createElement('div');
+      catHead.style.cssText = 'grid-column:1/-1;font-size:15px;color:#c9750a;font-weight:bold;margin-top:4px;';
+      catHead.textContent = OUTFIT_CAT_LABEL[cat][lang === 'en' ? 1 : 0];
+      box.appendChild(catHead);
       for (const [key, o] of Object.entries(OUTFITS[cat])) {
-        if (o.price === 0) continue;
+        if (!o.price || o.legacy) continue;
         const owned = G.owned[cat].includes(key);
+        // 服饰的开放档位看的是「衣橱等级」，不是商店等级
+        if ((o.tier || 1) > wmax) { lockedCard(iconBox(cat, key), o.name, o.tier); continue; }
         mkCard(iconBox(cat, key), o.name, o.price, () => {
           G.coins -= o.price; G.owned[cat].push(key); sfx.buy();
-          say('boughtClothes', { name: nm(cat, key) }, 2400, false, { icon: '👕', sub: t('boughtCardSub') });
+          // 买到的衣服会自动挂进衣橱（这里给一句明确的提示）
+          say('boughtToCloset', { name: nm(cat, key) }, 2400, false,
+              { icon: '👗', sub: t('boughtClothes') });
           renderShop(); renderHUD();
         }, owned);
       }
     }
+  } else if (shopTab === 'petcare') {
+    // 宠物用品：宠物口粮 + 领养新宠物
+    const phead = document.createElement('div');
+    phead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    phead.textContent = t('petRoomLv', { lv: lvOf('petroom'), cap: facCapText('petroom', lvOf('petroom')) });
+    box.appendChild(phead);
+    mkCard(iconBox('emoji', '🍖'), t('petFood'), PET_FOOD_PRICE * 5, () => {
+      G.coins -= PET_FOOD_PRICE * 5; G.petFood += 5; sfx.buy();
+      say('boughtPetFood', { n: 5 }, 2200, false, { icon: '🍖', sub: t('petFoodDesc') });
+      renderShop(); renderHUD();
+    }, false, t('petFoodDesc') + ' · ' + G.petFood);
+    PET_TYPES.forEach(function (ty) {
+      const full = G.pets.length >= maxPets();
+      mkCard(iconBox('emoji', PET_EMOJI[ty] || '🐾'),
+             t(ty === 'goose' ? 'petGoose' : ty === 'duck' ? 'petDuck' : ty),
+             PET_ADOPT_PRICE, () => { adoptPet(ty); renderShop(); },
+             full, full ? t('petFull', { max: maxPets() }) : t('petAdopt'));
+    });
   } else if (shopTab === 'vehicles') {
     // 交通工具：买回来后走到停车架按 E 就能骑上，骑上走得快
     const vhead = document.createElement('div');
     vhead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
     vhead.textContent = t('vehicleShopHead', { key: KEY_HINT });
     box.appendChild(vhead);
-    for (const v of VEHICLES) {
+    for (let vi = 0; vi < VEHICLES.length; vi++) {
+      const v = VEHICLES[vi];
+      if (tierLocked(shopTierOfIndex(vi, VEHICLES.length))) {
+        lockedCard(iconBox('emoji', v.icon), nm('vehicle', v.id), shopTierOfIndex(vi, VEHICLES.length));
+        continue;
+      }
       const owned = G.vehicles.indexOf(v.id) >= 0;
       mkCard(iconBox('emoji', v.icon), nm('vehicle', v.id), v.price, () => {
         G.coins -= v.price;
@@ -2859,18 +3909,24 @@ function renderShop() {
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
     const chTrough = troughOf('chicken');
-    head.textContent = t('animalCount', { n: cappedAnimalCount(), max: MAX_ANIMALS })
-      + ' · ' + t('logHens', { h: countHens(), hm: MAX_HENS, c: countChicks(), cm: MAX_CHICKS,
+    head.textContent = t('animalCount', { n: cappedAnimalCount(), max: maxOtherAnimals() })
+      + ' · ' + t('logHens', { h: countHens(), hm: maxHens(), c: countChicks(), cm: maxChicks(),
                                f: chTrough ? chTrough.feed : 0 });
     box.appendChild(head);
     for (const a of ANIMAL_SHOP) {
       const isHenBuy = a.type === 'chicken';
-      const full = isHenBuy ? (countHens() >= MAX_HENS)
-                            : (cappedAnimalCount() >= MAX_ANIMALS);
-      const sub = isHenBuy ? t('shopHenDesc', { hm: MAX_HENS }) : a.desc;
+      const full = isHenBuy ? (countHens() >= maxHens())
+                            : (a.type === 'sheep' ? countAnimalType('sheep') >= maxSheep()
+                                                  : countAnimalType('cow') >= maxCows()
+                               || cappedAnimalCount() >= maxOtherAnimals());
+      const sub = isHenBuy ? t('shopHenDesc', { hm: maxHens() })
+                : a.type === 'sheep' ? t('shopSheepDesc', { max: maxSheep() })
+                : t('shopCowDesc', { max: maxCows() });
       mkCard(iconBox('emoji', a.icon), isHenBuy ? t('animalHen') : a.name, a.price, () => {
-        if (isHenBuy && countHens() >= MAX_HENS) { sfx.error(); say('tooManyHens', { max: MAX_HENS }); return; }
-        if (!isHenBuy && cappedAnimalCount() >= MAX_ANIMALS) { sfx.error(); say('tooManyAnimals'); return; }
+        if (isHenBuy && countHens() >= maxHens()) { sfx.error(); say('tooManyHens', { max: maxHens() }); return; }
+        if (a.type === 'sheep' && countAnimalType('sheep') >= maxSheep()) { sfx.error(); say('tooManySheep', { max: maxSheep() }); return; }
+        if (a.type === 'cow' && countAnimalType('cow') >= maxCows()) { sfx.error(); say('tooManyCows', { max: maxCows() }); return; }
+        if (!isHenBuy && cappedAnimalCount() >= maxOtherAnimals()) { sfx.error(); say('tooManyAnimals'); return; }
         G.coins -= a.price;
         const h = PENS[a.type].home;
         const na = newAnimal(a.type, h.x + rand(-30, 30), h.y + rand(-20, 20));
@@ -2885,12 +3941,17 @@ function renderShop() {
       }, false, sub);
     }
   } else if (shopTab === 'zoo') {
-    // 动物园：观赏动物，不产出
+    // 动物园：观赏动物，不产出（按商店等级分三批开放）
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
     head.textContent = t('zooHead', { n: G.zoo.length, max: MAX_ZOO });
     box.appendChild(head);
-    for (const z of ZOO_SHOP) {
+    for (let zi = 0; zi < ZOO_SHOP.length; zi++) {
+      const z = ZOO_SHOP[zi];
+      if (tierLocked(shopTierOfIndex(zi, ZOO_SHOP.length))) {
+        lockedCard(iconBox('zoo', z.type), nm('zoo', z.type), shopTierOfIndex(zi, ZOO_SHOP.length));
+        continue;
+      }
       mkCard(iconBox('zoo', z.type), nm('zoo', z.type), z.price, () => {
         if (G.zoo.length >= MAX_ZOO) { sfx.error(); say('tooManyZoo'); return; }
         G.coins -= z.price;
@@ -2903,12 +3964,17 @@ function renderShop() {
       }, false, t('zooNote'));
     }
   } else if (shopTab === 'decor') {
-    // 庭院装饰：买好后进入放置模式，走到喜欢的位置放下
+    // 庭院装饰：买好后进入放置模式，走到喜欢的位置放下（按商店等级分三批开放）
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
     head.textContent = t('decorCount', { n: G.decorations.length, key: KEY_HINT });
     box.appendChild(head);
-    for (const d of DECOR_SHOP) {
+    for (let di = 0; di < DECOR_SHOP.length; di++) {
+      const d = DECOR_SHOP[di];
+      if (tierLocked(shopTierOfIndex(di, DECOR_SHOP.length))) {
+        lockedCard(iconBox('emoji', d.icon), d.name, shopTierOfIndex(di, DECOR_SHOP.length));
+        continue;
+      }
       mkCard(iconBox('emoji', d.icon), d.name, d.price, () => {
         G.coins -= d.price;
         sfx.buy(); renderHUD();
@@ -2918,14 +3984,15 @@ function renderShop() {
             { big: true, icon: d.icon, sub: t('boughtCardSub') });
       }, false, t('placeFree'));
     }
-  } else {
+  } else if (shopTab === 'pet') {
     for (const [key, o] of Object.entries(PET_HATS)) {
       const owned = G.petHatsOwned.includes(key);
       mkCard(iconBox('hat', key), o.name, o.price, () => {
         G.coins -= o.price; G.petHatsOwned.push(key);
-        G.pet.hat = key; G.pet.happy = 3; sfx.buy();
-        spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
-        say('wearPetHat', { pet: petName() }, 2400, false, { icon: o.icon, sub: t('boughtCardSub') });
+        const lp = G.pets[0];
+        lp.hat = key; lp.happy = 3; sfx.buy();
+        spawnParticles(lp.x, lp.y - 20, '💖', 4);
+        say('wearPetHat', { pet: petName(lp) }, 2400, false, { icon: o.icon, sub: t('boughtCardSub') });
         renderShop(); renderHUD();
       }, owned);
     }
@@ -2939,26 +4006,82 @@ document.querySelectorAll('#shop-modal .tab-btn').forEach(b =>
     renderShop();
   }));
 
-// ---------------- 衣柜 ----------------
+// ---------------- 衣橱（开放式衣帽间） ----------------
+// 「开放式衣帽间」：左边一面试衣镜（实时把角色画出来），右边一层层的
+// 挂衣杆 / 帽子架 / 头饰架 / 抽屉 / 鞋架 —— 买到的衣服会自动出现在这里。
 let wTab = 'hat';
+// 每一类衣服在衣帽间里的「摆放方式」
+const CLOSET_STYLE = {
+  hat:   { cls: 'shelf',    label: 'closetShelf' },
+  hair:  { cls: 'shelf',    label: 'closetHair' },
+  dress: { cls: 'rail',     label: 'closetDress' },
+  shirt: { cls: 'rail',     label: 'closetRail' },
+  pants: { cls: 'drawer',   label: 'closetDrawer' },
+  shoes: { cls: 'shoerack', label: 'closetShoeRack' },
+};
+// 试衣镜里的角色（照着当前穿着实时画一遍）
+function renderClosetAvatar() {
+  const cv = $('closet-avatar');
+  if (!cv || typeof cv.getContext !== 'function') return;
+  const x = cv.getContext('2d');
+  if (!x) return;
+  x.clearRect(0, 0, cv.width, cv.height);
+  x.save();
+  x.translate(cv.width / 2, cv.height * 0.80);
+  x.scale(2.15, 2.15);
+  const of = G.player.outfit;
+  drawPlayer(x, 0, 0, {
+    gender: G.player.gender, dir: 'down', walkPhase: 0, moving: false,
+    outfit: { hat: of.hat, hair: of.hair, shirt: of.shirt, dress: of.dress,
+              pants: of.pants, shoes: of.shoes },
+    actionT: 0, t: G.t, scale: 1,
+  });
+  x.restore();
+  const nmEl = $('closet-name');
+  if (nmEl) nmEl.textContent = playerName || '';
+}
 function renderWardrobe() {
   if (typeof highlightChar === 'function') highlightChar();
+  renderUpgradeStrip($('wd-upgrade'), 'wardrobe');
+  const hint = $('closet-hint');
+  if (hint) hint.textContent = t('closetHint');
+  renderClosetAvatar();
   const box = $('wardrobe-items');
+  if (!box) return;
   box.innerHTML = '';
-  // 帽子可以有「不戴」选项；上衣/裤子必须穿，初始的破衣服/破裤子也在列表里
-  const list = wTab === 'hat' ? ['none', ...G.owned.hat] : [...G.owned[wTab]];
+  const style = CLOSET_STYLE[wTab] || CLOSET_STYLE.shirt;
+  box.className = 'shop-grid closet-grid ' + style.cls;
+  // 这一层架子的名字
+  const head = document.createElement('div');
+  head.className = 'closet-note';
+  head.textContent = t(style.label);
+  box.appendChild(head);
+  // 「不戴 / 不穿」这类选项排在最前面
+  const owned = G.owned[wTab] || [];
+  const list = (wTab === 'hat' || wTab === 'hair' || wTab === 'dress' || wTab === 'shoes')
+    ? ['none', ...owned.filter(k => k !== 'none')]
+    : [...owned];
+  if (!list.length) {
+    const e = document.createElement('div');
+    e.className = 'closet-empty';
+    e.textContent = t('closetEmpty');
+    box.appendChild(e);
+  }
   for (const key of list) {
     const o = OUTFITS[wTab][key];
+    if (!o) continue;
     const d = document.createElement('div');
     d.className = 'shop-item';
     d.appendChild(iconBox(wTab, key));
-    d.insertAdjacentHTML('beforeend', `<div>${o.name}</div>`);
+    d.insertAdjacentHTML('beforeend', `<div>${nm(wTab, key)}</div>`);
     const b = document.createElement('button');
     const wearing = G.player.outfit[wTab] === key;
     b.textContent = wearing ? t('wearing') : t('wearIt');
     b.disabled = wearing;
     b.onclick = () => {
       G.player.outfit[wTab] = key;
+      // 穿上裙子 = 不用再穿上衣和裤子；反过来穿上衣 / 裤子就自动脱掉裙子
+      if (wTab === 'shirt' || wTab === 'pants') G.player.outfit.dress = 'none';
       sfx.equip(); spawnParticles(G.player.x, G.player.y - 30, '✨', 5);
       say('equipDone', { name: nm(wTab, key) });
       renderWardrobe();
@@ -2966,10 +4089,17 @@ function renderWardrobe() {
     d.appendChild(b);
     box.appendChild(d);
   }
-  // 宠物帽子区
+  // 如果穿着裙子，上衣和裤子两层给个说明
+  if ((wTab === 'shirt' || wTab === 'pants') && G.player.outfit.dress !== 'none') {
+    const n = document.createElement('div');
+    n.className = 'closet-note';
+    n.textContent = '👗 ' + t('dressNote');
+    box.appendChild(n);
+  }
+  // 宠物帽子区（挂衣帽间最下面一格）
   if (G.petHatsOwned.length) {
     const title = document.createElement('div');
-    title.style.cssText = 'grid-column:1/-1;font-weight:bold;color:#c77;';
+    title.style.cssText = 'grid-column:1/-1;font-weight:bold;color:#c77;margin-top:6px;';
     title.textContent = t('petSection');
     box.appendChild(title);
     for (const key of G.petHatsOwned) {
@@ -2979,12 +4109,14 @@ function renderWardrobe() {
       d.appendChild(iconBox('hat', key));
       d.insertAdjacentHTML('beforeend', `<div>${o.name}</div>`);
       const b = document.createElement('button');
-      const wearing = G.pet.hat === key;
+      const wearing = G.pets[0] && G.pets[0].hat === key;
       b.textContent = wearing ? t('wearing') : t('wearPet');
       b.disabled = wearing;
       b.onclick = () => {
-        G.pet.hat = key; G.pet.happy = 3; sfx.equip();
-        spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
+        const lp = G.pets[0];
+        if (!lp) return;
+        lp.hat = key; lp.happy = 3; sfx.equip();
+        spawnParticles(lp.x, lp.y - 20, '💖', 4);
         renderWardrobe();
       };
       d.appendChild(b);
@@ -2992,20 +4124,39 @@ function renderWardrobe() {
     }
   }
 }
-document.querySelectorAll('#wardrobe-modal .tab-btn').forEach(b =>
+document.querySelectorAll('#wardrobe-modal .tab-btn[data-wtab]').forEach(b =>
   b.addEventListener('click', () => {
     wTab = b.dataset.wtab;
     sfx.click();
-    document.querySelectorAll('#wardrobe-modal .tab-btn').forEach(x => x.classList.toggle('selected', x === b));
+    document.querySelectorAll('#wardrobe-modal .tab-btn[data-wtab]').forEach(x => x.classList.toggle('selected', x === b));
     renderWardrobe();
   }));
 
 // ---------------- 厨房 ----------------
+// 厨房等级决定能做的菜：1 级 6 道 → 2 级 12 道 → 3 级全部 18 道
+function recipeUnlocked(i) { return i < maxRecipes(); }
 function renderCook() {
   const box = $('cook-items');
   box.innerHTML = '';
-  for (const r of RECIPES) {
+  renderUpgradeStrip($('cook-upgrade'), 'kitchen');
+  const rhead = document.createElement('div');
+  rhead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+  rhead.textContent = t('cookTierNote', { lv: lvOf('kitchen') })
+    + ' · ' + Math.min(RECIPES.length, maxRecipes()) + '/' + RECIPES.length;
+  box.appendChild(rhead);
+  for (let ri = 0; ri < RECIPES.length; ri++) {
+    const r = RECIPES[ri];
     const out = ITEMS[r.id];
+    if (!recipeUnlocked(ri)) {
+      const dl = document.createElement('div');
+      dl.className = 'shop-item locked';
+      dl.innerHTML = `<div class="icon">🍽️</div><div>${nm('item', r.id)}</div><div class="sub">${t('tierLocked')}</div>`;
+      const bl = document.createElement('button');
+      bl.textContent = '🔒'; bl.disabled = true;
+      dl.appendChild(bl);
+      box.appendChild(dl);
+      continue;
+    }
     const can = hasItems(r.needs);
     const needStr = Object.entries(r.needs).map(([id, n]) =>
       id === 'fruit' ? t('anyFruit', { n }) : `${ITEMS[id].icon}×${n}`).join(' + ');
@@ -3029,10 +4180,10 @@ function renderCook() {
 }
 
 // ---------------- 大型水族箱 ----------------
-const TANK_MAX = 20;
+// 容量由「水族箱等级」决定（1 级 6 条 / 2 级 12 条 / 3 级 20 条），见 maxTank()
 function putInTank(id) {
   if (!SEA_SET[id]) return;
-  if (G.tank.length >= TANK_MAX) { sfx.error(); say('tankFull', { max: TANK_MAX }); return; }  // 超过就提示放不下
+  if (G.tank.length >= maxTank()) { sfx.error(); say('tankFull', { max: maxTank() }); return; }  // 超过就提示放不下
   if (!removeItem(id)) return;
   G.tank.push(id);
   sfx.water();
@@ -3051,7 +4202,9 @@ function takeFromTank(i) {
 function renderTank() {
   const cnt = $('tank-count'), list = $('tank-list'), bag = $('tank-bag');
   if (!cnt || !list || !bag) return;
-  cnt.textContent = t('tankCount', { n: G.tank.length, max: TANK_MAX });
+  renderUpgradeStrip($('tank-upgrade'), 'tank');
+  cnt.textContent = t('tankCount', { n: G.tank.length, max: maxTank() })
+    + ' · ' + t('tankTierNote', { lv: lvOf('tank') });
   const bagTitle = $('tank-bag-title');
   if (bagTitle) bagTitle.textContent = t('tankBagTitle');
   list.innerHTML = '';
@@ -3073,7 +4226,7 @@ function renderTank() {
   }
   bag.innerHTML = '';
   const mine = Object.keys(G.inventory).filter(id => SEA_SET[id] && G.inventory[id] > 0);
-  const full = G.tank.length >= TANK_MAX;
+  const full = G.tank.length >= maxTank();
   if (!mine.length) {
     bag.innerHTML = `<div style="grid-column:1/-1;color:#a8906a">${t('bagNoFish')}</div>`;
   } else {
@@ -3175,7 +4328,7 @@ function nearestInteract() {
     const d = dist(p.x, p.y, c.x, c.y);
     if (d < bestD + 30) {
       bestD = Math.min(bestD, d);
-      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomerMath', { item: nm('item', c.want), name: custName(c) })}` };
+      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomerMath', { item: basketLabel(c), name: custName(c) })}` };
     }
   }
   // 3. 动物（饿跑了的动物只会告诉你它饿了）
@@ -3252,17 +4405,26 @@ function nearestInteract() {
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
     ['tank', 'tank', t('prTank')],
+    ['petroom', 'petroom', t('prPetRoom')],
     ['rack', 'rack', G.vehicle
         ? t('prPark', { v: nm('vehicle', G.vehicle) })
         : (G.vehicles.length ? t('prRide', { v: nm('vehicle', G.vehicles[G.vehicles.length - 1]) }) : t('prRackEmpty'))],
     ['hatchery', 'hatch', G.incubating.length
         ? t('hatchDays', { n: G.incubating.length, d: hatchDaysLeft() })
-        : t('prHatch', { n: G.incubating.length, max: MAX_INCUBATE })],
+        : t('prHatch', { n: G.incubating.length, max: maxIncubate() })],
   ];
   for (const [zk, kind, label] of zoneChecks) {
     const z = ZONES[zk];
     const d = dist(p.x, p.y, z.x, z.y);
     if (d < z.r && d < bestD) { bestD = d; best = { kind, label }; }
+  }
+  // 6.2 设施升级告示牌（鸡巢 / 羊棚 / 牛棚 / 果树园 / 水坑）
+  for (const [f, sx, sy] of upgradeSignSpots()) {
+    const d = dist(p.x, p.y, sx, sy);
+    if (d < bestD + 26 && d < 96) {
+      bestD = Math.min(bestD, d);
+      best = { kind: 'upgrade', fac: f, label: t('prUpgrade', { fac: facName(f) }) };
+    }
   }
   // 6.5 森林里的蜂巢（走到蜂巢下面就能拿蜂蜜）
   if (inHiveReach(p.x, p.y)) {
@@ -3277,14 +4439,16 @@ function nearestInteract() {
   // 7. 池塘钓鱼：附近没有别的可交互对象时，才提示钓鱼
   //    （捡蛋、挤奶、种地这些操作优先，避免在岸边抢走交互）
   // 站在水坑边：附近没有别的可交互对象时，才提示钓鱼（取最近的那个水坑）
-  let nearPond = null, nearPondD = Infinity;
+  let nearPond = null, nearPondD = Infinity, nearLocked = null;
   for (const pond of PONDS) {
     if (Math.abs(p.x - pond.x) < pond.w / 2 + 44 && Math.abs(p.y - pond.y) < pond.h / 2 + 44) {
+      if (pond.locked) { if (!nearLocked) nearLocked = pond; continue; }
       const d = Math.max(0, pondDist(pond, p.x, p.y));
       if (d < nearPondD) { nearPondD = d; nearPond = pond; }
     }
   }
   if (!best && nearPond) best = { kind: 'fish', pond: nearPond, label: t('prFishAt', { pond: pondLabel(nearPond) }) };
+  else if (!best && nearLocked) best = { kind: 'pondLocked', label: '🔒 ' + t('pondLocked') };
   return best;
 }
 
@@ -3310,12 +4474,12 @@ function doInteract() {
     }
     case 'customer': {
       const c = target.c;
-      if (G.inventory[c.want] > 0) {
+      if (canFulfillBasket(c)) {
         // 先请小朋友帮忙算要找多少零钱（小学二年级难度），答对才算成交
         openMathChallenge(c);
       } else {
         sfx.error();
-        say('noSuchItem', { item: nm('item', c.want) });
+        say('needMoreBasket', { list: basketMissing(c) }, 2600);
       }
       break;
     }
@@ -3422,6 +4586,15 @@ function doInteract() {
       sfx.error(); say('honeyNotReady');
       break;
     case 'fish': startFishing(target.pond); break;
+    case 'pondLocked':
+      sfx.error(); say('pondLocked', null, 3000);
+      break;
+    case 'upgrade':
+      openUpgrade(target.fac);
+      break;
+    case 'petroom':
+      renderPetRoom(); sfx.open(); openModal('pet-modal');
+      break;
   }
 }
 
@@ -3454,7 +4627,7 @@ function reelIn() {
     spawnParticles(f.bx, f.by, '💦', 8);
     spawnParticles(f.bx, f.by - 12, ITEMS[id].icon, 1);
     say('caught', { fish: nm('item', id), pond: pondLabel(pond) }, 2600, false, { icon: id, sub: t('gotCardSub') });
-    G.pet.happy = 2;
+    G.pets.forEach(function (pp) { pp.mood = 2; });
     saveGame(true);
   } else {
     sfx.splash(); say('reelIn');
@@ -3494,21 +4667,59 @@ function customerPool() {
 // 客人的名字按当前语言显示
 function custName(c) { return (lang === 'en' ? c.nameObj.en : c.nameObj.zh); }
 
-function spawnCustomer() {
+// 组一张购物清单：客人可能一次买好几件。
+//   · 大部分是「同一种东西买 1~3 个」（对应算式 100 − 38 × 2 = ?）
+//   · 有时是「两样东西各 1 个」（对应算式 100 − (24 + 15) = ?）
+// 注意：这里挑的是「农场**拿得到**的东西」（customerPool 给的清单），
+// 不是玩家此刻背包里已经有的 —— 和原来的玩法一致：客人点单，小朋友先去收，
+// 收齐了再卖给 TA（收不齐就只能看着客人走掉）。数量按价格控制：贵的只买 1 个。
+function basketQtyRange(id) {
+  const price = salePriceOf(id);
+  if (price < 20) return 3;      // 便宜的多买几个
+  if (price < 40) return 2;
+  return 1;                      // 贵的一次只买 1 个
+}
+function buildBasket() {
   const pool = customerPool();
-  const want = pick(pool);
+  if (!pool.length) return [{ id: 'egg', qty: 1 }];
+  const id = pick(pool);
+  const maxQ = basketQtyRange(id);
+  let qty = 1;
+  // 一半的机会买复数个（2 ~ maxQ）
+  if (maxQ > 1 && Math.random() < 0.5) qty = 2 + Math.floor(Math.random() * (maxQ - 1));
+  const basket = [{ id: id, qty: qty }];
+  // 再有三成的机会带上另一样（各 1 个），凑成「先加后减」的算式
+  if (qty === 1 && pool.length > 1 && Math.random() < 0.3) {
+    const rest = pool.filter(function (x) { return x !== id; });
+    const other = pick(rest);
+    if (other && salePriceOf(id) + salePriceOf(other) <= 130) basket.push({ id: other, qty: 1 });
+  }
+  return basket;
+}
+
+function spawnCustomer() {
+  const items = buildBasket();
+  const want = items[0].id;
   const hatKeys = Object.keys(OUTFITS.hat).filter(k => k !== 'none');
+  const hairKeys = Object.keys(OUTFITS.hair).filter(k => k !== 'none');
+  const dressKeys = OUTFITS.dress ? Object.keys(OUTFITS.dress).filter(k => k !== 'none') : [];
+  const shoeKeys = Object.keys(OUTFITS.shoes).filter(k => k !== 'none');
+  // 客人也穿得花里胡哨：有一半的机会穿裙子（穿裙子就不画上衣和裤子）
+  const wearDress = Math.random() < 0.45 && dressKeys.length;
   const c = {
     nameObj: pick(CUSTOMER_NAMES),
     gender: Math.random() < 0.5 ? 'boy' : 'girl',
-    hat: Math.random() < 0.35 ? 'none' : pick(hatKeys),      // 头饰
-    shirt: pick(Object.keys(OUTFITS.shirt)),                  // 上衣
-    pants: pick(Object.keys(OUTFITS.pants)),                  // 裤子
-    hairStyle: pick(HAIR_STYLES),                             // 发型
-    hairColor: pick(HAIR_COLORS),                             // 发色
+    hat: Math.random() < 0.35 ? 'none' : pick(hatKeys),        // 帽子
+    hair: Math.random() < 0.3 ? 'none' : pick(hairKeys),        // 头饰
+    shirt: pick(Object.keys(OUTFITS.shirt)),                    // 上衣
+    dress: wearDress ? pick(dressKeys) : 'none',                // 裙子
+    pants: pick(Object.keys(OUTFITS.pants)),                    // 裤子
+    shoes: Math.random() < 0.3 ? 'none' : pick(shoeKeys),       // 鞋子
+    hairStyle: pick(HAIR_STYLES),                               // 发型
+    hairColor: pick(HAIR_COLORS),                               // 发色
     x: WORLD_W + 30, y: ZONES.stall.y + rand(-20, 40),
     dir: 'left', moving: true, walkPhase: 0, phase: rand(0, 6), t: 0,
-    want, state: 'come', waitT: 25, happy: false,
+    items: items, want: want, state: 'come', waitT: 25, happy: false,
     pet: null,
   };
   if (Math.random() < 0.7) {   // 大部分客人带一只小宠物
@@ -3521,7 +4732,7 @@ function spawnCustomer() {
   }
   G.customers.push(c);
   say('customerCome', { name: custName(c) }, 2200);
-  note('logCustomerWant', { name: custName(c), item: nm('item', want) });
+  note('logCustomerWant', { name: custName(c), item: basketLabel(c) });
   sfx.bell();
 }
 
@@ -3592,19 +4803,40 @@ function update(dt) {
     if (!G.modalOpen && G.sleepFade === 0) doInteract();
   }
 
-  // --- 宠物跟随 ---
-  const pet = G.pet;
-  const pd = dist(pet.x, pet.y, p.x, p.y);
-  if (pd > 55) {
-    const a = Math.atan2(p.y - pet.y, p.x - pet.x);
-    const spd = pd > 160 ? 220 : 130;
-    pet.x += Math.cos(a) * spd * dt;
-    pet.y += Math.sin(a) * spd * dt;
-    pet.dir = Math.cos(a) < 0 ? 'left' : 'right';
-    pet.moving = true;
-    pet.walkPhase += dt * 13;
-  } else pet.moving = false;
-  if (pet.happy > 0) pet.happy -= dt;
+  // --- 宠物跟随（宠物房间升级后可以有好几只，排成一队跟着走） ---
+  for (let i = 0; i < G.pets.length; i++) {
+    const pet = G.pets[i];
+    const follow = i === 0 ? p : G.pets[i - 1];
+    const gap = i === 0 ? 55 : 46;
+    const pd = dist(pet.x, pet.y, follow.x, follow.y);
+    if (pd > gap) {
+      const a = Math.atan2(follow.y - pet.y, follow.x - pet.x);
+      const spd = pd > 160 ? 220 : 130;
+      pet.x += Math.cos(a) * spd * dt;
+      pet.y += Math.sin(a) * spd * dt;
+      pet.dir = Math.cos(a) < 0 ? 'left' : 'right';
+      pet.moving = true;
+      pet.walkPhase += dt * 13;
+    } else pet.moving = false;
+    if (pet.happy > 0) pet.happy -= dt;
+    if (pet.mood > 0) pet.mood -= dt;
+    // 三个需要照顾的指标会慢慢变差：饱腹度下降、清洁度下降、隔一阵子拉一次便便
+    pet.hunger = Math.max(0, pet.hunger - dt * 0.5);
+    pet.clean = Math.max(0, pet.clean - dt * 0.35);
+    if (pet.poop < 3) {
+      pet.poopT -= dt;
+      if (pet.poopT <= 0) {
+        pet.poop++;
+        pet.poopT = rand(70, 130);
+        if (i === 0 || Math.random() < 0.5) spawnParticles(pet.x, pet.y + 4, '💩', 1);
+      }
+    }
+    // 太久没人管：头顶冒一个小图标提醒（会稍微掉队）
+    if (petIsSad(pet)) {
+      pet.sadT = (pet.sadT || 0) + dt;
+      if (pet.sadT > 26) { pet.sadT = 0; sfx.petVoice(pet.type, 200); }
+    } else pet.sadT = 0;
+  }
 
   // --- 动物 AI：闲逛 + 生产（母鸡下蛋、小鸡只在鸡棚附近乱走） ---
   for (const a of G.animals) {
@@ -3959,8 +5191,28 @@ function render() {
     ctx.beginPath(); ctx.moveTo(fx, 592); ctx.lineTo(fx, 600); ctx.stroke();
   }
 
-  // 池塘
-  for (const pond of PONDS) drawPond(ctx, pond.x, pond.y, pond.w, pond.h, t, pondLabel(pond));
+  // 果树园：栅栏 + 「下次扩建到这里」的虚线预留区
+  const oRect = orchardRect();
+  ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.strokeRect(oRect.x, oRect.y, oRect.w, oRect.h);
+  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
+  for (let fx = oRect.x; fx <= oRect.x + oRect.w; fx += 26) {
+    ctx.beginPath(); ctx.moveTo(fx, oRect.y - 4); ctx.lineTo(fx, oRect.y + 4); ctx.stroke();
+  }
+  if (lvOf('orchard') < MAX_LV) {
+    drawExpandOutline(ctx, ORCHARD_RECTS[lvOf('orchard')], t, TXT('expandArea'));
+  }
+  // 其它设施的扩建预留区（围栏 / 水坑 / 宠物房间 / 水族箱 / 商店摊位）
+  if (lvOf('coop') < MAX_LV)    drawExpandOutline(ctx, PEN_RECTS.chicken[lvOf('coop')], t, TXT('expandArea'));
+  if (lvOf('sheep') < MAX_LV)   drawExpandOutline(ctx, PEN_RECTS.sheep[lvOf('sheep')], t, TXT('expandArea'));
+  if (lvOf('cow') < MAX_LV)     drawExpandOutline(ctx, PEN_RECTS.cow[lvOf('cow')], t, TXT('expandArea'));
+  if (lvOf('petroom') < MAX_LV) drawExpandOutline(ctx, PETROOM_RECTS[lvOf('petroom')], t, TXT('expandArea'));
+
+  // 池塘（没解锁的画成干土坑 + 🔒）
+  for (const pond of PONDS) {
+    drawPond(ctx, pond.x, pond.y, pond.w, pond.h, t, pondLabel(pond),
+             !!pond.locked, pond.unlockLv);
+  }
 
   // 动物棚舍：后半栅栏（画在动物后面）
   drawFenceBack(ctx, PENS.chicken.x, PENS.chicken.y, PENS.chicken.w, PENS.chicken.h);
@@ -3983,10 +5235,27 @@ function render() {
   drawables.push({ y: PENS.sheep.y + PENS.sheep.h, draw: () => drawFenceFront(ctx, PENS.sheep.x, PENS.sheep.y + PENS.sheep.h, PENS.sheep.w) });
   drawables.push({ y: PENS.cow.y + PENS.cow.h, draw: () => drawFenceFront(ctx, PENS.cow.x, PENS.cow.y + PENS.cow.h, PENS.cow.w) });
   drawables.push({ y: ZONES.house.y + 56, draw: () => drawHouse(ctx, ZONES.house.x, ZONES.house.y, t) });
-  drawables.push({ y: ZONES.stall.y + 40, draw: () => drawStall(ctx, ZONES.stall.x - 45, ZONES.stall.y - 20, t) });
+  drawables.push({ y: ZONES.stall.y + 40, draw: () => drawStall(ctx, ZONES.stall.x - 45, ZONES.stall.y - 20, t, STALL_SCALE[lvOf('shop') - 1]) });
+  // 商店等级的牌子挂在摊子旁边
+  drawables.push({
+    y: ZONES.stall.y + 8,
+    draw: () => drawLvBadge(ctx, ZONES.stall.x + 46, ZONES.stall.y - 62, lvOf('shop'), t, canUpgradeFacility('shop')),
+  });
   drawables.push({ y: ZONES.kitchen.y + 12, draw: () => drawKitchenProp(ctx, ZONES.kitchen.x, ZONES.kitchen.y, t) });
   drawables.push({ y: ZONES.wardrobe.y + 14, draw: () => drawWardrobeProp(ctx, ZONES.wardrobe.x, ZONES.wardrobe.y, t) });
   drawables.push({ y: ZONES.bin.y + 16, draw: () => drawBin(ctx, ZONES.bin.x, ZONES.bin.y, t) });
+  // 🐾 宠物房间
+  drawables.push({
+    y: petRoomRect().y + petRoomRect().h + 6,
+    draw: () => drawPetRoom(ctx, ZONES.petroom.x, 0, t, lvOf('petroom'), G.pets, petRoomRect()),
+  });
+  // 设施升级告示牌：鸡巢 / 羊棚 / 牛棚 / 果树园 / 水坑
+  for (const [f, sx, sy, ic] of upgradeSignSpots()) {
+    drawables.push({
+      y: sy + 14,
+      draw: () => drawUpgradeSign(ctx, sx, sy, t, ic, lvOf(f), canUpgradeFacility(f), facName(f)),
+    });
+  }
   for (const tr of G.trees) drawables.push({
     y: tr.y + 4,
     draw: () => tr.type === 'strawberry'
@@ -4027,8 +5296,8 @@ function render() {
     y: ZONES.hatchery.y + 6,
     draw: () => drawHatchery(ctx, ZONES.hatchery.x, ZONES.hatchery.y, t, G.incubating),
   });
-  // 大型水族箱
-  drawables.push({ y: ZONES.tank.y + 6, draw: () => drawAquarium(ctx, ZONES.tank.x, ZONES.tank.y, t, G.tank) });
+  // 大型水族箱（尺寸跟着等级变）
+  drawables.push({ y: ZONES.tank.y + 6, draw: () => drawAquarium(ctx, ZONES.tank.x, ZONES.tank.y, t, G.tank, tankSize()) });
   // 动物园的观赏动物（动画 emoji 图）
   for (const z of G.zoo) {
     const zd = ZOO_MAP[z.type] || ZOO_SHOP[0];
@@ -4085,20 +5354,31 @@ function render() {
           ctx.fillStyle = '#c95a1a';
           ctx.fillText(custName(c), c.x, ny);
         }
-        // 想要物品的气泡
+        // 想要物品的气泡：买好几件就把清单缩写在气泡里
         if (c.state === 'wait') {
           const by = c.y - 52 + Math.sin(t * 3 + c.phase) * 3;
+          const bi = basketOf(c);
+          const bw = bi.length > 1 ? 74 : 44;
           ctx.fillStyle = '#fff';
-          rr(ctx, c.x - 22, by - 18, 44, 30, 10); ctx.fill();
+          rr(ctx, c.x - bw / 2, by - 18, bw, 30, 10); ctx.fill();
           ctx.strokeStyle = '#ffb84d'; ctx.lineWidth = 2.5;
-          rr(ctx, c.x - 22, by - 18, 44, 30, 10); ctx.stroke();
+          rr(ctx, c.x - bw / 2, by - 18, bw, 30, 10); ctx.stroke();
           ctx.beginPath();
           ctx.moveTo(c.x - 4, by + 12); ctx.lineTo(c.x + 4, by + 12); ctx.lineTo(c.x, by + 20);
           ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill();
           ctx.font = '19px sans-serif'; ctx.textAlign = 'center';
-          ctx.fillText(ITEMS[c.want].icon, c.x - 6, by + 3);
-          ctx.fillStyle = '#e2701d'; ctx.font = 'bold 13px sans-serif';
-          ctx.fillText('?', c.x + 12, by + 4);
+          if (bi.length > 1) {
+            // 两样东西：左边一个图标 + 「+」+ 右边一个图标
+            ctx.fillText(ITEMS[bi[0].id].icon, c.x - 18, by + 3);
+            ctx.fillStyle = '#e2701d'; ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('+', c.x, by + 4);
+            ctx.font = '19px sans-serif';
+            ctx.fillText(ITEMS[bi[1].id].icon, c.x + 18, by + 3);
+          } else {
+            ctx.fillText(ITEMS[bi[0].id].icon, c.x - 7, by + 3);
+            ctx.fillStyle = '#e2701d'; ctx.font = 'bold 13px sans-serif';
+            ctx.fillText(bi[0].qty > 1 ? ('×' + bi[0].qty) : '?', c.x + 13, by + 4);
+          }
         }
       },
     });
@@ -4108,7 +5388,26 @@ function render() {
     if (c.pet) drawables.push({ y: c.pet.y + 10, draw: () => drawPet(ctx, c.pet.x, c.pet.y, { ...c.pet, t }) });
   }
   // 宠物 & 玩家
-  drawables.push({ y: G.pet.y + 10, draw: () => drawPet(ctx, G.pet.x, G.pet.y, { ...G.pet, t, scale: PET_SCALE }) });
+  for (let i = 0; i < G.pets.length; i++) {
+    const p = G.pets[i];
+    drawables.push({
+      y: p.y + 10,
+      draw: () => {
+        drawPet(ctx, p.x, p.y, { ...p, t, scale: PET_SCALE });
+        // 需要照顾的宠物头顶冒小图标：🍖 饿了 / 💩 要清理 / 🛁 要洗澡
+        const ic = petNeedIcon(p);
+        if (ic) {
+          const by = p.y - 46 + Math.sin(t * 3 + p.phase) * 2.5;
+          ctx.fillStyle = 'rgba(255,255,255,.92)';
+          rr(ctx, p.x - 13, by - 13, 26, 22, 9); ctx.fill();
+          ctx.strokeStyle = '#ff9a3e'; ctx.lineWidth = 2;
+          rr(ctx, p.x - 13, by - 13, 26, 22, 9); ctx.stroke();
+          ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(ic, p.x, by + 4);
+        }
+      },
+    });
+  }
   drawables.push({
     y: p_y() + 20,
     draw: () => {
@@ -4491,6 +5790,7 @@ window.addEventListener('touchstart', () => {
 })();
 
 // 启动
+applyLevels();     // 按设施等级（默认全部 1 级）把地图尺寸摆好
 initWorld();
 setMuted(muted);   // 同步静音按钮图标
 {
@@ -4502,7 +5802,7 @@ window.addEventListener('beforeunload', () => saveGame(true));
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(true); });
 // 角色与宠物切换
 function highlightChar() {
-  const g = G.player.gender, pt = G.pet.type;
+  const g = G.player.gender, pt = (G.pets[0] && G.pets[0].type) || 'dog';
   const set = (id, on) => { const el = $(id); if (el) el.classList.toggle('selected', !!on); };
   set('pick-boy', g === 'boy'); set('pick-girl', g === 'girl');
   set('pick-dog', pt === 'dog'); set('pick-cat', pt === 'cat');
@@ -4540,14 +5840,22 @@ window.__farm = {
   MATH_TIME, resolveCustomerSale,
   renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
-  listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
+  listProfiles, deleteProfile, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
   emojiCache, emojiAnimUrl, emojiPngUrl, emojiWebpUrl, emojiSrcFor, emojiDrawable,
   emojiAnims, emojiFrameIndex, drawEmojiFrame, decodeEmojiAnim, ANIM_DEBUG,
   needsBreath, breathScale, loadEmoji, emojiFrameReady,
   notoAnimState, notoAnimSet, notoHasAnim,
-  canvasHasPixels, animSlot, ANIM_PARALLEL, notoNorm, MAX_INCUBATE,
+  canvasHasPixels, animSlot, ANIM_PARALLEL, notoNorm, maxIncubate, maxHens, maxChicks,
+  maxSheep, maxCows, maxOtherAnimals, maxOrchard, maxTank, maxRecipes, maxPets,
+  FACILITIES, FACILITY_ORDER, doUpgrade, applyLevels, lvOf, isMaxLv, upgradeCost,
+  addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
+  newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, upgradeSignSpots, facName, facCapText, update,
+  buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, buildMathSteps, mathExpressionText,
+  renderUpgradeStrip, shopClothesOf, OUTFIT_CATS,
+  renderShop, renderWardrobe, renderTank, renderBook, renderSell, customerPool, spawnCustomer,
+  startFishing, reelIn, adoptPet, feedPet, cleanPet, bathePet, maxPets, outfitTierMax, shopTierMax,
   drawEmojiAnimated, rawAnimState, detectRawAnim,
 };
 

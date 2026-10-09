@@ -27,50 +27,119 @@ function drawShadow(ctx, x, y, w) {
 }
 
 /* ------------------------------------------------------------
- * 纸娃娃数据：帽子×11 / 上衣×11 / 裤子×11
+ * 纸娃娃数据：帽子×11 / 头饰×12 / 裙子×12 / 上衣×10 / 裤子×11 / 鞋子×12
  * ---------------------------------------------------------- */
 const OUTFITS = {
   hat: {
-    none:    { name: '不戴帽子', icon: '🚫', price: 0 },
-    ragged:  { name: '破帽子',   icon: '🧢', price: 0 },
-    straw:   { name: '草帽',     icon: '👒', price: 30 },
-    bow:     { name: '蝴蝶结',   icon: '🎀', price: 50 },
-    cap:     { name: '棒球帽',   icon: '🧢', price: 60 },
-    beanie:  { name: '毛线帽',   icon: '🎅', price: 70 },
-    bandana: { name: '海盗头巾', icon: '🏴‍☠️', price: 80 },
-    flower:  { name: '花环',     icon: '🌸', price: 90 },
-    chef:    { name: '厨师帽',   icon: '👨‍🍳', price: 100 },
-    wizard:  { name: '巫师帽',   icon: '🧙', price: 120 },
-    frog:    { name: '青蛙帽',   icon: '🐸', price: 130 },
-    crown:   { name: '小皇冠',   icon: '👑', price: 150 },
+    none:    { name: '不戴帽子', icon: '🚫', price: 0, tier: 0 },
+    ragged:  { name: '破帽子',   icon: '🧢', price: 0, tier: 0 },
+    straw:   { name: '草帽',     icon: '👒', price: 30, tier: 1 },
+    bow:     { name: '蝴蝶结',   icon: '🎀', price: 50, tier: 1 },
+    cap:     { name: '棒球帽',   icon: '🧢', price: 60, tier: 1 },
+    beanie:  { name: '毛线帽',   icon: '🎅', price: 70, tier: 1 },
+    bandana: { name: '海盗头巾', icon: '🏴‍☠️', price: 80, tier: 2 },
+    flower:  { name: '花环',     icon: '🌸', price: 90, tier: 2 },
+    chef:    { name: '厨师帽',   icon: '👨‍🍳', price: 100, tier: 2 },
+    wizard:  { name: '巫师帽',   icon: '🧙', price: 120, tier: 3 },
+    frog:    { name: '青蛙帽',   icon: '🐸', price: 130, tier: 3 },
+    crown:   { name: '小皇冠',   icon: '👑', price: 150, tier: 3 },
+  },
+  // 🎀 头饰：漂亮的发饰（12 种），和帽子可以同时戴
+  hair: {
+    none:        { name: '不戴头饰',     icon: '🚫', price: 0, tier: 0 },
+    hairbow:     { name: '珍珠蝴蝶结',   icon: '🎀', price: 45, tier: 1 },
+    flowerpin:   { name: '小花发夹',     icon: '🌸', price: 40, tier: 1 },
+    heartpin:    { name: '爱心发夹',     icon: '💖', price: 50, tier: 1 },
+    starpin:     { name: '星星发卡',     icon: '⭐', price: 55, tier: 1 },
+    rainbowband: { name: '彩虹发带',     icon: '🌈', price: 75, tier: 2 },
+    sunflower:   { name: '向日葵发卡',   icon: '🌻', price: 70, tier: 2 },
+    cherrypin:   { name: '樱桃发夹',     icon: '🍒', price: 80, tier: 2 },
+    bunnyears:   { name: '兔耳发箍',     icon: '🐰', price: 85, tier: 2 },
+    catears:     { name: '猫耳发箍',     icon: '🐱', price: 85, tier: 2 },
+    butterfly:   { name: '蝴蝶发饰',     icon: '🦋', price: 120, tier: 3 },
+    unicorn:     { name: '独角兽角',     icon: '🦄', price: 150, tier: 3 },
+    tiara:       { name: '公主皇冠',     icon: '👑', price: 160, tier: 3 },
   },
   shirt: {
-    ragged:   { name: '破衣服',     icon: '👕', price: 0 },
-    stripes:  { name: '黄条纹衫',   icon: '🟡', price: 40 },
-    overalls: { name: '蓝色背带装', icon: '🩵', price: 60 },
-    dotty:    { name: '粉波点衫',   icon: '🌸', price: 70 },
-    hoodie:   { name: '绿连帽衫',   icon: '🧥', price: 80 },
-    dress:    { name: '粉色裙子',   icon: '👗', price: 80 },
-    sailor:   { name: '水手服',     icon: '⚓', price: 90 },
-    vest:     { name: '小马甲',     icon: '🤎', price: 90 },
-    star:     { name: '星星T恤',    icon: '⭐', price: 100 },
-    pumpkin:  { name: '南瓜装',     icon: '🎃', price: 110 },
-    rainbow:  { name: '彩虹T恤',    icon: '🌈', price: 120 },
+    ragged:   { name: '破衣服',     icon: '👕', price: 0, tier: 0 },
+    stripes:  { name: '黄条纹衫',   icon: '🟡', price: 40, tier: 1 },
+    overalls: { name: '蓝色背带装', icon: '🩵', price: 60, tier: 1 },
+    dotty:    { name: '粉波点衫',   icon: '🌸', price: 70, tier: 1 },
+    dress:    { name: '粉色连衣裙', icon: '👗', price: 80, tier: 0, legacy: true },
+    hoodie:   { name: '绿连帽衫',   icon: '🧥', price: 80, tier: 2 },
+    sailor:   { name: '水手服',     icon: '⚓', price: 90, tier: 2 },
+    vest:     { name: '小马甲',     icon: '🤎', price: 90, tier: 2 },
+    star:     { name: '星星T恤',    icon: '⭐', price: 100, tier: 3 },
+    pumpkin:  { name: '南瓜装',     icon: '🎃', price: 110, tier: 3 },
+    rainbow:  { name: '彩虹T恤',    icon: '🌈', price: 120, tier: 3 },
+  },
+  // 👗 裙子（12 种）：穿上裙子就不用再穿上衣和裤子了
+  dress: {
+    none:            { name: '不穿裙子',     icon: '🚫', price: 0, tier: 0 },
+    pinkdress:       { name: '粉粉连衣裙',   icon: '👗', price: 80,  tier: 1 },
+    bluedots:        { name: '蓝点点裙',     icon: '🔵', price: 85,  tier: 1 },
+    yellowdress:     { name: '柠檬黄裙',     icon: '🍋', price: 85,  tier: 1 },
+    denimdress:      { name: '牛仔背带裙',   icon: '💙', price: 90,  tier: 1 },
+    strawberrydress: { name: '草莓小裙',     icon: '🍓', price: 110, tier: 2 },
+    sunflowerdress:  { name: '向日葵裙',     icon: '🌻', price: 110, tier: 2 },
+    plaidred:        { name: '红格纹裙',     icon: '🔴', price: 115, tier: 2 },
+    rainbowdress:    { name: '彩虹蛋糕裙',   icon: '🌈', price: 130, tier: 2 },
+    princessdress:   { name: '公主蓬蓬裙',   icon: '👸', price: 150, tier: 3 },
+    starrydress:     { name: '星空纱裙',     icon: '✨', price: 165, tier: 3 },
+    butterflydress:  { name: '蝴蝶仙子裙',   icon: '🦋', price: 175, tier: 3 },
+    weddingdress:    { name: '白雪婚纱裙',   icon: '💒', price: 210, tier: 3 },
   },
   pants: {
-    ragged:      { name: '破裤子',   icon: '👖', price: 0 },
-    brown:       { name: '工装裤',   icon: '🟤', price: 30 },
-    jeans:       { name: '牛仔裤',   icon: '💙', price: 40 },
-    shorts:      { name: '红短裤',   icon: '🩳', price: 40 },
-    green:       { name: '绿长裤',   icon: '💚', price: 50 },
-    orange:      { name: '橙短裤',   icon: '🧡', price: 50 },
-    white:       { name: '白裤子',   icon: '🤍', price: 60 },
-    pink:        { name: '粉裤子',   icon: '🩷', price: 60 },
-    purple:      { name: '紫长裤',   icon: '💜', price: 70 },
-    stripepants: { name: '条纹裤',   icon: '🦓', price: 80 },
-    polka:       { name: '波点裤',   icon: '🔵', price: 90 },
+    ragged:      { name: '破裤子',   icon: '👖', price: 0, tier: 0 },
+    brown:       { name: '工装裤',   icon: '🟤', price: 30, tier: 1 },
+    jeans:       { name: '牛仔裤',   icon: '💙', price: 40, tier: 1 },
+    shorts:      { name: '红短裤',   icon: '🩳', price: 40, tier: 1 },
+    green:       { name: '绿长裤',   icon: '💚', price: 50, tier: 1 },
+    orange:      { name: '橙短裤',   icon: '🧡', price: 50, tier: 2 },
+    white:       { name: '白裤子',   icon: '🤍', price: 60, tier: 2 },
+    pink:        { name: '粉裤子',   icon: '🩷', price: 60, tier: 2 },
+    purple:      { name: '紫长裤',   icon: '💜', price: 70, tier: 2 },
+    stripepants: { name: '条纹裤',   icon: '🦓', price: 80, tier: 3 },
+    polka:       { name: '波点裤',   icon: '🔵', price: 90, tier: 3 },
+  },
+  // 👟 鞋子（12 种，含光脚）：一开始是光脚的
+  shoes: {
+    none:        { name: '光脚丫',     icon: '🦶', price: 0, tier: 0 },
+    redshoes:    { name: '小红鞋',     icon: '👟', price: 30, tier: 1 },
+    sandals:     { name: '凉鞋',       icon: '🩴', price: 35, tier: 1 },
+    sneakers:    { name: '白球鞋',     icon: '👟', price: 40, tier: 1 },
+    boots:       { name: '小黄靴',     icon: '🥾', price: 45, tier: 1 },
+    rainboots:   { name: '蓝雨靴',     icon: '🥾', price: 55, tier: 2 },
+    maryjanes:   { name: '黑皮鞋',     icon: '👞', price: 60, tier: 2 },
+    flowershoes: { name: '花边小鞋',   icon: '🩰', price: 65, tier: 2 },
+    sportshoes:  { name: '绿运动鞋',   icon: '👟', price: 70, tier: 2 },
+    magicshoes:  { name: '魔法靴',     icon: '🥾', price: 110, tier: 3 },
+    glassshoes:  { name: '水晶鞋',     icon: '👠', price: 120, tier: 3 },
+    wingshoes:   { name: '小翅膀鞋',   icon: '👟', price: 130, tier: 3 },
+    cloudshoes:  { name: '云朵鞋',     icon: '☁️', price: 140, tier: 3 },
   },
 };
+
+// 服饰分类（衣柜 / 商店共用的顺序）
+const OUTFIT_CATS = ['hat', 'hair', 'dress', 'shirt', 'pants', 'shoes'];
+const OUTFIT_CAT_LABEL = {
+  hat:   ['🎩 帽子',  '🎩 Hats'],
+  hair:  ['🎀 头饰',  '🎀 Hair'],
+  dress: ['👗 裙子',  '👗 Dresses'],
+  shirt: ['👕 上衣',  '👕 Tops'],
+  pants: ['👖 裤子',  '👖 Pants'],
+  shoes: ['👟 鞋子',  '👟 Shoes'],
+};
+// 这个分类里「还在卖」的服饰（跳过价格 0 的和旧版遗留的）
+function shopClothesOf(cat, maxTier) {
+  const out = [];
+  for (const [key, o] of Object.entries(OUTFITS[cat])) {
+    if (!o.price || o.legacy) continue;
+    if (maxTier !== undefined && (o.tier || 1) > maxTier) continue;
+    out.push(key);
+  }
+  return out;
+}
 
 const SHIRT_COLORS = {
   ragged:   { main: '#9a938a', patch: '#6e675f' },
@@ -352,6 +421,12 @@ function drawPlayer(ctx, x, y, o) {
   const skin = '#ffdbac';
   const shirt = SHIRT_COLORS[o.outfit.shirt] || SHIRT_COLORS.ragged;
   const pants = PANTS_COLORS[o.outfit.pants] || PANTS_COLORS.ragged;
+  // 裙子（穿上裙子就不画上衣和裤子，只留裙摆 + 鞋子）
+  const dressKey = (o.outfit.dress && o.outfit.dress !== 'none') ? o.outfit.dress : null;
+  const dressCol = dressKey ? (DRESS_COLORS[dressKey] || DRESS_COLORS.pinkdress) : null;
+  const bodyColor = dressCol ? dressCol.main : shirt.main;
+  const shoeKey = o.outfit.shoes || 'none';
+  const hairAcc = o.outfit.hair || 'none';
 
   ctx.save();
   ctx.translate(x, yy);
@@ -361,8 +436,8 @@ function drawPlayer(ctx, x, y, o) {
 
   drawShadow(ctx, 0, bob, 15);
 
-  // --- 腿（裤子层） ---
-  ctx.fillStyle = pants.main;
+  // --- 腿（裤子层；穿裙子时是光腿） ---
+  ctx.fillStyle = dressKey ? skin : pants.main;
   if (riding) {
     // 骑在车上：前腿弯着踩踏板，后腿收在座位下方
     ctx.save();
@@ -373,10 +448,8 @@ function drawPlayer(ctx, x, y, o) {
     ctx.translate(4, 0); ctx.rotate(0.45);
     rr(ctx, -3, 2, 8, 15, 3); ctx.fill();
     ctx.restore();
-    drawPantsPattern(ctx, o.outfit.pants, pants, 0);
-    ctx.fillStyle = '#7a5230';
-    rr(ctx, 6, 12, 10, 5, 2); ctx.fill();
-    rr(ctx, -12, 11, 9, 5, 2); ctx.fill();
+    if (!dressKey) drawPantsPattern(ctx, o.outfit.pants, pants, 0);
+    drawShoes(ctx, shoeKey, 0, 'ride', dirX);
   } else if (deck) {
     // 站在滑板车上：双腿微弯、前后站稳
     ctx.save();
@@ -387,36 +460,36 @@ function drawPlayer(ctx, x, y, o) {
     ctx.translate(4, 0); ctx.rotate(0.12);
     rr(ctx, -3, 2, 8, 15, 3); ctx.fill();
     ctx.restore();
-    drawPantsPattern(ctx, o.outfit.pants, pants, 0);
-    ctx.fillStyle = '#7a5230';
-    rr(ctx, -11, 14, 9, 5, 2); ctx.fill();
-    rr(ctx, 3, 14, 9, 5, 2); ctx.fill();
+    if (!dressKey) drawPantsPattern(ctx, o.outfit.pants, pants, 0);
+    drawShoes(ctx, shoeKey, 0, 'deck', dirX);
   } else {
     rr(ctx, -9 + swing * 0.5, 2, 8, 15, 3); ctx.fill();
     rr(ctx, 1 - swing * 0.5, 2, 8, 15, 3); ctx.fill();
     // 裤子花纹
-    drawPantsPattern(ctx, o.outfit.pants, pants, swing);
-    // 鞋子
-    ctx.fillStyle = '#7a5230';
-    rr(ctx, -10 + swing * 0.6, 15, 9, 5, 2); ctx.fill();
-    rr(ctx, 1 - swing * 0.6, 15, 9, 5, 2); ctx.fill();
+    if (!dressKey) drawPantsPattern(ctx, o.outfit.pants, pants, swing);
+    // 鞋子（光脚就不画）
+    drawShoes(ctx, shoeKey, swing, 'walk', dirX);
   }
 
-  // --- 身体（上衣层） ---
-  ctx.fillStyle = shirt.main;
-  if (o.outfit.shirt === 'dress') {
-    ctx.beginPath();
-    ctx.moveTo(-11, -16); ctx.lineTo(11, -16);
-    ctx.lineTo(15, 6); ctx.lineTo(-15, 6); ctx.closePath(); ctx.fill();
+  // --- 身体：裙子 或 上衣 ---
+  if (dressKey) {
+    drawDress(ctx, dressKey, o.t);
   } else {
-    rr(ctx, -11, -16, 22, 21, 6); ctx.fill();
+    ctx.fillStyle = shirt.main;
+    if (o.outfit.shirt === 'dress') {
+      ctx.beginPath();
+      ctx.moveTo(-11, -16); ctx.lineTo(11, -16);
+      ctx.lineTo(15, 6); ctx.lineTo(-15, 6); ctx.closePath(); ctx.fill();
+    } else {
+      rr(ctx, -11, -16, 22, 21, 6); ctx.fill();
+    }
+    // 上衣花纹
+    drawShirtPattern(ctx, o.outfit.shirt, shirt);
   }
-  // 上衣花纹
-  drawShirtPattern(ctx, o.outfit.shirt, shirt);
 
   // --- 手臂（动作时举起来；骑车时向前扶着车把） ---
   const armRaise = o.actionT > 0 ? Math.sin(o.actionT * 10) * 10 + 12 : 0;
-  ctx.strokeStyle = shirt.main; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.strokeStyle = bodyColor; ctx.lineWidth = 6; ctx.lineCap = 'round';
   ctx.beginPath();
   if (riding || deck) {
     // 两只手都伸向前方（+x 方向），像抓着车把
@@ -469,11 +542,26 @@ function drawPlayer(ctx, x, y, o) {
   ctx.strokeStyle = '#b5673a'; ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.arc(0, -24, 3, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
 
-  // --- 帽子层（整体上移一点，避免压住眼睛） ---
+  // --- 头饰 / 帽子层（整体上移一点，避免压住眼睛） ---
+  // 发箍、耳朵、独角兽角这些「大件」先画（帽子会压在上面），
+  // 小发夹、蝴蝶结这些「小件」后画（保证戴上帽子也看得见）。
+  const HAIR_OVER_HAT = { hairbow: 1, flowerpin: 1, heartpin: 1, starpin: 1, cherrypin: 1, butterfly: 1 };
+  if (hairAcc !== 'none' && !HAIR_OVER_HAT[hairAcc]) {
+    ctx.save();
+    ctx.translate(0, -3.5);
+    drawHairAcc(ctx, hairAcc, o.t);
+    ctx.restore();
+  }
   ctx.save();
   ctx.translate(0, -3.5);
   drawHat(ctx, o.outfit.hat, o.t);
   ctx.restore();
+  if (hairAcc !== 'none' && HAIR_OVER_HAT[hairAcc]) {
+    ctx.save();
+    ctx.translate(0, -3.5);
+    drawHairAcc(ctx, hairAcc, o.t);
+    ctx.restore();
+  }
 
   ctx.restore();
 }
@@ -629,6 +717,421 @@ function drawHat(ctx, hat, t) {
 }
 
 /* ------------------------------------------------------------
+ * 🎀 头饰（发饰）：和帽子画在同一层，可以同时戴
+ *   坐标系和 drawHat 一样：头心在 (0,-27)，调用前已经 translate(0,-3.5)
+ * ---------------------------------------------------------- */
+function drawHairAcc(ctx, key, t) {
+  const bob = Math.sin(t * 2) * 0.8;
+  switch (key) {
+    case 'hairbow':   // 珍珠蝴蝶结：戴在头顶偏左
+      ctx.save(); ctx.translate(-6, -36 + bob);
+      ctx.fillStyle = '#ff6fa5';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, -4.5); ctx.lineTo(-7, 4.5); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, -4.5); ctx.lineTo(7, 4.5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffe9f2'; ellipse(ctx, 0, 0, 2.6, 2.6); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ellipse(ctx, -4.5, -2, 1, 1); ctx.fill(); ellipse(ctx, 4.5, -2, 1, 1); ctx.fill();
+      ctx.restore();
+      break;
+    case 'flowerpin':  // 小花发夹：三朵小花
+      ctx.save(); ctx.translate(7, -34 + bob);
+      [[0, 0, '#ff8fb0'], [-5, 2, '#ffd23e'], [2, 5, '#c88ae8']].forEach(function (f) {
+        ctx.fillStyle = f[2];
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          ellipse(ctx, f[0] + Math.cos(a) * 2.6, f[1] + Math.sin(a) * 2.6, 1.9, 1.9); ctx.fill();
+        }
+        ctx.fillStyle = '#fff8d0';
+        ellipse(ctx, f[0], f[1], 1.4, 1.4); ctx.fill();
+      });
+      ctx.restore();
+      break;
+    case 'heartpin':
+      ctx.save(); ctx.translate(-7, -35 + bob);
+      ctx.fillStyle = '#ff5f8f';
+      ctx.beginPath();
+      ctx.moveTo(0, 4); ctx.quadraticCurveTo(-6, -1, -3, -4);
+      ctx.quadraticCurveTo(0, -5.5, 0, -2);
+      ctx.quadraticCurveTo(0, -5.5, 3, -4);
+      ctx.quadraticCurveTo(6, -1, 0, 4);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ellipse(ctx, -1.6, -2.2, 1, 0.8); ctx.fill();
+      ctx.restore();
+      break;
+    case 'starpin':
+      ctx.save(); ctx.translate(7, -36 + bob);
+      ctx.fillStyle = '#ffd23e';
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5;
+        const r = i % 2 ? 2.6 : 6;
+        const px = Math.cos(a) * r, py = Math.sin(a) * r;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#e0a81e'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.restore();
+      break;
+    case 'rainbowband':  // 彩虹发带：横过额头
+      ctx.save(); ctx.translate(0, -33 + bob);
+      const rc = ['#ff6b6b', '#ffb84d', '#ffd23e', '#6fbf5a', '#5fb8e8', '#a07ce0'];
+      rc.forEach(function (c, i) {
+        ctx.strokeStyle = c; ctx.lineWidth = 1.9;
+        ctx.beginPath();
+        ctx.ellipse(0, -i * 1.1, 11.4, 5.4, 0, Math.PI * 1.05, Math.PI * 1.95);
+        ctx.stroke();
+      });
+      ctx.fillStyle = '#ffd23e';
+      ellipse(ctx, 10.5, -1, 2.2, 2.2); ctx.fill();
+      ctx.restore();
+      break;
+    case 'sunflower':
+      ctx.save(); ctx.translate(-8, -34 + bob);
+      ctx.fillStyle = '#ffc93e';
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        ellipse(ctx, Math.cos(a) * 5, Math.sin(a) * 5, 3.4, 2.2); ctx.fill();
+      }
+      ctx.fillStyle = '#8a5a2e'; ellipse(ctx, 0, 0, 3, 3); ctx.fill();
+      ctx.restore();
+      break;
+    case 'cherrypin':   // 两颗小樱桃
+      ctx.save(); ctx.translate(7, -33 + bob);
+      ctx.strokeStyle = '#5aa84f'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(0, -6); ctx.quadraticCurveTo(3, -3, 1, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, -6); ctx.quadraticCurveTo(-3, -3, -3, 1); ctx.stroke();
+      ctx.fillStyle = '#e03a4a';
+      ellipse(ctx, 1, 2, 2.8, 2.8); ctx.fill();
+      ellipse(ctx, -3, 3, 2.6, 2.6); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ellipse(ctx, 0.2, 1, 0.8, 0.8); ctx.fill();
+      ctx.restore();
+      break;
+    case 'bunnyears':   // 兔耳发箍
+      ctx.save(); ctx.translate(0, -33 + bob);
+      ctx.fillStyle = '#fff';
+      [[-6, -1.1], [6, 1.1]].forEach(function (e) {
+        ctx.save(); ctx.translate(e[0], -6); ctx.rotate(e[1] * 0.28);
+        ellipse(ctx, 0, -5, 3.4, 9.5); ctx.fill();
+        ctx.fillStyle = '#ffc4d6';
+        ellipse(ctx, 0, -5, 1.7, 6.4); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.restore();
+      });
+      ctx.strokeStyle = '#f0c8d8'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 4.6, 0, Math.PI, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      break;
+    case 'catears':
+      ctx.save(); ctx.translate(0, -34 + bob);
+      ctx.fillStyle = '#5a4a42';
+      [[-7, -1], [7, 1]].forEach(function (e) {
+        ctx.save(); ctx.translate(e[0], -3); ctx.rotate(e[1] * 0.35);
+        ctx.beginPath();
+        ctx.moveTo(-4.5, 3); ctx.lineTo(0, -7.5); ctx.lineTo(4.5, 3);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffb0c8';
+        ctx.beginPath();
+        ctx.moveTo(-2.2, 2); ctx.lineTo(0, -4.2); ctx.lineTo(2.2, 2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#5a4a42';
+        ctx.restore();
+      });
+      ctx.strokeStyle = '#5a4a42'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 4.6, 0, Math.PI, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      break;
+    case 'butterfly':   // 停在头上的小蝴蝶（会扇翅膀）
+      ctx.save(); ctx.translate(7, -38 + bob);
+      const flap = Math.abs(Math.sin(t * 6)) * 0.6 + 0.5;
+      ctx.fillStyle = '#8ac7ff';
+      ctx.save(); ctx.scale(flap, 1);
+      ellipse(ctx, -4, -2, 4.2, 3.2); ctx.fill();
+      ellipse(ctx, -4, 2.5, 3.4, 2.6); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#c88ae8';
+      ctx.save(); ctx.scale(flap, 1);
+      ellipse(ctx, 4, -2, 4.2, 3.2); ctx.fill();
+      ellipse(ctx, 4, 2.5, 3.4, 2.6); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#5a3a6a';
+      rr(ctx, -0.9, -3.5, 1.8, 7, 0.9); ctx.fill();
+      ctx.strokeStyle = '#5a3a6a'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(-2, -6); ctx.moveTo(0, -3.5); ctx.lineTo(2, -6); ctx.stroke();
+      ctx.restore();
+      break;
+    case 'unicorn':     // 独角兽角 + 小耳朵
+      ctx.save(); ctx.translate(0, -33 + bob);
+      ctx.fillStyle = '#ffd23e';
+      ctx.beginPath();
+      ctx.moveTo(-3, 0); ctx.lineTo(0, -13); ctx.lineTo(3, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#e0a81e'; ctx.lineWidth = 0.9;
+      for (let i = 1; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-3 + i * 0.9, -i * 3.2); ctx.lineTo(3 - i * 0.9, -i * 3.2 + 0.6);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.moveTo(-10, 1); ctx.lineTo(-7, -5); ctx.lineTo(-4.5, 1); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(10, 1); ctx.lineTo(7, -5); ctx.lineTo(4.5, 1); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      break;
+    case 'tiara':       // 小公主皇冠发饰
+      ctx.save(); ctx.translate(0, -34 + bob);
+      ctx.fillStyle = '#ffe27a';
+      ctx.beginPath();
+      ctx.moveTo(-9, 1); ctx.lineTo(-9, -4); ctx.lineTo(-5.5, -0.5);
+      ctx.lineTo(-2.5, -7); ctx.lineTo(0, -3);
+      ctx.lineTo(2.5, -7); ctx.lineTo(5.5, -0.5); ctx.lineTo(9, -4);
+      ctx.lineTo(9, 1); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#e0b81e'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.fillStyle = '#ff6b8a'; ellipse(ctx, 0, -1.5, 1.5, 1.5); ctx.fill();
+      ctx.fillStyle = '#8ac7ff'; ellipse(ctx, -6, -0.6, 1.1, 1.1); ctx.fill();
+      ellipse(ctx, 6, -0.6, 1.1, 1.1); ctx.fill();
+      ctx.restore();
+      break;
+  }
+}
+
+/* ------------------------------------------------------------
+ * 👗 裙子（连衣裙）：穿上裙子就不再画上衣和裤子
+ *   坐标系和身体层一样：躯干 y=-16 起，腿部 y=2 起
+ * ---------------------------------------------------------- */
+const DRESS_COLORS = {
+  pinkdress:       { main: '#ff9fc0', trim: '#fff3f8', accent: '#ff6fa5' },
+  bluedots:        { main: '#9fd0f0', trim: '#ffffff', accent: '#ffffff' },
+  yellowdress:     { main: '#ffe27a', trim: '#fffbe8', accent: '#ffb84d' },
+  denimdress:      { main: '#5b8fd0', trim: '#e8f0fa', accent: '#3f6fb5' },
+  strawberrydress: { main: '#ff8fa8', trim: '#fff3f8', accent: '#e03a4a' },
+  sunflowerdress:  { main: '#ffd85e', trim: '#fffbe8', accent: '#8a5a2e' },
+  plaidred:        { main: '#e05656', trim: '#fff3f3', accent: '#a83434' },
+  rainbowdress:    { main: '#fff6e8', trim: '#ffffff', accent: '#ff6b8a' },
+  princessdress:   { main: '#ffb8d8', trim: '#fff6fb', accent: '#ffd23e' },
+  starrydress:     { main: '#6a5fc0', trim: '#e8e4ff', accent: '#ffe27a' },
+  butterflydress:  { main: '#c9a8f0', trim: '#f6f0ff', accent: '#8ac7ff' },
+  weddingdress:    { main: '#ffffff', trim: '#f0f4ff', accent: '#cfe0ff' },
+};
+function drawDressPattern(ctx, key, c) {
+  const SKIRT_BOTTOM = 17;
+  if (key === 'bluedots') {
+    ctx.fillStyle = c.accent;
+    for (let i = 0; i < 7; i++) {
+      const a = -1.1 + i * 0.36;
+      ellipse(ctx, Math.sin(a) * 15, 6 + (i % 3) * 4.4, 1.7, 1.7); ctx.fill();
+    }
+  } else if (key === 'sunflowerdress' || key === 'sunflower') {
+    ctx.fillStyle = c.accent;
+    ellipse(ctx, 0, 6, 3.2, 3.2); ctx.fill();
+    ctx.fillStyle = '#ffd23e';
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ellipse(ctx, Math.cos(a) * 6, 6 + Math.sin(a) * 6, 2.4, 1.8); ctx.fill();
+    }
+  } else if (key === 'strawberrydress') {
+    ctx.fillStyle = c.accent;
+    for (let i = 0; i < 4; i++) {
+      const x = -10 + i * 7;
+      ctx.beginPath();
+      ctx.moveTo(x, 5); ctx.quadraticCurveTo(x + 3, 10, x + 1.5, 12);
+      ctx.quadraticCurveTo(x, 10, x - 1.5, 12);
+      ctx.quadraticCurveTo(x - 3, 10, x, 5);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#5aa84f';
+    for (let i = 0; i < 4; i++) { rr(ctx, -10 + i * 7 - 1, 4, 4, 1.6, 0.8); ctx.fill(); }
+  } else if (key === 'plaidred') {
+    ctx.strokeStyle = c.accent; ctx.lineWidth = 1.4;
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath(); ctx.moveTo(i * 4.6, 2); ctx.lineTo(i * 6.4, SKIRT_BOTTOM); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-15, 4 + i * 4); ctx.lineTo(15, 4 + i * 4); ctx.stroke();
+    }
+  } else if (key === 'rainbowdress') {
+    const rc = ['#ff6b6b', '#ffb84d', '#ffd23e', '#6fbf5a', '#5fb8e8', '#a07ce0'];
+    rc.forEach(function (col, i) {
+      ctx.fillStyle = col;
+      rr(ctx, -16 + i * 0.6, 3 + i * 2.3, 32 - i * 1.2, 2.1, 1); ctx.fill();
+    });
+  } else if (key === 'starrydress') {
+    ctx.fillStyle = c.accent;
+    const pts = [[-8, 5], [-1, 9], [6, 6], [10, 12], [-11, 12], [2, 14], [-4, 3]];
+    pts.forEach(function (p, i) {
+      ctx.save(); ctx.translate(p[0], p[1]); ctx.scale(1, 1);
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const a = -Math.PI / 2 + k * Math.PI / 5;
+        const r = k % 2 ? 0.8 : 2.1;
+        const px = Math.cos(a) * r, py = Math.sin(a) * r;
+        k ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    });
+  } else if (key === 'butterflydress') {
+    ctx.fillStyle = c.accent;
+    [[-7, 7], [7, 9], [0, 13]].forEach(function (p) {
+      ellipse(ctx, p[0] - 2.5, p[1], 2.6, 2); ctx.fill();
+      ellipse(ctx, p[0] + 2.5, p[1], 2.6, 2); ctx.fill();
+    });
+    ctx.fillStyle = '#fff';
+    [[-7, 7], [7, 9], [0, 13]].forEach(function (p) {
+      ellipse(ctx, p[0], p[1], 0.8, 2.4); ctx.fill();
+    });
+  } else if (key === 'princessdress' || key === 'weddingdress') {
+    ctx.fillStyle = c.accent;
+    for (let i = 0; i < 14; i++) {
+      const a = -1.2 + i * 0.18;
+      ellipse(ctx, Math.sin(a) * (14 + (i % 2) * 2), 8 + (i % 5) * 2, 0.9, 0.9); ctx.fill();
+    }
+  } else if (key === 'yellowdress') {
+    ctx.fillStyle = c.accent;
+    ctx.fillStyle = '#a8d84f';
+    ellipse(ctx, -5, 8, 2.6, 3.4); ctx.fill();
+    ellipse(ctx, 5, 10, 2.6, 3.4); ctx.fill();
+  } else if (key === 'denimdress') {
+    ctx.strokeStyle = c.accent; ctx.lineWidth = 1;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(i * 6, 3); ctx.lineTo(i * 8, SKIRT_BOTTOM); ctx.stroke();
+    }
+    ctx.fillStyle = c.trim;
+    rr(ctx, -3, 3, 6, 4, 1.5); ctx.fill();
+  }
+}
+// 连衣裙：上身 + 裙摆 + 腰带
+function drawDress(ctx, key, t) {
+  const c = DRESS_COLORS[key] || DRESS_COLORS.pinkdress;
+  const flare = (key === 'princessdress' || key === 'weddingdress') ? 1.22 : 1;
+  // 裙摆
+  ctx.fillStyle = c.main;
+  ctx.beginPath();
+  ctx.moveTo(-11, -13);
+  ctx.lineTo(11, -13);
+  ctx.quadraticCurveTo(15 * flare, 2, 18 * flare, 17);
+  ctx.quadraticCurveTo(0, 21, -18 * flare, 17);
+  ctx.quadraticCurveTo(-15 * flare, 2, -11, -13);
+  ctx.closePath(); ctx.fill();
+  // 裙摆下沿的蕾丝
+  ctx.fillStyle = c.trim;
+  ctx.beginPath();
+  ctx.moveTo(-18 * flare, 17);
+  ctx.quadraticCurveTo(0, 21, 18 * flare, 17);
+  ctx.quadraticCurveTo(16 * flare, 15.4, 14 * flare, 16.2);
+  ctx.quadraticCurveTo(0, 19.6, -14 * flare, 16.2);
+  ctx.quadraticCurveTo(-16 * flare, 15.4, -18 * flare, 17);
+  ctx.closePath(); ctx.fill();
+  // 花纹
+  drawDressPattern(ctx, key, c);
+  // 小领子 + 腰带
+  ctx.fillStyle = c.trim;
+  ctx.beginPath();
+  ctx.moveTo(-9, -15); ctx.lineTo(9, -15); ctx.lineTo(6, -9); ctx.lineTo(-6, -9);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = c.accent;
+  rr(ctx, -12, -1, 24, 3, 1.5); ctx.fill();
+  if (key === 'pinkdress' || key === 'princessdress' || key === 'butterflydress') {
+    ctx.fillStyle = c.accent;
+    ctx.save(); ctx.translate(0, 0.5);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-5, -3); ctx.lineTo(-5, 3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(5, -3); ctx.lineTo(5, 3); ctx.closePath(); ctx.fill();
+    ellipse(ctx, 0, 0, 1.6, 1.6); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ------------------------------------------------------------
+ * 👟 鞋子：12 种，画在两条腿的脚上
+ * ---------------------------------------------------------- */
+const SHOE_STYLES = {
+  none:        null,
+  redshoes:    { main: '#e0483f', sole: '#a8342c', shape: 'flat' },
+  sandals:     { main: '#f0b8c8', sole: '#c88fa0', shape: 'sandal', accent: '#ff6fa5' },
+  sneakers:    { main: '#f7f7f2', sole: '#d2d2c8', shape: 'sneak', accent: '#4d8fd6' },
+  boots:       { main: '#e8b23e', sole: '#a87a1e', shape: 'boot', accent: '#8a5a2e' },
+  rainboots:   { main: '#4d8fd6', sole: '#2f6bb0', shape: 'boot', accent: '#cfe8ff' },
+  maryjanes:   { main: '#33333d', sole: '#1c1c24', shape: 'flat', accent: '#e8e8f0' },
+  flowershoes: { main: '#ffd8e6', sole: '#e09ab0', shape: 'flat', accent: '#ff6fa5' },
+  sportshoes:  { main: '#6fbf5a', sole: '#f7f7f2', shape: 'sneak', accent: '#fff' },
+  magicshoes:  { main: '#8a5fc7', sole: '#5f3f96', shape: 'boot', accent: '#ffd23e' },
+  glassshoes:  { main: 'rgba(205,238,255,.88)', sole: 'rgba(150,205,240,.9)', shape: 'heel', accent: '#ffffff' },
+  wingshoes:   { main: '#fff6d8', sole: '#e0c98a', shape: 'sneak', accent: '#a8e0ff' },
+  cloudshoes:  { main: '#ffffff', sole: '#dce8f5', shape: 'boot', accent: '#cfe8ff' },
+};
+// 画一只鞋：脚的位置 (cx, cy)，朝向由 dirX 决定
+function drawOneShoe(ctx, key, cx, cy, dirX) {
+  const s = SHOE_STYLES[key];
+  if (!s) return;                       // 光脚：什么都不画
+  const sh = s.shape;
+  if (sh === 'boot') {
+    ctx.fillStyle = s.main;
+    rr(ctx, cx - 4.5, cy - 7, 9, 10, 2.5); ctx.fill();
+    ctx.fillStyle = s.sole;
+    rr(ctx, cx - 5.5, cy + 1, 11, 3.6, 1.6); ctx.fill();
+    if (s.accent) { ctx.fillStyle = s.accent; rr(ctx, cx - 4.5, cy - 6, 9, 2, 1); ctx.fill(); }
+  } else if (sh === 'sneak') {
+    ctx.fillStyle = s.main;
+    rr(ctx, cx - 4.5, cy - 4, 9, 7.5, 2.5); ctx.fill();
+    ctx.fillStyle = s.sole;
+    rr(ctx, cx - 5, cy + 2, 10.5, 3, 1.4); ctx.fill();
+    if (s.accent) { ctx.fillStyle = s.accent; rr(ctx, cx - 1, cy - 3.6, 4, 1.8, 0.8); ctx.fill(); }
+  } else if (sh === 'heel') {
+    ctx.fillStyle = s.main;
+    rr(ctx, cx - 4.2, cy - 3.5, 8.4, 6.5, 2.2); ctx.fill();
+    ctx.fillStyle = s.sole;
+    rr(ctx, cx - 4.6, cy + 1.4, 9.2, 2.4, 1.2); ctx.fill();
+    rr(ctx, cx + 2.2, cy + 3, 2, 3.4, 0.8); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ellipse(ctx, cx - 2, cy - 1.4, 1.2, 0.9); ctx.fill();
+  } else if (sh === 'sandal') {
+    ctx.fillStyle = s.sole;
+    rr(ctx, cx - 5, cy + 0.5, 10, 3.6, 1.6); ctx.fill();
+    ctx.strokeStyle = s.main; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx - 4, cy + 0.5); ctx.lineTo(cx + 3, cy - 3.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 0.5, cy + 0.5); ctx.lineTo(cx + 3.5, cy - 3.5); ctx.stroke();
+    if (s.accent) { ctx.fillStyle = s.accent; ellipse(ctx, cx + 1.2, cy - 3.4, 1.4, 1.4); ctx.fill(); }
+  } else {                              // flat
+    ctx.fillStyle = s.main;
+    rr(ctx, cx - 4.4, cy - 3.6, 8.8, 6.8, 2.2); ctx.fill();
+    ctx.fillStyle = s.sole;
+    rr(ctx, cx - 4.8, cy + 1.6, 9.6, 2.6, 1.3); ctx.fill();
+    if (s.accent) { ctx.fillStyle = s.accent; rr(ctx, cx - 4.4, cy - 2.6, 8.8, 1.6, 0.8); ctx.fill(); }
+  }
+  // 特殊款的小装饰
+  if (key === 'wingshoes') {
+    ctx.fillStyle = 'rgba(168,224,255,.8)';
+    ctx.beginPath(); ctx.moveTo(cx, cy + 1); ctx.quadraticCurveTo(cx - 8 * dirX, cy - 4, cx - 7 * dirX, cy + 4); ctx.closePath(); ctx.fill();
+  } else if (key === 'cloudshoes') {
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
+    ellipse(ctx, cx - 2, cy - 1, 3.6, 2.4); ctx.fill();
+    ellipse(ctx, cx + 2.6, cy - 1.6, 2.8, 2.2); ctx.fill();
+  } else if (key === 'glassshoes') {
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
+    ellipse(ctx, cx + 3, cy - 2.4, 1.1, 1.1); ctx.fill();
+  } else if (key === 'flowershoes') {
+    ctx.fillStyle = '#ff6fa5';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      ellipse(ctx, cx + Math.cos(a) * 1.7, cy - 2 + Math.sin(a) * 1.7, 1.1, 1.1); ctx.fill();
+    }
+  }
+}
+// 两只脚一起画（walk = 走路摆动；其他姿势两只脚并排）
+// 脚的位置和以前硬编码的「棕鞋子」完全对齐（走路 y≈17、滑板车 16.5、骑车 14）
+function drawShoes(ctx, key, swing, mode, dirX) {
+  if (!key || key === 'none') return;
+  const dx = dirX || 1;
+  if (mode === 'ride') {
+    drawOneShoe(ctx, key, 11, 14, dx);
+    drawOneShoe(ctx, key, -7.5, 13, dx);
+  } else if (mode === 'deck') {
+    drawOneShoe(ctx, key, -6.5, 16.5, dx);
+    drawOneShoe(ctx, key, 7.5, 16.5, dx);
+  } else {
+    drawOneShoe(ctx, key, -5.5 + swing * 0.6, 17, dx);
+    drawOneShoe(ctx, key, 5.5 - swing * 0.6, 17, dx);
+  }
+}
+
+/* ------------------------------------------------------------
  * 服饰独立图标（商店 / 衣柜用，画出真实样式）
  * ---------------------------------------------------------- */
 // 帽子图标：头 + 头发 + 帽子
@@ -677,10 +1180,43 @@ function iconPants(ctx, key) {
   rr(ctx, -9, -10, 8, 17, 3); ctx.fill();
   rr(ctx, 1, -10, 8, 17, 3); ctx.fill();
   drawPantsPattern(ctx, key, pants, 0);
-  // 鞋子
+  // 鞋子（统一的小棕鞋，裤子图标里只是陪衬）
   ctx.fillStyle = '#7a5230';
   rr(ctx, -10, 5, 9, 5, 2); ctx.fill();
   rr(ctx, 1, 5, 9, 5, 2); ctx.fill();
+}
+
+// 头饰图标：头 + 头发 + 头饰（和帽子图标同一套坐标）
+function iconHair(ctx, key) {
+  ctx.fillStyle = '#ffdbac';
+  ellipse(ctx, 0, 0, 11, 10.5); ctx.fill();
+  ctx.fillStyle = '#6b4226';
+  ctx.beginPath(); ctx.ellipse(0, -4, 11.5, 7.5, 0, Math.PI, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.translate(0, 27);
+  drawHairAcc(ctx, key, 0.6);
+  ctx.restore();
+}
+
+// 裙子图标：一条连衣裙
+function iconDress(ctx, key) {
+  if (key === 'none') {
+    ctx.strokeStyle = '#c9b8a8'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-8, -8); ctx.lineTo(8, 8);
+    ctx.moveTo(8, -8); ctx.lineTo(-8, 8); ctx.stroke();
+    return;
+  }
+  ctx.save();
+  ctx.translate(0, 3);
+  drawDress(ctx, key, 0.6);
+  ctx.restore();
+}
+
+// 鞋子图标：一双鞋（左右各一只）
+function iconShoes(ctx, key) {
+  drawOneShoe(ctx, key, -7, 0, 1);
+  drawOneShoe(ctx, key, 7, 0, 1);
 }
 
 // 生成服饰图标的 canvas 元素
@@ -696,10 +1232,22 @@ function clothingIconCanvas(cat, key, size = 44) {
     x.translate(size / 2, size * 0.66);
     x.scale(0.85, 0.85);
     iconHat(x, key);
+  } else if (cat === 'hair') {
+    x.translate(size / 2, size * 0.66);
+    x.scale(0.85, 0.85);
+    iconHair(x, key);
   } else if (cat === 'shirt') {
     x.translate(size / 2, size / 2 + 4);
     x.scale(0.95, 0.95);
     iconShirt(x, key);
+  } else if (cat === 'dress') {
+    x.translate(size / 2, size / 2 - 2);
+    x.scale(0.92, 0.92);
+    iconDress(x, key);
+  } else if (cat === 'shoes') {
+    x.translate(size / 2, size / 2);
+    x.scale(1.25, 1.25);
+    iconShoes(x, key);
   } else {
     x.translate(size / 2, size / 2);
     x.scale(1.3, 1.3);
@@ -1004,7 +1552,9 @@ function drawPet(ctx, x, y, p) {
 function drawCustomer(ctx, x, y, c) {
   drawPlayer(ctx, x, y, {
     gender: c.gender, dir: c.dir, walkPhase: c.walkPhase, moving: c.moving,
-    outfit: { hat: c.hat, shirt: c.shirt, pants: c.pants },
+    // 客人也会穿裙子 / 戴头饰 / 穿鞋子（随机搭配）
+    outfit: { hat: c.hat, hair: c.hair || 'none', shirt: c.shirt,
+              dress: c.dress || 'none', pants: c.pants, shoes: c.shoes || 'none' },
     hairStyle: c.hairStyle, hairColor: c.hairColor,
     actionT: 0, t: c.t,
   });
@@ -1183,7 +1733,18 @@ function drawHouse(ctx, x, y, t) {
   ctx.strokeRect(x + 84, y - 30, 26, 24);
 }
 
-function drawStall(ctx, x, y, t) {
+function drawStall(ctx, x, y, t, sc) {
+  // 商店摊位升级后会变大（sc = 1 / 1.2 / 1.45）
+  const k = sc || 1;
+  if (k !== 1) {
+    ctx.save();
+    ctx.translate(x + 45, y + 40);
+    ctx.scale(k, k);
+    ctx.translate(-(x + 45), -(y + 40));
+    drawStall(ctx, x, y, t, 1);
+    ctx.restore();
+    return;
+  }
   drawShadow(ctx, x + 45, y + 40, 55);
   ctx.fillStyle = '#c98a5a';
   rr(ctx, x, y, 90, 40, 6); ctx.fill();
@@ -1210,7 +1771,38 @@ function drawStall(ctx, x, y, t) {
   ctx.fillText('🛒', x + 45, y - 53);
 }
 
-function drawPond(ctx, x, y, w, h, t, label) {
+function drawPond(ctx, x, y, w, h, t, label, locked, needLv) {
+  // 还没解锁的水坑：画成一个干涸的土坑 + 一把锁，升级水坑才会灌满水
+  if (locked) {
+    ctx.fillStyle = '#c9b280';
+    ellipse(ctx, x, y, w / 2 + 12, h / 2 + 10); ctx.fill();
+    ctx.fillStyle = '#b8a172';
+    ellipse(ctx, x, y, w / 2, h / 2); ctx.fill();
+    ctx.fillStyle = 'rgba(140,120,80,.35)';
+    ellipse(ctx, x - w * 0.1, y - h * 0.1, w / 2.6, h / 3.2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 4, y + 2); ctx.lineTo(x - w / 8, y - 3);
+    ctx.moveTo(x + w / 6, y + 4); ctx.lineTo(x + w / 4, y - 1);
+    ctx.stroke();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = 'rgba(90,140,180,.75)'; ctx.lineWidth = 2;
+    ellipse(ctx, x, y, w / 2 + 10, h / 2 + 8); ctx.stroke();
+    ctx.setLineDash([]);
+    if (label) {
+      const txt = '🔒 ' + label;
+      const sw = Math.max(66, txt.length * 13 + 18);
+      const sy = y - h / 2 - 32 + Math.sin(t * 1.8) * 1.5;
+      ctx.fillStyle = 'rgba(255,255,255,.9)';
+      rr(ctx, x - sw / 2, sy, sw, 20, 6); ctx.fill();
+      ctx.strokeStyle = '#9aa8b4'; ctx.lineWidth = 2.2;
+      rr(ctx, x - sw / 2, sy, sw, 20, 6); ctx.stroke();
+      ctx.fillStyle = '#6a7684';
+      ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(txt, x, sy + 15);
+    }
+    return;
+  }
   ctx.fillStyle = '#c9b280';
   ellipse(ctx, x, y, w / 2 + 12, h / 2 + 10); ctx.fill();
   ctx.fillStyle = '#5fb8e8';
@@ -1237,6 +1829,127 @@ function drawPond(ctx, x, y, w, h, t, label) {
     ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('💧 ' + label, x, sy + 15);
   }
+}
+
+/* ------------------------------------------------------------
+ * 升级系统的场景元素
+ * ---------------------------------------------------------- */
+
+// 「以后会扩到这里」的虚线框：1、2 级时把下一次扩建的范围画出来，
+// 地图上就一眼能看出「这里留着地方给它长大」。
+function drawExpandOutline(ctx, rect, t, text) {
+  if (!rect) return;
+  ctx.save();
+  ctx.setLineDash([10, 8]);
+  ctx.lineDashOffset = -(t * 14) % 18;
+  ctx.strokeStyle = 'rgba(255,255,255,.75)';
+  ctx.lineWidth = 2.5;
+  rr(ctx, rect.x, rect.y, rect.w, rect.h, 10); ctx.stroke();
+  ctx.setLineDash([]);
+  const txt = text || '🔨 扩建预留区';
+  ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  const cx = rect.x + rect.w / 2, cy = rect.y - 8 + Math.sin(t * 2) * 1.5;
+  const tw = txt.length * 12 + 16;
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  rr(ctx, cx - tw / 2, cy - 13, tw, 18, 8); ctx.fill();
+  ctx.fillStyle = '#8a6a2a';
+  ctx.fillText(txt, cx, cy);
+  ctx.restore();
+}
+
+// 设施等级小牌子（挂在棚舍 / 水坑 / 果园的告示牌上）
+function drawLvBadge(ctx, x, y, lv, t, canUp) {
+  const w = 46, h = 19;
+  ctx.save();
+  ctx.fillStyle = canUp ? '#fff6d0' : '#ffffff';
+  rr(ctx, x - w / 2, y - h / 2, w, h, 8); ctx.fill();
+  ctx.strokeStyle = canUp ? '#ffb020' : '#c9b8a0';
+  ctx.lineWidth = 2;
+  if (canUp) ctx.lineWidth = 2.4 + Math.sin(t * 5) * 0.6;
+  rr(ctx, x - w / 2, y - h / 2, w, h, 8); ctx.stroke();
+  ctx.fillStyle = canUp ? '#c9750a' : '#8a7a62';
+  ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('⭐Lv.' + lv + (canUp ? ' 🔨' : ''), x, y + 4.5);
+  ctx.restore();
+}
+
+// 升级告示牌（果园 / 水坑用）：一根木牌 + 等级徽章
+function drawUpgradeSign(ctx, x, y, t, icon, lv, canUp, label) {
+  drawShadow(ctx, x, y + 10, 12);
+  ctx.fillStyle = '#a57c4a';
+  rr(ctx, x - 3, y - 14, 6, 26, 2); ctx.fill();
+  ctx.fillStyle = '#e0b878';
+  rr(ctx, x - 24, y - 34, 48, 24, 5); ctx.fill();
+  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
+  rr(ctx, x - 24, y - 34, 48, 24, 5); ctx.stroke();
+  ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(icon, x, y - 16);
+  drawLvBadge(ctx, x, y - 44 + Math.sin(t * 2) * 1.5, lv, t, canUp);
+  if (label) {
+    ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    const tw = label.length * 11 + 12;
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    rr(ctx, x - tw / 2, y + 13, tw, 16, 7); ctx.fill();
+    ctx.fillStyle = '#7a4a12';
+    ctx.fillText(label, x, y + 25);
+  }
+}
+
+// 🐾 宠物房间：一间小屋子，里面有食盆、澡盆和垫子；升级后屋子变大、床变多
+function drawPetRoom(ctx, x, y, t, lv, pets, rect) {
+  const r = rect || { x: x - 85, y: y - 105, w: 170, h: 105 };
+  const W = r.w, H = r.h;
+  const wallTop = r.y, wallBot = r.y + H;
+  drawShadow(ctx, r.x + W / 2, wallBot + 4, W / 2);
+  // 墙
+  ctx.fillStyle = '#ffe6c8';
+  rr(ctx, r.x, wallTop, W, H, 8); ctx.fill();
+  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = 2.5;
+  rr(ctx, r.x, wallTop, W, H, 8); ctx.stroke();
+  // 屋顶
+  ctx.fillStyle = '#f0a058';
+  ctx.beginPath();
+  ctx.moveTo(r.x - 10, wallTop + 4);
+  ctx.lineTo(r.x + W / 2, wallTop - 34);
+  ctx.lineTo(r.x + W + 10, wallTop + 4);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#d8863e';
+  rr(ctx, r.x - 10, wallTop, W + 20, 7, 3.5); ctx.fill();
+  // 门（下方中间）
+  ctx.fillStyle = '#b5723a';
+  rr(ctx, r.x + W / 2 - 15, wallBot - 34, 30, 34, 5); ctx.fill();
+  ctx.fillStyle = '#ffd23e';
+  ellipse(ctx, r.x + W / 2 + 9, wallBot - 17, 2, 2); ctx.fill();
+  // 招牌
+  ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🐾', r.x + W / 2, wallTop + 26);
+  // 窗户
+  ctx.fillStyle = 'rgba(180,225,245,.9)';
+  rr(ctx, r.x + 12, wallTop + 14, 26, 22, 4); ctx.fill();
+  rr(ctx, r.x + W - 38, wallTop + 14, 26, 22, 4); ctx.fill();
+  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = 2;
+  rr(ctx, r.x + 12, wallTop + 14, 26, 22, 4); ctx.stroke();
+  rr(ctx, r.x + W - 38, wallTop + 14, 26, 22, 4); ctx.stroke();
+  // 屋里的垫子：按等级画出所有床位（有几只宠物就有几个小枕头）
+  const beds = Math.min(4, Math.max(lv, (pets || []).length));
+  const innerL = r.x + 16, innerR = r.x + W - 16;
+  for (let i = 0; i < beds; i++) {
+    const px = beds === 1 ? (innerL + innerR) / 2 : innerL + (innerR - innerL) * (i / (beds - 1));
+    ctx.fillStyle = i % 2 ? '#cfe8ff' : '#ffd8e6';
+    ellipse(ctx, px, wallBot - 16, 15, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ellipse(ctx, px, wallBot - 19, 7, 3.4); ctx.fill();
+  }
+  // 门边的食盆和澡盆
+  ctx.fillStyle = '#f0b8c8';
+  ellipse(ctx, r.x + 20, wallBot + 12, 10, 5); ctx.fill();
+  ctx.fillStyle = '#a8d8f0';
+  ellipse(ctx, r.x + W - 20, wallBot + 12, 11, 6); ctx.fill();
+  ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🍖', r.x + 20, wallBot + 16);
+  ctx.fillText('🛁', r.x + W - 20, wallBot + 16);
+  // 等级徽章
+  drawLvBadge(ctx, r.x + W / 2, wallTop - 44, lv, t, false);
 }
 
 function drawBin(ctx, x, y, t) {
@@ -1398,8 +2111,9 @@ function drawCowBarn(ctx, x, y, t) {
 }
 
 // 大型水族箱（里面养的鱼会游动，用动画 emoji 图）
-function drawAquarium(ctx, x, y, t, fish) {
-  const W = 300, H = 140;          // 水族箱加大（原来 210x96）
+function drawAquarium(ctx, x, y, t, fish, size) {
+  // 水族箱的尺寸跟着「水族箱等级」变：1 级 240x118 → 3 级 360x164
+  const W = (size && size.w) || 300, H = (size && size.h) || 140;
   fish = fish || [];
   drawShadow(ctx, x, y + 6, W / 2);
   // 木架

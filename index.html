@@ -121,6 +121,9 @@
             <li data-i18n="help13">🌧️ 下雨天水会自动浇好；💾 点右上角的 💾 就能随时存档</li>
             <li data-i18n="help14">🌳 森林里的蜂巢有蜂蜜，走过去按 E 就能拿到</li>
             <li data-i18n="help15">🐤 小鸡出生 5 天后长成母鸡；最多 5 只母鸡、10 只小鸡</li>
+            <li data-i18n="help16">🔨 走到棚舍 / 果园 / 水坑旁的告示牌，按 E 就能「升级」——地方变大、能养更多、能买更多</li>
+            <li data-i18n="help17">🐾 宠物房间要给宠物🍖喂食、🧹清理便便、🛁洗澡；升级房间能养更多只宠物</li>
+            <li data-i18n="help18">👗 买到的裙子 / 头饰 / 鞋子会自动挂进「衣帽间」，点一下就能换上</li>
           </ul>
           <button class="big-btn close-modal" data-close="help-modal" data-i18n="btnKnow">知道啦！</button>
         </div>
@@ -134,6 +137,7 @@
             <button class="modal-x close-modal" data-close="shop-modal"
                     data-i18n-title="btnQuitHint" title="离开">✕</button>
           </div>
+          <div id="shop-upgrade" class="upgrade-strip"></div>
           <div class="tab-row">
             <button class="tab-btn selected" data-tab="seeds" data-i18n="tabSeeds">🌱 种子</button>
             <button class="tab-btn" data-tab="clothes" data-i18n="tabClothes">👕 服装</button>
@@ -142,6 +146,7 @@
             <button class="tab-btn" data-tab="zoo" data-i18n="tabZoo">🦁 观赏动物</button>
             <button class="tab-btn" data-tab="decor" data-i18n="tabDecor">🎡 装饰</button>
             <button class="tab-btn" data-tab="pet" data-i18n="tabPet">🐾 宠物装扮</button>
+            <button class="tab-btn" data-tab="petcare" data-i18n="tabPetCare">🍖 宠物用品</button>
           </div>
           <div id="shop-items" class="shop-grid"></div>
           <button class="big-btn close-modal" data-close="shop-modal" data-i18n="btnLeaveShop">离开商店</button>
@@ -156,31 +161,80 @@
             <button class="modal-x close-modal" data-close="cook-modal"
                     data-i18n-title="btnQuitHint" title="离开">✕</button>
           </div>
+          <div id="cook-upgrade" class="upgrade-strip"></div>
           <div id="cook-items" class="shop-grid"></div>
           <button class="big-btn close-modal" data-close="cook-modal" data-i18n="btnCookDone">做好啦</button>
         </div>
       </div>
 
-      <!-- ============ 衣柜 ============ -->
+      <!-- ============ 衣橱（开放式衣帽间） ============ -->
       <div id="wardrobe-modal" class="modal hidden">
-        <div class="modal-card">
-          <h2 data-i18n="wardrobeTitle">👕 我的衣柜</h2>
-          <div class="tab-row char-row">
-            <span class="char-label" data-i18n="charSection">👦 角色与宠物</span>
-            <button class="tab-btn" id="pick-boy" data-i18n="boy">小男孩</button>
-            <button class="tab-btn" id="pick-girl" data-i18n="girl">小女孩</button>
-            <button class="tab-btn" id="pick-dog" data-i18n="dog">小狗</button>
-            <button class="tab-btn" id="pick-cat" data-i18n="cat">小猫</button>
-            <button class="tab-btn" id="pick-duck" data-i18n="petDuck">小鸭</button>
-            <button class="tab-btn" id="pick-goose" data-i18n="petGoose">小鹅</button>
+        <div class="modal-card closet-card">
+          <div class="modal-head">
+            <h2 data-i18n="closetTitle">👗 我的衣帽间</h2>
+            <button class="modal-x close-modal" data-close="wardrobe-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
           </div>
-          <div class="tab-row">
-            <button class="tab-btn selected" data-wtab="hat" data-i18n="wtabHat">🎩 帽子</button>
-            <button class="tab-btn" data-wtab="shirt" data-i18n="wtabShirt">👕 上衣</button>
-            <button class="tab-btn" data-wtab="pants" data-i18n="wtabPants">👖 裤子</button>
+          <div id="wd-upgrade" class="upgrade-strip"></div>
+          <p class="closet-hint" id="closet-hint"></p>
+          <!-- 开放式衣帽间：左边是试衣镜，右边是一层层的挂衣杆 / 架子 / 鞋架 -->
+          <div class="closet-scene">
+            <div class="closet-mirror">
+              <div class="closet-mirror-title" data-i18n="closetMirror">🪞 试衣镜</div>
+              <canvas id="closet-avatar" width="150" height="210"></canvas>
+              <div class="closet-mirror-name" id="closet-name"></div>
+            </div>
+            <div class="closet-racks">
+              <div class="tab-row char-row">
+                <span class="char-label" data-i18n="charSection">👦 角色与宠物</span>
+                <button class="tab-btn" id="pick-boy" data-i18n="boy">小男孩</button>
+                <button class="tab-btn" id="pick-girl" data-i18n="girl">小女孩</button>
+                <button class="tab-btn" id="pick-dog" data-i18n="dog">小狗</button>
+                <button class="tab-btn" id="pick-cat" data-i18n="cat">小猫</button>
+                <button class="tab-btn" id="pick-duck" data-i18n="petDuck">小鸭</button>
+                <button class="tab-btn" id="pick-goose" data-i18n="petGoose">小鹅</button>
+              </div>
+              <div class="tab-row" id="wd-tabs">
+                <button class="tab-btn selected" data-wtab="hat" data-i18n="wtabHat">🎩 帽子</button>
+                <button class="tab-btn" data-wtab="hair" data-i18n="wtabHair">🎀 头饰</button>
+                <button class="tab-btn" data-wtab="dress" data-i18n="wtabDress">👗 裙子</button>
+                <button class="tab-btn" data-wtab="shirt" data-i18n="wtabShirt">👕 上衣</button>
+                <button class="tab-btn" data-wtab="pants" data-i18n="wtabPants">👖 裤子</button>
+                <button class="tab-btn" data-wtab="shoes" data-i18n="wtabShoes">👟 鞋子</button>
+              </div>
+              <div id="wardrobe-items" class="shop-grid closet-grid"></div>
+            </div>
           </div>
-          <div id="wardrobe-items" class="shop-grid"></div>
           <button class="big-btn close-modal" data-close="wardrobe-modal" data-i18n="btnWardrobeDone">换好啦</button>
+        </div>
+      </div>
+
+      <!-- ============ 设施升级 ============ -->
+      <div id="upgrade-modal" class="modal hidden">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 id="upgrade-title" data-i18n="upgradeTitle">🔨 升级设施</h2>
+            <button class="modal-x close-modal" data-close="upgrade-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
+          </div>
+          <p class="subtitle" data-i18n="upgradeHint">升级以后地方变大，能养 / 能买的东西也更多！</p>
+          <div id="upgrade-body"></div>
+          <button class="big-btn close-modal" data-close="upgrade-modal" data-i18n="btnKnow">知道啦！</button>
+        </div>
+      </div>
+
+      <!-- ============ 宠物房间 ============ -->
+      <div id="pet-modal" class="modal hidden">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 data-i18n="petTitle">🐾 宠物房间</h2>
+            <button class="modal-x close-modal" data-close="pet-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
+          </div>
+          <div id="pet-upgrade" class="upgrade-strip"></div>
+          <p class="subtitle" id="pet-room-sub"></p>
+          <div id="pet-list" class="pet-list"></div>
+          <button class="big-btn close-modal" data-close="pet-modal" data-i18n="btnKnow">知道啦！</button>
         </div>
       </div>
 
@@ -226,7 +280,12 @@
       <!-- ============ 大型水族箱 ============ -->
       <div id="tank-modal" class="modal hidden">
         <div class="modal-card">
-          <h2 data-i18n="tankTitle">🐠 大型水族箱</h2>
+          <div class="modal-head">
+            <h2 data-i18n="tankTitle">🐠 大型水族箱</h2>
+            <button class="modal-x close-modal" data-close="tank-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
+          </div>
+          <div id="tank-upgrade" class="upgrade-strip"></div>
           <p class="subtitle" id="tank-count"></p>
           <div id="tank-list" class="shop-grid"></div>
           <h3 id="tank-bag-title" style="color:#3a7fbf;margin-top:6px">🎣 我的鱼篓</h3>
