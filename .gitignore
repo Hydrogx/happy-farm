@@ -1,0 +1,8 @@
+# macOS 会自动生成的文件夹属性文件
+.DS_Store
+
+# 临时文件 / 编辑器
+*.tmp
+*.log
+.idea/
+.vscode/
