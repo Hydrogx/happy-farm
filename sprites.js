@@ -1151,7 +1151,7 @@ function drawCowBarn(ctx, x, y, t) {
 
 // 大型水族箱（里面养的鱼会游动，用动画 emoji 图）
 function drawAquarium(ctx, x, y, t, fish) {
-  const W = 210, H = 96;
+  const W = 300, H = 140;          // 水族箱加大（原来 210x96）
   fish = fish || [];
   drawShadow(ctx, x, y + 6, W / 2);
   // 木架
@@ -1173,36 +1173,51 @@ function drawAquarium(ctx, x, y, t, fish) {
   ctx.quadraticCurveTo(x, y - 30, x + W / 2 - 6, y - 18);
   ctx.lineTo(x + W / 2 - 6, y - 12); ctx.lineTo(x - W / 2 + 6, y - 12);
   ctx.closePath(); ctx.fill();
-  // 水草
-  ctx.strokeStyle = '#3f9e63'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  for (let i = -1; i <= 1; i++) {
-    const bx = x + i * 34, sway = Math.sin(t * 1.6 + i) * 5;
+  // 水草（箱子大了，水草也更多更高）
+  ctx.strokeStyle = '#3f9e63'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  for (let i = -2; i <= 2; i++) {
+    const bx = x + i * 46, sway = Math.sin(t * 1.6 + i) * 6;
+    const hgt = 62 + (i % 2 ? 14 : 0);
     ctx.beginPath();
-    ctx.moveTo(bx, y - 20);
-    ctx.quadraticCurveTo(bx + sway, y - 40, bx + sway * 1.4, y - 58);
+    ctx.moveTo(bx, y - 22);
+    ctx.quadraticCurveTo(bx + sway, y - 22 - hgt * 0.55, bx + sway * 1.4, y - 22 - hgt);
     ctx.stroke();
   }
+  // 小石头
+  ctx.fillStyle = '#b9c3c9';
+  [[-100, -20, 9, 5], [-40, -19, 7, 4], [30, -20, 10, 5], [96, -19, 8, 4]].forEach(function (r) {
+    ellipse(ctx, x + r[0], y + r[1], r[2], r[3]); ctx.fill();
+  });
   // 气泡
   ctx.fillStyle = 'rgba(255,255,255,.55)';
-  for (let i = 0; i < 7; i++) {
-    const ph = ((t * 0.35 + i * 0.19) % 1);
-    const bx = x - W / 2 + 22 + ((i * 37) % (W - 44));
-    ellipse(ctx, bx, y - 16 - ph * (H - 30), 1.8 + (1 - ph) * 2, 1.8 + (1 - ph) * 2);
+  for (let i = 0; i < 12; i++) {
+    const ph = ((t * 0.35 + i * 0.13) % 1);
+    const bx = x - W / 2 + 22 + ((i * 41) % (W - 44));
+    ellipse(ctx, bx, y - 16 - ph * (H - 30), 1.8 + (1 - ph) * 2.2, 1.8 + (1 - ph) * 2.2);
     ctx.fill();
   }
-  // 里面的鱼（沿椭圆轨迹游动，用动画图）
+  // 里面的鱼：在玻璃箱内部沿椭圆轨迹游，游到边界会自己掉头
+  const SW = W / 2 - 34, SH = H / 2 - 26;      // 允许游动的半宽 / 半高
+  const cxm = x, cym = y - H / 2 - 12;         // 水体的中心
   fish.forEach((id, i) => {
     const it = ITEMS[id];
     if (!it) return;
     const rec = loadEmoji(it.cp);
-    const a = t * (0.55 + (i % 4) * 0.13) + i * 1.7;
-    const fx = x + Math.cos(a) * (W / 2 - 30);
-    const fy = y - H / 2 - 16 + Math.sin(a * 1.6) * 22;
+    const a = t * (0.45 + (i % 5) * 0.11) + i * 1.7;
+    const fx = cxm + Math.cos(a) * SW;
+    const fy = cym + Math.sin(a * 1.5 + i) * SH;
+    // 水平速度方向 = -sin(a)（x 对 a 求导），用来决定朝哪边游
+    const vx = -Math.sin(a);
+    const size = 26 + Math.min(26, (it.price || 20) / 14);   // 贵的鱼大一点
     ctx.save();
     ctx.translate(fx, fy);
-    if (Math.sin(a) > 0) ctx.scale(-1, 1);     // 朝游动方向
-    if (rec && rec.ok && rec.img) ctx.drawImage(rec.img, -15, -15, 30, 30);
-    else { ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, 8); }
+    if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
+    if (rec && rec.ok && rec.img) {
+      ctx.drawImage(rec.img, -size / 2, -size / 2, size, size);
+    } else {
+      ctx.font = Math.round(size * 0.9) + 'px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, size * 0.32);
+    }
     ctx.restore();
   });
   // 玻璃高光 + 边框
@@ -1214,12 +1229,12 @@ function drawAquarium(ctx, x, y, t, fish) {
   ctx.stroke();
   // 小招牌
   ctx.fillStyle = '#fff3d6';
-  rr(ctx, x - 26, y - H - 34, 52, 20, 6); ctx.fill();
+  rr(ctx, x - 32, y - H - 38, 64, 24, 7); ctx.fill();
   ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
-  rr(ctx, x - 26, y - H - 34, 52, 20, 6); ctx.stroke();
-  ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  rr(ctx, x - 32, y - H - 38, 64, 24, 7); ctx.stroke();
+  ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
   ctx.fillStyle = '#7a4a12';
-  ctx.fillText('🐠 ' + fish.length, x, y - H - 19);
+  ctx.fillText('🐠 ' + fish.length, x, y - H - 20);
 }
 
 /* ------------------------------------------------------------
@@ -1582,7 +1597,7 @@ function drawCloud(ctx, x, y, s, alpha) {
  * ---------------------------------------------------------- */
 function drawForestGround(ctx, t) {
   // 森林范围（和 game.js 里的 FOREST 保持一致，这里写成常量避免依赖加载顺序）
-  const F = { x: 1150, y: 34, w: 430, h: 436 };
+  const F = { x: 30, y: 400, w: 400, h: 250 };
   if (typeof FOREST !== 'undefined' && FOREST) { F.x = FOREST.x; F.y = FOREST.y; F.w = FOREST.w; F.h = FOREST.h; }
   const x0 = F.x, y0 = F.y, w = F.w, h = F.h;
   // 林间草地：颜色更深一点的绿

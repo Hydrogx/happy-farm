@@ -82,22 +82,25 @@ function pondLabel(p) { return lang === 'en' ? p.nameEn : p.name; }
 
 // ---------------- 森林 & 蜂巢 ----------------
 // 森林在农场的右上角（摊位与小水坑之间那片树林），里面有一个蜂巢可以拿蜂蜜
-const FOREST = { x: 1150, y: 34, w: 430, h: 436 };   // 房子和摊位都在森林左边，不重叠
-const HIVE = { x: 1500, y: 300, r: 82, honey: 1, honeyT: 0, max: 2 };
+// 森林放在果树区的左下方（左半边那一大片空地），范围比以前大
+const FOREST = { x: 30, y: 400, w: 400, h: 250 };
+const HIVE = { x: 390, y: 524, r: 96, honey: 1, honeyT: 0, max: 2 };
 const HONEY_EVERY = 55;          // 秒：蜂巢重新酿出蜂蜜
 // 小工具（提前定义，下面的数据表初始化就要用）
 function dist(x1, y1, x2, y2) { return Math.hypot(x1 - x2, y1 - y2); }
 function rand(a, b) { return a + Math.random() * (b - a); }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 const FOREST_TREES = [           // 森林里的大树（蜂巢就挂在那棵树上）
-  { x: 1500, y: 300, kind: 'big', phase: 0.4 },
-  { x: 1220, y: 120, kind: 'pine', phase: 1.2 },
-  { x: 1550, y: 140, kind: 'pine', phase: 2.1 },
-  { x: 1230, y: 420, kind: 'pine', phase: 3.4 },
+  { x: 390, y: 600, kind: 'big', phase: 0.4 },
+  { x: 120, y: 560, kind: 'pine', phase: 1.2 },
+  { x: 378, y: 470, kind: 'pine', phase: 2.1 },
+  { x: 140, y: 462, kind: 'pine', phase: 3.4 },
+  { x: 300, y: 588, kind: 'pine', phase: 4.2 },
 ];
 const FOREST_DECOR = [];         // 小蘑菇/树桩/灌木（纯装饰）
-[['mushroom', 1190, 220], ['mushroom', 1520, 420], ['mushroom', 1320, 370],
- ['stump', 1450, 110], ['stump', 1190, 400], ['bush', 1400, 430], ['bush', 1470, 210]]
+[['mushroom', 70, 500], ['mushroom', 250, 520], ['mushroom', 360, 640], ['mushroom', 180, 632],
+ ['stump', 330, 470], ['stump', 60, 636], ['bush', 240, 610], ['bush', 100, 452],
+ ['bush', 400, 520]]
   .forEach(function (d) { FOREST_DECOR.push({ kind: d[0], x: d[1], y: d[2], phase: rand(0, 6) }); });
 function inForest(x, y) {
   return x > FOREST.x && x < FOREST.x + FOREST.w && y > FOREST.y && y < FOREST.y + FOREST.h;
@@ -601,22 +604,54 @@ const EMOJI_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest/';
 const emojiCache = {};     // cp -> { img, ok, kind }
 function emojiAnimUrl(cp) { return EMOJI_BASE + cp + '/512.gif'; }
 function emojiPngUrl(cp) { return EMOJI_BASE + cp + '/512.png'; }
+
+// 判断一张图「画出来是不是真的有东西」。
+// 有些素材（海豚 1f42c、鲨鱼 1f988 的 512.gif）能加载、尺寸也正常，但每一帧都是全透明的，
+// 直接画就是空白；另外还有几种（金鱼 / 斑马 / 长颈鹿 / 虾 / 贝壳 / 鱿鱼）根本没有 gif，
+// 服务器返回 404 的 HTML，onload 也会触发，画的时候直接抛错 —— 都不能用。
+function emojiDrawable(im) {
+  if (!im) return false;
+  if (!im.naturalWidth || !im.naturalHeight) return false;      // 404 的 HTML 页面
+  try {
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    const x = c.getContext('2d');
+    if (!x) return true;                                        // 环境不支持检测，就先当它能用
+    x.clearRect(0, 0, 32, 32);
+    x.drawImage(im, 0, 0, 32, 32);
+    const d = x.getImageData(0, 0, 32, 32).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 20) return true;
+    return false;                                               // 全透明：画出来是空白
+  } catch (e) {
+    return false;                                               // 图坏了 / 跨域不让读
+  }
+}
+// 加载 emoji 图：先加载静态 PNG 保证「立刻能用」，再尝试动画 GIF，
+// 只有在「GIF 确实能画出东西」的时候才换成 GIF。
+// 这样海豚、鲨鱼会老老实实显示 PNG（不再空白），金鱼、斑马等也不会再让渲染中途抛错。
 function loadEmoji(cp) {
   if (!cp) return null;
   let rec = emojiCache[cp];
   if (rec) return rec;
   rec = emojiCache[cp] = { img: null, ok: false, kind: '' };
-  if (typeof Image === 'undefined') return rec;
-  const tryLoad = (url, kind, onFail) => {
+  if (typeof Image === 'undefined' || typeof document === 'undefined') return rec;
+  const make = () => {
     const im = new Image();
-    // 允许跨域读取（图都来自 fonts.gstatic.com，带 CORS 头）：
-    // 这样画布不会被「污染」，需要时还能 getImageData 做像素级检查
+    // 允许跨域读取（图都来自 fonts.gstatic.com，带 CORS 头），画布不会被污染
     try { im.crossOrigin = 'anonymous'; } catch (e) {}
-    im.onload = () => { rec.img = im; rec.ok = true; rec.kind = kind; };
-    im.onerror = () => { if (onFail) onFail(); };
-    im.src = url;
+    return im;
   };
-  tryLoad(emojiAnimUrl(cp), 'gif', () => tryLoad(emojiPngUrl(cp), 'png'));
+  // ① 先用 PNG 顶上
+  const png = make();
+  png.onload = () => { if (!rec.ok) { rec.img = png; rec.ok = true; rec.kind = 'png'; } };
+  png.src = emojiPngUrl(cp);
+  // ② 再试动画 GIF，能用才换
+  const gif = make();
+  gif.onload = () => {
+    if (!emojiDrawable(gif)) return;        // 空白 / 坏的 → 继续用 PNG
+    rec.img = gif; rec.ok = true; rec.kind = 'gif';
+  };
+  gif.src = emojiAnimUrl(cp);
   return rec;
 }
 // DOM 里用 <img> 显示动画 emoji（列表用）
@@ -798,7 +833,7 @@ const ZONES = {
   wardrobe: { x: 930,  y: 370, r: 55 },
   bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 70 },
-  tank:     { x: 730, y: 470, r: 95 },
+  tank:     { x: 730, y: 470, r: 132 },
   hatchery: { x: 348, y: 742, r: 74 },    // 鸡棚里的孵蛋器
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
 };
@@ -3501,6 +3536,7 @@ renderHUD();
 // 调试用的小开关（方便在控制台里看状态 / 测试）
 window.__farm = {
   G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo,
+  SEA_ALL, SEA_SET, PONDS, emojiDrawable,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
