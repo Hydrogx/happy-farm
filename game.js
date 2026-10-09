@@ -802,8 +802,11 @@ let notoAnimSet = null;          // Set：有动画的 codepoint（去掉了 fe0
 let notoAnimState = 'idle';      // idle | loading | ready | failed
 function notoNorm(cp) { return String(cp || '').toLowerCase().replace(/[_-]?fe0f/g, '').replace(/[-_]/g, ''); }
 function notoHasAnim(cp) {
-  if (!notoAnimSet) return null;            // 还不知道，就让调用方按老办法试
-  return notoAnimSet.has(notoNorm(cp));
+  const k = notoNorm(cp);
+  if (NOTO_HAS_ANIM[k]) return true;        // 内嵌表：启动瞬间就有答案
+  if (NOTO_NO_ANIM[k]) return false;        // 明确没有动画 → 别发注定 404 的请求
+  if (!notoAnimSet) return null;            // 表里没有的（以后新增的）再等网络清单
+  return notoAnimSet.has(k);
 }
 (function loadNotoList() {
   try {
@@ -884,6 +887,29 @@ function animSlotDone() {
 const ANIM_DEBUG = [];          // 解码过程的诊断信息（排查用）
 // 官方没有动画素材的 emoji（查过官网 881 个清单 + 实测 webp/gif 都是 404）
 // 这些在画面里用「呼吸缩放」让它活起来，看起来就不呆了
+// 官方动画清单里「我们有用到、且有动画」的 emoji（内嵌一份，启动瞬间就能判断，
+// 不用等网络返回的清单；也因此不会对没有动画的 emoji 发出注定 404 的请求）
+const NOTO_HAS_ANIM = {
+  '1f331': 1, '1f33d': 1, '1f344': 1, '1f345': 1, '1f347': 1, '1f348': 1,
+  '1f349': 1, '1f34a': 1, '1f34b': 1, '1f34d': 1, '1f34e': 1, '1f350': 1,
+  '1f352': 1, '1f353': 1, '1f355': 1, '1f35d': 1, '1f35e': 1, '1f362': 1,
+  '1f369': 1, '1f36a': 1, '1f373': 1, '1f37f': 1, '1f407': 1, '1f40a': 1,
+  '1f40c': 1, '1f40d': 1, '1f412': 1, '1f419': 1, '1f41d': 1, '1f41f': 1,
+  '1f421': 1, '1f422': 1, '1f427': 1, '1f42c': 1, '1f433': 1, '1f438': 1,
+  '1f43b': 1, '1f43c': 1, '1f43f': 1, '1f952': 1, '1f954': 1, '1f955': 1,
+  '1f957': 1, '1f95d': 1, '1f95e': 1, '1f966': 1, '1f967': 1, '1f96c': 1,
+  '1f96d': 1, '1f980': 1, '1f981': 1, '1f988': 1, '1f98a': 1, '1f98b': 1,
+  '1f98e': 1, '1f994': 1, '1f998': 1, '1f99a': 1, '1f99d': 1, '1f99e': 1,
+  '1f9a5': 1, '1f9a9': 1, '1f9ad': 1, '1f9c4': 1, '1f9c5': 1, '1fabc': 1,
+  '1fad1': 1, '1fadb': 1, '1fadc': 1, '2b50': 1,
+};
+// 明确「官方没有动画」的 emoji（发了也只会 404，直接跳过）
+const NOTO_NO_ANIM = {
+  '1f33e': 1, '1f351': 1, '1f364': 1, '1f36e': 1, '1f36f': 1, '1f370': 1,
+  '1f372': 1, '1f418': 1, '1f428': 1, '1f958': 1, '1f95a': 1, '1f95b': 1,
+  '1f963': 1, '1f992': 1, '1f993': 1, '1f999': 1, '1f9c1': 1, '1f9f6': 1,
+};
+
 const NO_ANIM_CP = {
   '1f418': 1,  // 大象
   '1f95a': 1,  // 鸡蛋
