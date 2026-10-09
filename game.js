@@ -750,24 +750,48 @@ function loadEmoji(cp) {
     try { im.crossOrigin = 'anonymous'; } catch (e) {}
     return im;
   };
-  // ① 先用 PNG 顶上
+  // ① 先用 PNG 顶上（PNG 一定有）
   const png = make();
-  png.onload = () => { if (!rec.ok) { rec.img = png; rec.ok = true; rec.kind = 'png'; } };
-  png.src = emojiPngUrl(cp);
-  // ② 再试动画 GIF，能用才换
+  png.onload = () => {
+    rec.pngOk = true;
+    if (!rec.ok) { rec.img = png; rec.ok = true; rec.kind = 'png'; }
+  };
+  png.onerror = () => { rec.pngOk = false; };
+  rec.pngUrl = emojiPngUrl(cp);
+  rec.gifUrl = emojiAnimUrl(cp);
+  rec.pngImg = png;
+  png.src = rec.pngUrl;
+  // ② 再试动画 GIF，确认能画出东西才换成 GIF
   const gif = make();
   gif.onload = () => {
-    if (!emojiDrawable(gif)) return;        // 空白 / 坏的 → 继续用 PNG
-    rec.img = gif; rec.ok = true; rec.kind = 'gif';
+    if (!emojiDrawable(gif)) { rec.gifBad = true; return; }   // 空白 / 坏的 → 继续用 PNG
+    rec.img = gif; rec.ok = true; rec.kind = 'gif'; rec.gifOk = true;
   };
-  gif.src = emojiAnimUrl(cp);
+  gif.onerror = () => { rec.gifBad = true; };
+  gif.src = rec.gifUrl;
   return rec;
 }
-// DOM 里用 <img> 显示动画 emoji（列表用）
+// DOM 里显示某个 emoji 图时该用哪个地址：
+// 确认过 GIF 能用就用 GIF（有动画）；GIF 不能用（404 / 空白）就用 PNG
+function emojiSrcFor(rec) {
+  if (!rec) return '';
+  if (rec.gifOk) return rec.gifUrl;
+  return rec.pngUrl || '';
+}
+// DOM 里用 <img> 显示 emoji（列表用）。
+// 地址走 emojiSrcFor()：有动画的用 GIF，没有动画的用 PNG，
+// 并挂了 onerror —— 万一还是加载失败就当场退回 PNG，绝不显示成「碎图」
 function emojiImgHTML(cp, emoji, cls) {
   cls = cls || 'emoji-img';
-  if (cp) return '<img class="' + cls + '" src="' + emojiAnimUrl(cp) + '" alt="' + emoji + '" loading="lazy" draggable="false">';
-  return emoji;
+  if (!cp) return emoji;
+  const rec = loadEmoji(cp);
+  const src = emojiSrcFor(rec);
+  if (!src) return emoji;
+  const fallback = rec.pngUrl || emojiPngUrl(cp);
+  // 不用 loading="lazy"：这些图很小，而且物品栏/列表一旦被判定「暂时不可见」
+  // 懒加载就会让图标空着不显示
+  return '<img class="' + cls + '" src="' + src + '" alt="' + emoji + '" draggable="false"' +
+    ' onerror="this.onerror=null;this.src=\'' + fallback + '\'">';
 }
 
 // ---------------- 动物园观赏动物（只看不产出，会在农场里散步） ----------------
@@ -3972,7 +3996,7 @@ window.__farm = {
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
-  emojiCache, emojiAnimUrl, emojiPngUrl,
+  emojiCache, emojiAnimUrl, emojiPngUrl, emojiSrcFor, emojiDrawable,
 };
 
 requestAnimationFrame(loop);

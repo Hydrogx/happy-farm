@@ -1397,9 +1397,15 @@ function drawAquarium(ctx, x, y, t, fish) {
     ellipse(ctx, bx, y - 16 - ph * (H - 30), 1.8 + (1 - ph) * 2.2, 1.8 + (1 - ph) * 2.2);
     ctx.fill();
   }
-  // 里面的鱼：在玻璃箱内部沿椭圆轨迹游，游到边界会自己掉头
+  // 里面的鱼：在玻璃箱内部沿椭圆轨迹游，游到边界会自己掉头。
+  // 有些生物（海豚、鲨鱼）的图本身留白很多，要放大一点才看得清，
+  // 所以这里给它们各自的显示倍率。
   const SW = W / 2 - 34, SH = H / 2 - 26;      // 允许游动的半宽 / 半高
   const cxm = x, cym = y - H / 2 - 12;         // 水体的中心
+  const SEA_ZOOM = { dolphin: 1.6, shark: 1.55, whale: 1.15, seal: 1.3, croc: 1.25,
+                     seaturtle: 1.25, goldfish: 1.2, fish: 1.15, puffer: 1.2,
+                     octopus: 1.15, lobster: 1.15, crab: 1.1, squid: 1.15,
+                     shrimp: 1.25, shell: 1.2 };
   fish.forEach((id, i) => {
     const it = ITEMS[id];
     if (!it) return;
@@ -1407,17 +1413,16 @@ function drawAquarium(ctx, x, y, t, fish) {
     const a = t * (0.45 + (i % 5) * 0.11) + i * 1.7;
     const fx = cxm + Math.cos(a) * SW;
     const fy = cym + Math.sin(a * 1.5 + i) * SH;
-    // 水平速度方向 = -sin(a)（x 对 a 求导），用来决定朝哪边游
-    const vx = -Math.sin(a);
-    const size = 26 + Math.min(26, (it.price || 20) / 14);   // 贵的鱼大一点
+    const vx = -Math.sin(a);                   // 水平速度方向 = -sin(a)
+    const size = (26 + Math.min(22, (it.price || 20) / 16)) * (SEA_ZOOM[id] || 1.3);
     ctx.save();
     ctx.translate(fx, fy);
     if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
     if (rec && rec.ok && rec.img) {
       ctx.drawImage(rec.img, -size / 2, -size / 2, size, size);
     } else {
-      ctx.font = Math.round(size * 0.9) + 'px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, size * 0.32);
+      ctx.font = Math.round(size * 0.85) + 'px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, size * 0.3);
     }
     ctx.restore();
   });
