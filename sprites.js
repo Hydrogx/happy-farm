@@ -1014,6 +1014,52 @@ function drawCustomer(ctx, x, y, c) {
  * 场景物件
  * ---------------------------------------------------------- */
 const TANK_ANIM_SPEED = 0.5;   // 水族箱里的生物动画速度（0.5 = 半速）
+const ZOO_ANIM_SPEED = 1;      // 地图上观赏动物的动画速度（1 = 原速，跟商店一致）
+
+// ------------------------------------------------------------
+// 画一只「用 Noto 动画 emoji 做的生物」——水族箱里的鱼和地图上的观赏动物
+// 都用这一个函数，保证两边的动画行为完全一致：
+//   ① 有逐帧动画（ImageDecoder 拆好的帧）→ 逐帧画，动画时间可以单独调速；
+//   ② 没有动画素材（官网没做 / 这个浏览器解不出来）→ 静态图 + 呼吸效果
+//      （缩放和摇摆都套在原图上，位置和逐帧那条路完全对齐）；
+//   ③ 连图都没有 → 返回 false，让调用方退回文字 emoji。
+// 说明：中心点 cx/cy 就是静止图那一帧的中心，逐帧画和呼吸画都用它，
+//       所以两条路切换的时候位置不会跳。
+// callerScale = 调用方自己已经叠好的缩放（例如动物园的 sc），
+//               在「中心点」外面做缩放，两种画法都会同等受益。
+// ------------------------------------------------------------
+function drawEmojiCreature(ctx, cp, cx, cy, size, tSec, rec, speed, phase, callerScale) {
+  if (!rec || !rec.ok || !rec.img) return false;
+  const sp = speed || 1;
+  // 关于倍速：emojiFrameIndex 算的是 (传入时刻 - startedAt)，startedAt 记在**游戏时间轴**上。
+  // 为了让水族箱的 0.5 倍速真的只是「放慢」，这里传「游戏时刻按 1/sp 缩放后的值」，
+  // 同时把动画进度原点也挪一下，保证放慢之后仍然是**往前播**、不会倒退或定格。
+  const at = tSec / sp;
+  const elapsed = sp === 1 ? tSec : tSec - at;   // 相位补偿
+  // ① 逐帧动画（水族箱里半速，看着更悠闲；地图上的动物原速）
+  if (drawEmojiAnimated(ctx, cp, cx, cy, size, at, rec, elapsed)) {
+    // 注意：缩放要**留在当前变换里**（调用方 drawZoo 靠它做呼吸/走路的缩放，
+    // 由它自己的 ctx.restore() 收尾）。所以这里不能包 save/restore，
+    // 否则缩放会被 restore 抵消掉，调用方每帧再乘一次 → 变换指数级膨胀。
+    const k = callerScale || 1;
+    if (k !== 1) {
+      ctx.translate(cx, cy);
+      ctx.scale(k, k);
+      ctx.translate(-cx, -cy);
+    }
+    return true;
+  }
+  // ② 没有动画素材：静态图 + 呼吸（±6% 缩放 + 轻微左右摇摆）
+  if (!needsBreath(cp)) return false;
+  const bs = breathScale(tSec, phase) * (callerScale || 1);
+  const sway = Math.sin(tSec * 2.2 + (phase || 0)) * 0.045;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(sway);
+  ctx.drawImage(rec.img, -size * bs / 2, -size * bs / 2, size * bs, size * bs);
+  ctx.restore();
+  return true;
+}
 
 const FRUIT_COLORS = {
   apple: '#ff5a4e', orange: '#ffa02e', pear: '#c8e05a',
@@ -1423,14 +1469,10 @@ function drawAquarium(ctx, x, y, t, fish) {
     ctx.save();
     ctx.translate(fx, fy);
     if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
-    if (rec && rec.ok) {
-      // 优先用自己解码的动画帧；没有动画的用呼吸效果
-      // 水族箱里的动画用半速播放，看着更悠闲（鱼游动的速度不变）
-      if (!drawEmojiAnimated(ctx, it.cp, 0, 0, size, t * TANK_ANIM_SPEED, rec)) {
-        const bs = needsBreath(it.cp) ? breathScale(t, i) : 1;
-        ctx.drawImage(rec.img, -size * bs / 2, -size * bs / 2, size * bs, size * bs);
-      }
-    } else {
+    // 和地图上的观赏动物走同一套画法（drawEmojiCreature）：
+    // 优先逐帧动画（水族箱里用半速播放，看着更悠闲，游动速度不变），
+    // 没有动画素材的用静态图 + 呼吸效果；都没有才退回文字 emoji
+    if (!drawEmojiCreature(ctx, it.cp, 0, 0, size, t, rec, TANK_ANIM_SPEED, i, 1)) {
       ctx.font = Math.round(size * 0.85) + 'px sans-serif'; ctx.textAlign = 'center';
       ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, size * 0.3);
     }
@@ -1486,22 +1528,11 @@ function drawZoo(ctx, x, y, o) {
   // 走路时朝前倾一点，像在迈步
   const lean = moving ? (fly ? Math.sin(wp * 2) * 0.05 : 0.055) : 0;
   ctx.rotate(-lean);
-  if (o.rec && o.rec.ok && o.rec.img) {
-    const swapped = !drawEmojiAnimated(ctx, o.rec.cp, 0, -s / 2, s, o.t, o.rec);   // 原生动图 / 逐帧
-    if (swapped) {
-      // 没有动画素材的（大象等）：用呼吸缩放 + 轻微左右摇摆，看起来也是「活的」
-      const bs = breathScale(o.t, o.phase);
-      const sway2 = Math.sin(o.t * 2.2 + o.phase) * 0.045;
-      ctx.save();
-      ctx.translate(0, -s / 2);
-      ctx.rotate(sway2);
-      ctx.scale(sc * bs, sc * bs);
-      ctx.drawImage(o.rec.img, -s / 2, -s / 2, s, s);
-      ctx.restore();
-    } else {
-      ctx.scale(sc, sc);
-    }
-  } else {
+  const cp = o.cp || (o.rec && o.rec.cp);
+  // 和水族箱里的小鱼走同一套画法：优先逐帧动画，没有动画素材就静态图 + 呼吸
+  // （cp 一定要传：没有 cp 就找不到帧，动物会定格成一张图）
+  // 两条路都画不出来（连图都没有）才退回文字 emoji
+  if (!drawEmojiCreature(ctx, cp, 0, -s / 2, s, o.t, o.rec, ZOO_ANIM_SPEED, o.phase, sc)) {
     ctx.font = Math.round(s * 0.8) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#222';

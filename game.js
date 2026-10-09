@@ -790,49 +790,51 @@ function weatherText() { const w = STR[lang].weather || STR.zh.weather; return w
 
 // ---------------- 动画 emoji 资源（Noto Emoji Animation） ----------------
 // 资源来源：https://googlefonts.github.io/noto-emoji-animation/
-// 有动画的用 512.gif（浏览器自动播放），没有动画版的退回 512.png（再用 canvas 叠加动作）
+//
+// 【本项目的做法：资源全部放在本地 assets/emoji/】
+//   官网素材已经提前下载到 assets/emoji/<codepoint>.webp（动图）和 <codepoint>.png（静态图），
+//   取图时**本地优先**，本地没有才回落到远端 gstatic。这样做的三个原因：
+//     ① 同源 —— canvas 画出来的图不会被「污染」，getImageData 抽样检测、ImageDecoder 拆帧都能正常工作；
+//     ② 没有跨域请求 —— 不发跨域请求、不依赖 CORS 响应头，断网 / 内网部署也不会白图；
+//     ③ 路径不会错 —— 相对路径跟着站点走，换域名、加子目录（/farm/）都不会失效。
+//   官网的 data/api.json 也只是用来判断「有没有动画」，现在这份清单已经内嵌 + 以本地文件为准，
+//   所以启动时不再需要联网拉清单。
 const EMOJI_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest/';
+const EMOJI_LOCAL_DIR = 'assets/emoji/';
 const emojiCache = {};     // cp -> { img, ok, kind }
-// 官网（googlefonts.github.io/noto-emoji-animation）只给一部分 emoji 做了动画，
-// 它自己的清单在 data/api.json 里。拉一次存起来，就知道某个 emoji 到底有没有动画，
-// 没有的话直接走静态图，不用白白发两个会 404 的请求。
-const NOTO_API = 'https://googlefonts.github.io/noto-emoji-animation/data/api.json';
-const NOTO_LIST_KEY = 'farm-noto-anim-list';
-let notoAnimSet = null;          // Set：有动画的 codepoint（去掉了 fe0f）
-let notoAnimState = 'idle';      // idle | loading | ready | failed
+let notoAnimSet = null;          // 兼容保留：以前从官网 api.json 拉的清单（现在不用了）
+let notoAnimState = 'ready';     // 现在以本地文件 + 内嵌表为准，启动即 ready
 function notoNorm(cp) { return String(cp || '').toLowerCase().replace(/[_-]?fe0f/g, '').replace(/[-_]/g, ''); }
+
+// 本地有没有这个 emoji 的动图？
+// 下载脚本只给「官网确实做了动画」的 70 个存了 .webp，正好等于 NOTO_HAS_ANIM 这份内嵌清单，
+// 而 NOTO_NO_ANIM（18 个：大象、长颈鹿、斑马、考拉、蜂蜜、毛线、鸡蛋、牛奶、饲料…）只有静态 png。
+// 所以「有没有动画」不看网络、不发请求，启动瞬间就有答案。
+function emojiLocalAnim(cp) {
+  const k = notoNorm(cp);
+  if (NOTO_NO_ANIM[k]) return false;        // 本地就没下动图，别去请求
+  return true;
+}
+// 「这个 emoji 到底有没有动画」——本地清单是唯一权威，不再依赖网络
 function notoHasAnim(cp) {
   const k = notoNorm(cp);
-  if (NOTO_HAS_ANIM[k]) return true;        // 内嵌表：启动瞬间就有答案
-  if (NOTO_NO_ANIM[k]) return false;        // 明确没有动画 → 别发注定 404 的请求
-  if (!notoAnimSet) return null;            // 表里没有的（以后新增的）再等网络清单
-  return notoAnimSet.has(k);
+  if (NOTO_HAS_ANIM[k]) return true;
+  if (NOTO_NO_ANIM[k]) return false;
+  return null;                              // 表里没有的（以后新增的）交给加载流程实测
 }
-(function loadNotoList() {
-  try {
-    const cached = localStorage.getItem(NOTO_LIST_KEY);
-    if (cached) {
-      const arr = JSON.parse(cached);
-      if (arr && arr.length) { notoAnimSet = new Set(arr); notoAnimState = 'ready'; return; }
-    }
-  } catch (e) {}
-  if (typeof fetch === 'undefined') { notoAnimState = 'failed'; return; }
-  notoAnimState = 'loading';
-  fetch(NOTO_API).then(r => r.json()).then(d => {
-    const arr = (d.icons || []).map(ic => notoNorm(ic.codepoint));
-    notoAnimSet = new Set(arr);
-    notoAnimState = 'ready';
-    try { localStorage.setItem(NOTO_LIST_KEY, JSON.stringify(arr)); } catch (e) {}
-  }).catch(() => { notoAnimState = 'failed'; });
-})();
 
-// Noto 的动图有两个地址，和官网 <picture> 里的写法一致：
-//   .webp —— 动画版（优先，官网就是先给 webp）
-//   .gif  —— 动图（第二选择）
-//   .png  —— 静态图（兜底：有些 emoji 官方只有静态图）
-function emojiWebpUrl(cp) { return EMOJI_BASE + cp + '/512.webp'; }
-function emojiAnimUrl(cp) { return EMOJI_BASE + cp + '/512.gif'; }
-function emojiPngUrl(cp) { return EMOJI_BASE + cp + '/512.png'; }
+// 三种格式的地址，都**本地优先**：
+//   .webp —— 动画版（第一优先）
+//   .gif  —— 动图（第二选择，本地没存，只有远端兜底）
+//   .png  —— 静态图（兜底：官方有些 emoji 只有静态图）
+function emojiLocalUrl(cp, ext) { return EMOJI_LOCAL_DIR + cp + '.' + ext; }
+function emojiRemoteUrl(cp, file) { return EMOJI_BASE + cp + '/' + file; }
+function emojiWebpUrl(cp) { return emojiLocalAnim(cp) ? emojiLocalUrl(cp, 'webp') : emojiRemoteUrl(cp, '512.webp'); }
+function emojiAnimUrl(cp) { return emojiLocalAnim(cp) ? emojiLocalUrl(cp, 'webp') : emojiRemoteUrl(cp, '512.gif'); }
+function emojiPngUrl(cp) { return emojiLocalUrl(cp, 'png'); }
+// 远端的备用地址（本地文件缺失 / 部署时忘了带上 assets 时用）
+function emojiWebpFallback(cp) { return emojiRemoteUrl(cp, '512.webp'); }
+function emojiPngFallback(cp) { return emojiRemoteUrl(cp, '512.png'); }
 
 // 判断一张图「画出来是不是真的有东西」。
 // 有些素材（海豚 1f42c、鲨鱼 1f988 的 512.gif）能加载、尺寸也正常，但每一帧都是全透明的，
@@ -868,10 +870,14 @@ function canvasHasPixels(x, w, h, thresh) {
 // （画出来永远是第一帧，看着就是「一张图在平移」）。
 // 所以这里用 ImageDecoder 把 GIF 拆成一帧一帧的小画布，再按时间自己换帧，
 // 这样任何浏览器都能看到真的动效，而且节奏可以和游戏时间对齐。
-const EMOJI_ANIM_MAX = 18;      // 最多同时缓存多少套动画（36 帧/套，控制在 ~40MB 以内）
+const EMOJI_ANIM_MAX = 24;      // 最多同时缓存多少套动画（36 帧/套，约 55MB 上限）
+                                // 动物园最多 30 种同时在地图上，24 套够用；
+                                // 被淘汰的再画到时会自动重新解码（见 ensureEmojiAnim）
 const EMOJI_ANIM_PX = 128;      // 每一帧缩到 128px，省内存（游戏里最大也就画 ~70px）
 const EMOJI_ANIM_FRAMES = 36;   // 每套动画最多取 36 帧（尽量贴近原动图的流畅度）
 const emojiAnims = {};          // cp -> { frames:[canvas], delay:[ms], total }
+const emojiNoAnim = {};         // cp -> 1：确认没有动画 / 解码失败过，别再反复重试
+const animRetryAt = {};         // cp -> 上次尝试解码的时间（给重新解码做个节流）
 const ANIM_PARALLEL = 4;        // 同时最多解 4 套动画（一次几十个请求容易有个别加载失败）
 let animRunning = 0;
 const animWaiters = [];
@@ -910,17 +916,18 @@ const NOTO_NO_ANIM = {
   '1f963': 1, '1f992': 1, '1f993': 1, '1f999': 1, '1f9c1': 1, '1f9f6': 1,
 };
 
-const NO_ANIM_CP = {
-  '1f418': 1,  // 大象
-  '1f95a': 1,  // 鸡蛋
-  '1f95b': 1,  // 牛奶
-  '1f36f': 1,  // 蜂蜜
-  '1f9f6': 1,  // 毛线
-  '1f33e': 1,  // 动物饲料
-  '2b50': 1,   // 小海星
-  '1f999': 1,  // 羊驼（官网没动画 → 用呼吸效果）
-};
-function needsBreath(cp) { return !!NO_ANIM_CP[cp] && !emojiFrameReady(cp); }
+// 「没有动画素材」的 emoji：官方没做动画，或者这个浏览器解不出来（emojiNoAnim）。
+// 判据全部收在这里一处，不另外维护硬编码名单：
+//   · 官方没做动画的 18 个（NOTO_NO_ANIM：大象、长颈鹿、斑马、考拉、羊驼、蜂蜜、毛线…）
+//   · 实测解不出动画的（emojiNoAnim：单帧 / 空图 / file:// 下取不到）
+// 这些就用「静态图 + 呼吸效果」，不再傻等动画。
+// 注意：只有**真的没有帧**时才算「需要呼吸」，一旦解码成功就自动切回动画。
+function needsBreath(cp) {
+  if (!cp) return false;
+  if (emojiFrameReady(cp)) return false;                 // 有逐帧动画 → 不需要呼吸
+  if (emojiNoAnim[cp]) return true;                      // 试过，解不出来
+  return notoHasAnim(cp) === false;                      // 官方本来就没有动画
+}
 // 每个物种一个固定相位（同一个 emoji 的动画在所有实例上同步）
 function cpPhase(cp) {
   let h = 0;
@@ -938,11 +945,14 @@ function emojiFrameReady(cp) {
   return !!(a && a.frames && a.frames.length > 1);
 }
 // 取这一时刻该显示第几帧
-function emojiFrameIndex(cp, tSec) {
+// offset 是「相位补偿」：水族箱里的生物按半速播放时，调用方传进来的时刻和
+// startedAt 之间会差一段，用它补齐，保证动画始终是往前播的。
+function emojiFrameIndex(cp, tSec, offset) {
   const a = emojiAnims[cp];
   if (!a || !a.frames || a.frames.length < 2) return -1;
   const t0 = Number.isFinite(a.startedAt) ? a.startedAt : 0;
-  let ms = (((tSec - t0) * 1000) % a.total + a.total) % a.total;
+  const k = offset || 0;
+  let ms = (((tSec - t0 - k) * 1000) % a.total + a.total) % a.total;
   for (let i = 0; i < a.frames.length; i++) {
     if (ms < a.delay[i]) return i;
     ms -= a.delay[i];
@@ -950,23 +960,48 @@ function emojiFrameIndex(cp, tSec) {
   return a.frames.length - 1;
 }
 // 画一帧动画（没有动画就返回 false，让调用方退回静态图）
-function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
-  const i = emojiFrameIndex(cp, tSec);
+function drawEmojiFrame(ctx, cp, cx, cy, size, tSec, offset) {
+  const i = emojiFrameIndex(cp, tSec, offset);
   if (i < 0) return false;
   const a = emojiAnims[cp];
   ctx.drawImage(a.frames[i], cx - size / 2, cy - size / 2, size, size);
   return true;
 }
-// 画一只 emoji 动物 / 生物：优先「浏览器原生播放原动图」，其次「自己逐帧画」，
-// 都不行就画静态底图（此时调用方可以再叠呼吸效果）。
+// 画一只 emoji 动物 / 生物：优先「自己逐帧画」（ImageDecoder 拆好的帧，最可靠），
+// 帧还没准备好时才直接画原动图，都不行就返回 false（调用方再叠呼吸效果）。
 // 返回 true 表示已经由动画画完了。
-function drawEmojiAnimated(ctx, cp, cx, cy, size, tSec, rec) {
-  if (rec && rec.raw && rawAnimState[cp] !== 'frames') {
-    // 浏览器会自动推进这张动图的帧：直接画，最省事也最顺
+//
+// 为什么把「逐帧画」放在第一位：实测（Chrome）把动图 <img> 画到 canvas 上，
+// 浏览器**只交第一帧**——图在页面上照样会动，但 canvas 上拿到的是定格画面，
+// 这就是「商店里的动物会动、地图上的动物却像贴纸」的真正原因。
+// 所以这里的顺序是：有帧就用帧，没帧先拿原图顶着，帧一到就自动切过去。
+// cp 拿不到时（老调用点）退回 rec.cp，避免又出现「找不到帧」。
+function drawEmojiAnimated(ctx, cp, cx, cy, size, tSec, rec, offset) {
+  const key = cp || (rec && rec.cp);
+  if (emojiFrameReady(key)) {
+    if (drawEmojiFrame(ctx, key, cx, cy, size, tSec, offset)) return true;
+  } else {
+    ensureEmojiAnim(key, rec);                    // 帧被缓存淘汰掉了 → 重新解一次
+  }
+  if (rec && rec.raw && rawAnimState[key] !== 'frames') {
     ctx.drawImage(rec.raw, cx - size / 2, cy - size / 2, size, size);
     return true;
   }
-  return drawEmojiFrame(ctx, cp, cx, cy, size, tSec);
+  return false;
+}
+// 缓存满了会把最早解好的那几套动画丢掉（省内存）。被丢掉之后再画到时，
+// 这里补一次解码，让它自己「长回来」，不至于永远停在原图第一帧。
+// 另外：官方本来就没有动画的（静态 png）和解不出来的，记在 emojiNoAnim 里，别再反复重试；
+// 即使还在重试中，也用 animRetryAt 限一下频率（1.5 秒一次），别每帧都开一路。
+function ensureEmojiAnim(cp, rec) {
+  if (!cp || emojiAnims[cp]) return;             // 有记录（正在解 / 已解好）就别重复开工
+  if (emojiNoAnim[cp]) return;                   // 官方没做动画 / 试过解不出来 → 不再尝试
+  if (notoHasAnim(cp) === false) return;         // 静态图，不该走解码
+  const now = Date.now();
+  if (now - (animRetryAt[cp] || 0) < 1500) return;   // 刚试过，先歇一下
+  animRetryAt[cp] = now;
+  const url = (rec && (rec.animUrl || rec.webpUrl)) || emojiWebpUrl(cp);
+  if (url) decodeEmojiAnim(cp, url, null);
 }
 const rawAnimState = {};        // cp -> 'raw'（直接画原动图）| 'frames'（逐帧画）
 const rawCheckPending = {};     // 正在检测的 cp（避免重复检测）
@@ -974,6 +1009,8 @@ const rawCheckPending = {};     // 正在检测的 cp（避免重复检测）
 // 有些环境（例如无头浏览器）把动图画到 canvas 上是不会动的一帧。
 // 这里用一张很小的离屏画布抽样两次：画面有变化 → 浏览器会自动播放，
 // 地图上就直接画原动图；没有变化 → 标记成要逐帧画。
+// 另外：只要逐帧缓存已经就绪，就一律按 'frames' 处理（逐帧画更可靠），
+// 免得抽样恰好采到两帧一样的画面而误判成「原生会动」。
 function detectRawAnim(cp, raw) {
   if (!raw || typeof cp !== 'string') return;
   if (rawAnimState[cp] || rawCheckPending[cp]) return;
@@ -998,7 +1035,7 @@ function detectRawAnim(cp, raw) {
           for (let i = 0; i < c1.length; i += 4) {
             if (c1[i] !== c2[i] || c1[i + 1] !== c2[i + 1] || c1[i + 2] !== c2[i + 2] || c1[i + 3] !== c2[i + 3]) diff++;
           }
-          rawAnimState[cp] = diff > 0 ? 'raw' : 'frames';
+          rawAnimState[cp] = (diff > 0 && !emojiFrameReady(cp)) ? 'raw' : 'frames';
         } catch (e) { rawAnimState[cp] = 'frames'; }
       }, 280);
     } catch (e) { rawAnimState[cp] = 'frames'; }
@@ -1007,7 +1044,7 @@ function detectRawAnim(cp, raw) {
 // 把 GIF / webp 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
 // 注意：同一个 emoji 只允许有一路解码在跑 —— 否则先成功的那一路
 // 可能被后失败的那一路删掉，动物就会卡在静态图（只播第一帧）不动。
-function decodeEmojiAnim(cp, url, cb, attempt) {
+function decodeEmojiAnim(cp, url, cb, attempt, force) {
   if (emojiAnims[cp]) {                                        // 已经解过 / 正在解
     const a = emojiAnims[cp];
     if (a.frames && a.frames.length > 1) { if (cb) cb(true); return; }
@@ -1015,18 +1052,26 @@ function decodeEmojiAnim(cp, url, cb, attempt) {
     return;
   }
   if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') { if (cb) cb(false); return; }
+  const N = attempt || 0;
+  if (!force && emojiNoAnim[cp]) { if (cb) cb(false); return; }  // 试过解不出来 → 别反复刷请求
   const cbList = cb ? [cb] : [];                                // 必须在下面赋值之前定义
-  emojiAnims[cp] = { frames: [], delay: [], total: 0, pending: true, cbs: cbList };
-  // 万一这次没解出来（网络慢 / 解析失败），隔一小会儿再试，最多 4 次（2s → 4s → 8s → 16s）。
+  const a0 = { frames: [], delay: [], total: 0, pending: true, cbs: cbList, fetching: true, finishedAt: 0 };
+  emojiAnims[cp] = a0;
+  // 万一这次没解出来（网络慢 / 解析失败），隔一小会儿再试（2s → 4s → 8s → 16s）。
   // 不重试的话，这只动物就会一直停在静态图上不动。
-  const nextAttempt = (attempt || 0) + 1;
-  if (nextAttempt <= 4) {
+  // ⚠️ 关键：**不能**在解码还在进行时就把记录删掉重来 —— 否则解码完成时会写回一个
+  //    undefined 的记录（报 "Cannot set properties of undefined (setting 'src')"），
+  //    帧缓存直接丢掉，动物就一直只有一帧。所以这里只在「确实卡住了」时才重来。
+  if (N + 1 <= 4) {
     setTimeout(function () {
-      const a2 = emojiAnims[cp];
-      if (a2 && a2.frames && a2.frames.length > 1) return;       // 已经成功了
-      if (a2) delete emojiAnims[cp];                            // 卡住了 → 清掉重来
-      decodeEmojiAnim(cp, url, null, nextAttempt);
-    }, 1000 * Math.pow(2, nextAttempt));
+      const a = emojiAnims[cp];
+      if (a !== a0) return;                                    // 已经被换掉 / 删掉了
+      if (a.frames && a.frames.length > 1) return;             // 已经成功了
+      if (a.fetching) { decodeEmojiAnim(cp, url, null, N + 1, true); return; }   // 还在解，别打断它
+      if (a.finishedAt) return;                                // 已经有确定结果（单帧 / 空图 / 解码失败）
+      delete emojiAnims[cp];                                   // 卡在半路 → 清掉重来
+      decodeEmojiAnim(cp, url, null, N + 1, true);
+    }, 1000 * Math.pow(2, N + 1));
   }
   const finishCb = (ok) => {
     const list = cbList.slice();
@@ -1036,7 +1081,15 @@ function decodeEmojiAnim(cp, url, cb, attempt) {
     list.forEach(f => { try { f(ok); } catch (e) {} });
   };
   // 注意顺序：先把回调叫醒，再删掉占位记录（反过来的话回调就永远收不到消息了）
-  const fail = (why) => { ANIM_DEBUG.push(cp + ':fail(' + (why || '?') + ')'); finishCb(false); delete emojiAnims[cp]; };
+  const fail = (why) => {
+    ANIM_DEBUG.push(cp + ':fail(' + (why || '?') + ')');
+    a0.fetching = false; a0.finishedAt = Date.now();
+    // 记住「这个 emoji 解不出动画」：不然映射到它的动物会每帧都重试一遍，
+    // 白白刷一堆注定失败的请求（静态 png 送进 ImageDecoder 就会这样）。
+    if (N + 1 > 4 || why === 'single' || why === 'blank' || String(why).indexOf('ctor') === 0) emojiNoAnim[cp] = 1;
+    finishCb(false);
+    if (emojiAnims[cp] === a0) delete emojiAnims[cp];
+  };
   animSlot(() => fetch(url).then(r => r.arrayBuffer()).then(buf => {
     let dec;
     try { dec = new ImageDecoder({ data: buf, type: (rec_mime(url)) }); }
@@ -1075,9 +1128,11 @@ function decodeEmojiAnim(cp, url, cb, attempt) {
         }).catch((e) => { ANIM_DEBUG.push(cp + ':decode err ' + e.message); finish(shots); });
       };
       const finish = (list) => {
+        a0.fetching = false; a0.finishedAt = Date.now();
         if (!list || list.length < 2) { fail('few:' + (list ? list.length : 0)); return; }
         if (!anyPixels) { fail('blank'); return; }               // 每帧都是空的：这种素材做不了动画
         const a = emojiAnims[cp];
+        if (!a) return;                                          // 记录已被丢弃（超出缓存上限 / 重试）→ 老实放弃
         a.src = url; a.frames = list.map(x => x.cv);
         a.delay = list.map(x => x.dur);
         a.total = a.delay.reduce((x, y) => x + y, 0) || 1200;
@@ -1098,82 +1153,120 @@ function decodeEmojiAnim(cp, url, cb, attempt) {
 // 根据扩展名给出 mime（webp / gif）
 function rec_mime(url) { return /[.]webp(\?|$)/.test(url) ? 'image/webp' : 'image/gif'; }
 
-// 加载 emoji 图：先加载静态 PNG 保证「立刻能用」，再依次尝试 webp / gif 动图，
-// 只有确认「能画出东西」才换成动图，同时后台把动图拆成帧做真动画。
+// 加载 emoji 图：先加载静态 PNG 保证「立刻能用」，再尝试动图并把动图拆成帧做真动画。
+// 地址本地优先（assets/emoji/），本地拿不到才回落远端 gstatic。
 function loadEmoji(cp) {
   if (!cp) return null;
   let rec = emojiCache[cp];
   if (rec) return rec;
-  rec = emojiCache[cp] = { img: null, ok: false, kind: '' };
+  // ⚠️ cp 必须记在记录上：地图上画动物时（drawZoo）用的是 rec.cp 去找动画帧，
+  //    少了这个字段，逐帧动画永远找不到帧，动物就只能是一张不动的图。
+  rec = emojiCache[cp] = { cp: cp, img: null, ok: false, kind: '' };
   if (typeof Image === 'undefined' || typeof document === 'undefined') return rec;
-  const make = () => {
+  // 本地是同源资源，不需要（也不该）带 crossOrigin：带上的话图会被当成跨域 CORS 图，
+  // 某些浏览器画到 canvas 上只出第一帧、读像素还会抛安全错误。
+  // 只有当本地文件缺失、要回落远端时才需要 CORS 模式。
+  const make = (remote) => {
     const im = new Image();
-    try { im.crossOrigin = 'anonymous'; } catch (e) {}
+    if (remote) { try { im.crossOrigin = 'anonymous'; } catch (e) {} }
     return im;
   };
-  rec.pngUrl = emojiPngUrl(cp);
-  rec.webpUrl = emojiWebpUrl(cp);
+  rec.pngUrl = emojiPngUrl(cp);                                            // assets/emoji/<cp>.png
+  rec.webpUrl = emojiWebpUrl(cp);                                          // 本地 .webp，没有就是远端 .webp
   rec.gifUrl = emojiAnimUrl(cp);
-  // ① 先用 PNG 顶上（PNG 一定有，保证任何时刻都有图）
-  const png = make();
+  rec.hasAnim = notoHasAnim(cp) !== false;
+  // ① 先用静态 PNG 顶上（本地一定有），保证任何时刻都有图可画
+  const png = make(!/^assets\//.test(rec.pngUrl));
   png.onload = () => {
     rec.pngOk = true;
     if (!rec.ok) { rec.img = png; rec.ok = true; rec.kind = 'png'; }
   };
-  png.onerror = () => { rec.pngOk = false; };
+  // 本地 png 万一没部署上，退回远端 png（地图上画动画的图不能是碎图）
+  png.onerror = () => {
+    rec.pngOk = false;
+    const fb = emojiPngFallback(cp);
+    if (png.src.indexOf(fb) < 0) { const im2 = make(true); im2.onload = png.onload; im2.src = fb; rec.pngImg = im2; }
+  };
   rec.pngImg = png;
   png.src = rec.pngUrl;
-  // ② 依次尝试动图：webp 优先，然后 gif。
+  // ② 尝试动图：本地 .webp → 远端 .webp → 远端 .gif（本地没存 gif）。
   //    注意：这里**不能**只测第 0 帧 —— 海豚、鲨鱼的动图首帧是全透明的，
   //    只看首帧会把它们误判成坏图。改成让解析器解码多帧后再校验。
-  const tried = { webp: false, gif: false };
-  const pickAnim = (ok) => {
-    if (ok) return;
-    // 官网清单说这个 emoji 没有动画 → 直接静态图，省掉两个 404 请求
-    if (notoHasAnim(cp) === false) { rec.animUrl = rec.pngUrl; return; }
-    if (!tried.webp) { tried.webp = true; tryAnim(rec.webpUrl, 'webp', () => pickAnim()); return; }
-    if (!tried.gif) { tried.gif = true; tryAnim(rec.gifUrl, 'gif', () => pickAnim()); return; }
-  };
+  const steps = [];
+  if (rec.hasAnim) {
+    if (/^assets\//.test(rec.webpUrl)) {
+      steps.push({ url: rec.webpUrl, kind: 'webp' });
+      steps.push({ url: emojiWebpFallback(cp), kind: 'webp' });   // 本地缺文件时的远端兜底
+    } else {
+      steps.push({ url: rec.webpUrl, kind: 'webp' });
+    }
+    steps.push({ url: emojiRemoteUrl(cp, '512.gif'), kind: 'gif' });
+  }
+  let lastUrl = '';
+  const useStatic = () => { rec.animUrl = rec.pngUrl; rec.kind = rec.img === rec.pngImg ? 'png' : rec.kind; rec.animLocal = true; };
+  // 尝试一路动图。三种结果都覆盖：① 解码出多帧（最好）；② 只能画第一帧（file:// 打不开时）；
+  // ③ 完全不能用（本地文件缺失、404）→ 自动跳下一种格式，最后退回静态 png。
   const tryAnim = (url, kind, next) => {
-    rec.animUrl = url;                           // DOM 立刻用动图地址（浏览器自己播）
-    // 同时用一个 <img> 加载原动图：地图上可以直接把它画到 canvas 上，
-    // 由浏览器原生播放（比逐帧画更省事、也更顺）；不行再退回逐帧画。
-    const raw = make();
-    raw.onload = () => {
-      if (!emojiDrawable(raw)) return;           // 首帧全透明的（海豚等）交给逐帧画判断
-      rec.raw = raw;
-      detectRawAnim(cp, raw);                    // 确认浏览器会不会原生播放
-      rec.img = raw; rec.ok = true; rec.kind = kind; rec.animUrl = url;
-      if (kind === 'webp') rec.webpOk = true; else rec.gifOk = true;
-      rec.domUrl = url;
+    if (lastUrl === url) { next(); return; }      // 同一个地址别试两次
+    lastUrl = url;
+    rec.animUrl = url;                            // DOM 立刻用动图地址（浏览器自己播）
+    const local = /^assets\//.test(url);
+    const raw = make(!local);                     // 本地资源同源，不需要 CORS 模式
+    let decoded = null;                           // null=还没结果 | true=有多帧 | false=解不了
+    const settle = () => {
+      if (decoded === null) return;               // 等 <img> 和解析器两边都有结果
+      if (decoded) {                              // ① 有逐帧动画：这才算真的能用
+        rec.animUrl = url; rec.animLocal = local;
+        if (kind === 'webp') rec.webpOk = true; else rec.gifOk = true;
+        if (!rec.ok || rec.img === rec.pngImg) {
+          rec.img = (emojiAnims[cp] && emojiAnims[cp].frames[0]) || raw;
+          rec.kind = kind;
+        }
+        rec.domUrl = url;
+        return;                                   // 成功，不再往下试
+      }
+      // 解析不出多帧：
+      if (rec.raw === raw && rec.ok && rec.img === raw) return;   // ② 至少 <img> 能画 → 先用它顶着（定格）
+      if (rec.raw === raw) rec.raw = null;
+      if (rec.img === raw) { rec.img = null; rec.ok = !!(rec.pngImg && rec.pngOk) || false; }
+      rec.animUrl = rec.pngUrl;
+      // 官方本来就没有动画的（静态 png 送进 ImageDecoder 会报
+      // "Failed to retrieve track metadata."），试一次就够了，别再往下换格式、也别再重试
+      if (notoHasAnim(cp) === false || emojiNoAnim[cp]) { useStatic(); return; }
+      next();                                     // ③ 这一路不行，试下一种格式
     };
-    raw.onerror = () => {};
+    raw.onload = () => {
+      if (!emojiDrawable(raw)) { settle(); return; }   // 首帧全透明的（海豚等）交给逐帧画判断
+      rec.raw = raw;
+      if (rec.img === rec.pngImg || !rec.ok) { rec.img = raw; rec.ok = true; rec.kind = kind; }
+      detectRawAnim(cp, raw);                     // 抽样确认浏览器会不会原生推进帧
+      settle();
+    };
+    raw.onerror = () => { if (rec.animUrl === url) rec.animUrl = rec.pngUrl; };
     raw.src = url;
     decodeEmojiAnim(cp, url, function (ok) {
-      if (!ok) {
-        if (!rec.ok) rec.animUrl = rec.pngUrl;   // 动图完全不可用才退回静态图
-        return;
-      }
-      if (!rec.ok) {                             // 原图没能直接用，就用解出来的第一帧当底图
-        rec.img = emojiAnims[cp].frames[0];
-        rec.ok = true; rec.kind = kind; rec.animUrl = url;
-        if (kind === 'webp') rec.webpOk = true; else rec.gifOk = true;
-        rec.domUrl = url;
-      }
+      decoded = !!ok;
+      settle();
     });
   };
-  pickAnim(false);
+  // 依次尝试；每一路自己决定成功（不调 next）还是失败（调 next）
+  (function step() {
+    if (emojiFrameReady(cp)) return;              // 已经有逐帧动画了，不用再试
+    const s = steps.shift();
+    if (!s) { if (!rec.animUrl) useStatic(); return; }   // 都没有 → 静态图（调用方会叠呼吸）
+    tryAnim(s.url, s.kind, step);
+  })();
   return rec;
 }
 // DOM 里显示某个 emoji 图时该用哪个地址：
-// 确认过 GIF 能用就用 GIF（浏览器自己会播动画）；GIF 不能用就用 PNG
+// 有动图就用动图（本地 .webp 优先；浏览器会自己播），否则用静态 png
 function emojiSrcFor(rec) {
   if (!rec) return '';
-  if (rec.animUrl) return rec.animUrl;      // webp / gif 动图
+  if (rec.animUrl) return rec.animUrl;      // 本地 .webp / 远端 .webp / 远端 .gif
   return rec.pngUrl || '';
 }
 // DOM 里用 <img> 显示 emoji（列表用）。
-// 地址走 emojiSrcFor()：有动画的用 GIF，没有动画的用 PNG，
+// 地址走 emojiSrcFor()：有动画的用动图（本地 webp），没有动画的用 png，
 // 并挂了 onerror —— 万一还是加载失败就当场退回 PNG，绝不显示成「碎图」
 function emojiImgHTML(cp, emoji, cls) {
   cls = cls || 'emoji-img';
@@ -1269,6 +1362,23 @@ function isStarving(type) { const tr = troughOf(type); return !!tr && tr.unfed >
 // 某种动物现在有几只
 function countAnimalType(type) { return G.animals.filter(a => a.type === type).length; }
 // 放饲料：一次把食槽加满（用背包里的饲料 / 玉米）
+// 放进去之后**马上**让饿跑的动物回窝（不用等到第二天结算）。
+// 以前这里只清了 unfed 计数，没清 animals 上的 tired 标志，所以食槽里明明有饲料了，
+// 鸡头上还是一直顶着「饿跑了 / 饲料不足」的红框，走到它旁边也只会提示「它饿了」。
+function feedArrived(tr) {
+  let cameBack = false;
+  for (const a of G.animals) {
+    if (a.type !== tr.type || !a.tired) continue;
+    a.tired = false;
+    cameBack = true;
+    spawnParticles(a.x, a.y - 18, '💖', 4);
+    // 让它掉头回窝，而不是继续在外面乱走
+    const h = a.home || (PENS[a.type] && PENS[a.type].home);
+    if (h) { a.tx = h.x + rand(-30, 30); a.ty = h.y + rand(-20, 20); a.moving = true; }
+  }
+  if (cameBack) { note('logFeedBack'); sfx.sparkle(); }
+  return cameBack;
+}
 function fillTrough(tr) {
   const need = FEED_MAX - tr.feed;
   if (need <= 0) { sfx.error(); say('feedFull'); return false; }
@@ -1277,8 +1387,9 @@ function fillTrough(tr) {
     const use = Math.min(have, need);
     removeItem('feed', use);
     tr.feed += use;
-    if (tr.feed > 0) tr.unfed = 0;
+    tr.unfed = 0;                          // 今天开始算「吃饱了」
     sfx.plant(); spawnParticles(tr.x, tr.y - 14, '🌾', 5);
+    feedArrived(tr);
     say('logFeed', { n: tr.feed, max: FEED_MAX });
     saveGame(true);
     return true;
@@ -1290,10 +1401,12 @@ function fillTrough(tr) {
     tr.feed += use;
     tr.unfed = 0;
     sfx.plant(); spawnParticles(tr.x, tr.y - 14, '🌾', 5);
+    feedArrived(tr);
     say('logFeedCorn', { n: tr.feed, max: FEED_MAX });
     saveGame(true);
     return true;
   }
+  // 背包里连玉米都没有：只叫一声，不改状态
   sfx.error(); say('noFeed');
   return false;
 }
@@ -1723,16 +1836,8 @@ function dailyFeedUpdate() {
     if (tr.feed >= need) {
       tr.feed -= need;
       tr.unfed = 0;
-      // 只要今天吃饱了，之前饿跑的动物就自己回窝（每次结算都清一次，避免漏掉）
-      let cameBack = false;
-      for (const a of G.animals) {
-        if (a.type === tr.type && a.tired) {
-          a.tired = false;
-          cameBack = true;
-          spawnParticles(a.x, a.y - 18, '💖', 4);
-        }
-      }
-      if (cameBack) { note('logFeedBack'); sfx.sparkle(); }
+      // 只要今天吃饱了，之前饿跑的动物就自己回窝（和手动放饲料时同一套逻辑）
+      feedArrived(tr);
     } else {
       // 今天没吃上：记一天。前 2 天只是没产出，撑到第 3 天才饿得跑出围栏
       tr.feed = 0;
@@ -3932,7 +4037,7 @@ function render() {
       y: z.y + 4,
       draw: () => drawZoo(ctx, z.x, z.y, {
         type: z.type, fly: !!ZOO_FLY[z.type],
-        size: zd.size, rec, moving: z.moving, walkPhase: z.walkPhase,
+        size: zd.size, rec, cp: zd.cp, moving: z.moving, walkPhase: z.walkPhase,
         // 动画相位按物种固定（和商店里同一条动画同步），不再用每只一个的随机相位
         phase: cpPhase(zd.cp), emoji: zd.icon, dir: z.dir, t,
       }),
@@ -4424,7 +4529,8 @@ renderHUD();
 
 // 调试用的小开关（方便在控制台里看状态 / 测试）
 window.__farm = {
-  G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo,
+  G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo, newAnimal,
+  feedArrived, fillTrough,
   SEA_ALL, SEA_SET, PONDS, emojiDrawable, RECIPES, OBTAINABLE, MUSHROOMS, MUSHROOM_REGROW,
   CROPS, CROP_MAP, FRUIT_IDS,
   FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
