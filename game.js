@@ -467,6 +467,8 @@ const STR = {
     mathTitle: '🧮 帮忙算零钱',
     mathAsk: '客人买了 {item}（{price} 金币），给了 {paid} 金币，要找他多少零钱？',
     mathHint: '客人给的钱 − 东西的价格 = 要找的零钱',
+    eachFor: '每个 {n} 金币',
+    paidChip: '给了 {n} 金币',
     nlPrice: '价格',
     nlPaid: '付的钱',
     coinUnit: '{n} 金币',
@@ -551,6 +553,18 @@ const STR = {
     petRoomEmpty: '还没有宠物，去领养一只吧！',
     petStatusOk: '开开心心 💖',
     // —— 衣帽间 ——
+    // —— 🎫 来参观的客人（观赏费）——
+    spot_chicken: '鸡棚的母鸡', spot_sheep: '羊棚的小羊', spot_cow: '牛棚的奶牛',
+    spot_zoo: '观赏动物', spot_tank: '水族箱里的鱼',
+    themeZoo: '动物', themeTank: '水族馆',
+    logVisitorCome: '🎫 {name}来农场参观了（想看{what}）',
+    logVisitorPaid: '👀 {name}看了{spot}，付了 {n} 金币观赏费',
+    logVisitorLeave: '🚶 {name}参观完走了，一共付了 {n} 金币观赏费',
+    visitorSay: '{name}：这里的{spot}真好看！',
+    prGreetVisitor: '🙋 跟{name}打个招呼',
+    greetVisitor: '{name}：谢谢你让我参观，下次还来！💖',
+    attractHint: '🌟 农场现在能同时接待 {n} 位参观客人（动物 / 观赏动物 / 水族箱的鱼越多，来的人越多、给的观赏费也越多）',
+    logAttractMore: '🌟 农场更热闹了！现在最多能同时接待 {n} 位参观客人',
     // —— 升级面板：建筑现状 ——
     upgStatusHead: '📋 现在的状况：',
     upgCapHead: '✅ 现在的容量：',
@@ -786,6 +800,8 @@ const STR = {
     mathTitle: '🧮 Count the Change',
     mathAsk: 'Your customer buys {item} ({price} coins) and pays {paid} coins. How much change do you give back?',
     mathHint: 'Money paid − price of the item = change',
+    eachFor: '{n} coins each',
+    paidChip: 'pays {n} coins',
     nlPrice: 'price',
     nlPaid: 'paid',
     coinUnit: '{n} coins',
@@ -869,6 +885,18 @@ const STR = {
     petRoomEmpty: 'No pets yet — adopt one!',
     petStatusOk: 'Happy 💖',
     // —— 衣帽间 ——
+    // —— 🎫 Visitors (viewing fee) ——
+    spot_chicken: 'the hens', spot_sheep: 'the lambs', spot_cow: 'the cows',
+    spot_zoo: 'the zoo animals', spot_tank: 'the aquarium fish',
+    themeZoo: 'animals', themeTank: 'the aquarium',
+    logVisitorCome: '🎫 {name} came to visit the farm (wants to see {what})',
+    logVisitorPaid: '👀 {name} looked at {spot} and paid {n} coins',
+    logVisitorLeave: '🚶 {name} finished the tour — {n} coins in viewing fees',
+    visitorSay: '{name}: Your {spot} are lovely!',
+    prGreetVisitor: '🙋 Say hi to {name}',
+    greetVisitor: '{name}: Thanks for the tour — I will come again! 💖',
+    attractHint: '🌟 Your farm can host {n} visitors at once (more animals / zoo animals / fish = more visitors and bigger fees)',
+    logAttractMore: '🌟 The farm is livelier! Up to {n} visitors at once',
     // —— 升级面板：建筑现状 ——
     upgStatusHead: '📋 Right now: ',
     upgCapHead: '✅ Current capacity: ',
@@ -1668,6 +1696,7 @@ const G = {
   decor: [],
   customers: [],
   customerTimer: 18,
+  visitorTimer: 12,          // 下一位参观客人什么时候来
   ambientT: 6,          // 环境动物叫声计时
   lastStep: 0,          // 脚步动画相位
   saveT: 0,             // 自动存档计时
@@ -2764,7 +2793,7 @@ function loadGame(name) {
     if (typeof d.muted === 'boolean') setMuted(d.muted);
     // 清掉临时状态
     G.customers = []; G.particles = []; G.fishing = null;
-    G.sleepFade = 0; G.sleepDawn = false; G.customerTimer = rand(20, 40);
+    G.sleepFade = 0; G.sleepDawn = false; G.customerTimer = rand(20, 40); G.visitorTimer = rand(8, 20);
     renderInventory(); renderHUD();
     return true;
   } catch (e) { return false; }
@@ -2801,7 +2830,7 @@ function resetGame() {
   G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
   HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
-  G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
+  G.customerTimer = 18; G.visitorTimer = 12; G.ambientT = 6; G.saveT = 0;
   applyLevels();          // ★ 先把等级写进地图（围栏/水坑/水族箱尺寸）
   initWorld();
   renderInventory(); renderHUD();
@@ -2968,27 +2997,26 @@ function renderMathChallenge() {
   const q = $('math-question'), box = $('math-choices'), info = $('math-info'), bar = $('math-bar');
   if (!q || !box || !G.math) return;
   const m = G.math;
-  // 题目：把「买了几件、每件多少钱、给了多少」讲清楚
-  if (m.items.length > 1) {
-    q.innerHTML = t('mathAskMix', {
-      a: nm('item', m.items[0].id) + '×' + m.items[0].qty,
-      pa: salePriceOf(m.items[0].id),
-      b: nm('item', m.items[1].id) + '×' + m.items[1].qty,
-      pb: salePriceOf(m.items[1].id),
-      paid: m.paid,
-    });
-  } else if (m.items[0].qty > 1) {
-    q.innerHTML = t('mathAskMulti', {
-      n: m.items[0].qty, item: nm('item', m.items[0].id),
-      price: salePriceOf(m.items[0].id), paid: m.paid,
-    });
-  } else {
-    q.innerHTML = t('mathAsk', { item: nm('item', m.item), price: m.price, paid: m.paid });
+  // ① 第一行：买了什么 / 单价 / 给了多少 —— 做成小圆牌，多买几件也不会变成一大段话
+  const chips = [];
+  m.items.forEach(function (it) {
+    chips.push('<span class="math-chip"><span class="ci">' + ITEMS[it.id].icon + '</span>' +
+               nm('item', it.id) + (it.qty > 1 ? ' ×' + it.qty : '') + '</span>');
+  });
+  if (m.items.length === 1 && m.items[0].qty > 1) {
+    chips.push('<span class="math-chip">' + t('eachFor', { n: salePriceOf(m.items[0].id) }) + '</span>');
+  } else if (m.items.length > 1) {
+    chips.push('<span class="math-chip">' + m.items.map(function (it) {
+      return salePriceOf(it.id) + '💰';
+    }).join(' + ') + '</span>');
   }
-  // 算式 + 分步（数轴留作直观辅助）
+  chips.push('<span class="math-chip paid">' + t('paidChip', { n: m.paid }) + '</span>');
+  q.innerHTML = chips.join('');
+  // ② 完整算式 + 分步；数轴只在「算找零」这一步出现
   const step = m.steps[m.step];
+  const last = m.step === m.steps.length - 1;
   const stepHtml = m.steps.map(function (s, i) {
-    const cls = i < m.step ? 'done' : i === m.step ? 'active' : '';
+    const cls = i < m.step ? 'done' : i === m.step ? 'active' : 'locked';
     const shown = i < m.step ? (s.expr + ' = ' + s.answer) : (s.expr + ' = ?');
     const label = i < m.steps.length - 1 ? t('mathStepTotal') : t('mathStepChange');
     return '<div class="math-step ' + cls + '"><span class="st-label">' + label +
@@ -2998,10 +3026,9 @@ function renderMathChallenge() {
     info.innerHTML =
       '<div class="math-expr">' + mathExpressionText(m) + '</div>' +
       '<div class="math-steps">' + stepHtml + '</div>' +
-      numberLineHTML(m.step === 0 ? 0 : m.total, m.paid);
+      (last ? numberLineHTML(m.total, m.paid) : '');
   }
   box.innerHTML = '';
-  box.classList.add('small');
   m.choices.forEach(function (v) {
     const b = document.createElement('button');
     b.className = 'math-choice';
@@ -3009,28 +3036,21 @@ function renderMathChallenge() {
     b.onclick = function () { answerMath(v); };
     box.appendChild(b);
   });
-  if (m.step === 0 && m.steps.length > 1) box.classList.add('small');
   if (bar) bar.style.width = '100%';
 }
-// 数轴：把「已经算出来的总价」和「付的钱」标在一条线上，一眼看出要往前跳多少
+// 数轴（矮矮一条）：把「算出来的总价」和「付的钱」标在一条线上，一眼看出要往前跳多少
 function numberLineHTML(price, paid) {
-  const max = Math.max(paid, price) + 5;
+  const max = Math.max(paid, price) + 4;
   const pPct = (price / max) * 100, dPct = (paid / max) * 100;
-  let ticks = '';
-  const stepV = max <= 60 ? 5 : 10;
-  for (let v = 0; v <= max; v += stepV) {
-    const pct = (v / max) * 100;
-    ticks += '<span class="nl-tick" style="left:' + pct + '%"></span>' +
-             '<span class="nl-label" style="left:' + pct + '%">' + v + '</span>';
-  }
-  return '<div class="nl-wrap">' +
-      '<div class="nl-dot price" style="left:' + pPct + '%"><b>' + price + '</b></div>' +
-      '<div class="nl-dot paid" style="left:' + dPct + '%"><b>' + paid + '</b></div>' +
-      '<div class="nl-jump" style="left:' + pPct + '%;width:' + Math.max(0, dPct - pPct) + '%"></div>' +
-      '<div class="nl-line">' + ticks + '</div>' +
-      '<div class="nl-caption">' +
-        '<span class="nl-key price">' + t('nlPrice') + ' ' + price + ' 金币</span>' +
-        '<span class="nl-key paid">' + t('nlPaid') + ' ' + paid + ' 金币</span>' +
+  return '<div class="nl2">' +
+      '<div class="nl2-track">' +
+        '<div class="nl2-fill" style="left:' + pPct + '%;width:' + Math.max(0, dPct - pPct) + '%"></div>' +
+      '</div>' +
+      '<div class="nl2-dot price" style="left:' + pPct + '%">' + price + '</div>' +
+      '<div class="nl2-dot paid" style="left:' + dPct + '%">' + paid + '</div>' +
+      '<div class="nl2-legend">' +
+        '<span class="price">' + t('nlPrice') + ' ' + price + ' 金币</span>' +
+        '<span class="paid">' + t('nlPaid') + ' ' + paid + ' 金币</span>' +
       '</div>' +
     '</div>';
 }
@@ -3995,6 +4015,7 @@ function renderShop() {
         spawnParticles(na.x, na.y - 20, '💖', 5);
         say('boughtAnimal', { animal: isHenBuy ? t('animalHen') : nm('animal', a.type) }, 2500, false,
             { icon: a.icon, sub: t('boughtAnimalSub') });
+        note('logAttractMore', { n: visitorSlots() });     // 动物多了 → 能接待更多参观客人
         renderShop(); renderHUD();
       }, false, sub);
     }
@@ -4018,6 +4039,7 @@ function renderShop() {
         sfx.buy(); sfx.zooVoice(z.v, z.p, 300);
         spawnParticles(spot.x, spot.y - 20, '💖', 5);
         say('boughtZoo', { animal: nm('zoo', z.type) }, 2600, false, { icon: z.icon, sub: t('zooNote') });
+        note('logAttractMore', { n: visitorSlots() });
         renderShop(); renderHUD();
       }, false, t('zooNote'));
     }
@@ -4244,6 +4266,7 @@ function putInTank(id) {
   G.tank.push(id);
   sfx.water();
   say('tankPut', { fish: nm('item', id) });
+  note('logAttractMore', { n: visitorSlots() });       // 鱼多了 → 参观的人也会变多
   saveGame(true); renderTank();
 }
 function takeFromTank(i) {
@@ -4377,8 +4400,16 @@ function nearestInteract() {
     const d = dist(p.x, p.y, it.x, it.y);
     if (d < bestD) { bestD = d; best = { kind: 'item', it, label: `${ITEMS[it.id].icon} ${t('prPickup', { item: nm('item', it.id) })}` }; }
   }
-  // 2. 等待中的客人（优先售卖，检测范围比其它略大）
+  // 2. 客人：买东西的可以卖东西给他；来参观的可以打个招呼
   for (const c of G.customers) {
+    if (c.kind === 'visitor') {
+      const dv = dist(p.x, p.y, c.x, c.y);
+      if (dv < bestD + 22) {
+        bestD = Math.min(bestD, dv);
+        best = { kind: 'greet', c, label: t('prGreetVisitor', { name: custName(c) }) };
+      }
+      continue;
+    }
     if (c.state !== 'wait') continue;
     const d = dist(p.x, p.y, c.x, c.y);
     if (d < bestD + 30) {
@@ -4644,6 +4675,13 @@ function doInteract() {
     case 'pondLocked':
       sfx.error(); say('pondLocked', null, 3000);
       break;
+    case 'greet': {
+      const v = target.c;
+      spawnParticles(v.x, v.y - 24, '💖', 4);
+      sfx.happy(); sfx.pet();
+      say('greetVisitor', { name: custName(v) }, 2600);
+      break;
+    }
     case 'upgrade':
       openUpgrade(target.fac);
       break;
@@ -4782,6 +4820,7 @@ function spawnCustomer() {
     hairColor: pick(HAIR_COLORS),                               // 发色
     x: WORLD_W + 30, y: ZONES.stall.y + rand(-20, 40),
     dir: 'left', moving: true, walkPhase: 0, phase: rand(0, 6), t: 0,
+    kind: 'buyer',
     items: items, want: want, state: 'come', waitT: 25, happy: false,
     pet: null,
   };
@@ -4797,6 +4836,189 @@ function spawnCustomer() {
   say('customerCome', { name: custName(c) }, 2200);
   note('logCustomerWant', { name: custName(c), item: basketLabel(c) });
   sfx.bell();
+}
+
+// ============================================================
+//            🎫 来参观的客人（观赏费）
+// ------------------------------------------------------------
+// 农场上**动物 / 观赏动物 / 水族箱里的鱼**越多：
+//   ① 同时能接待的参观客人越多（visitorSlots）
+//   ② 每个人给的观赏费越高（visitorFee）
+// 参观客人在农场里自己逛：走到动物跟前看一会儿、付一次观赏费，看完 1~3 处就走。
+// ============================================================
+// 农场的「看头」有多少（鱼和观赏动物更稀罕，算 2 分）
+function attractionScore() {
+  return G.animals.length + G.zoo.length * 2 + G.tank.length * 2;
+}
+// 同时最多能接待几位参观客人
+function visitorSlots() {
+  const s = attractionScore();
+  if (s <= 0) return 0;
+  return Math.min(4, 1 + Math.floor(s / 8));
+}
+// 看一处景点的观赏费：农场越大给得越多，同一处东西越多也越值
+function visitorFee(n) {
+  const s = attractionScore();
+  const base = 4 + Math.sqrt(s) * 4;
+  const bonus = 1 + Math.min(1.4, Math.max(0, (n || 1) - 1) * 0.1);
+  return Math.max(4, Math.round(base * bonus));
+}
+// 现在能看的景点有哪些
+function attractionSpots() {
+  const out = [];
+  const push = function (id, n) { if (n > 0) out.push({ id: id, n: n, name: t('spot_' + id) }); };
+  push('chicken', countAnimalType('chicken'));
+  push('sheep', countAnimalType('sheep'));
+  push('cow', countAnimalType('cow'));
+  push('zoo', G.zoo.length);
+  push('tank', G.tank.length);
+  return out;
+}
+// 到某一处景点「站在哪里看」（动物会走动，所以每次现算）
+function spotLookAt(spot) {
+  if (spot.id === 'tank') return { x: ZONES.tank.x, y: ZONES.tank.y + 78, ax: ZONES.tank.x, ay: ZONES.tank.y };
+  if (spot.id === 'zoo') {
+    const z = G.zoo[Math.floor(Math.random() * G.zoo.length)];
+    if (!z) return null;
+    return { x: z.x, y: z.y + 48, ax: z.x, ay: z.y };
+  }
+  const list = G.animals.filter(function (a) { return a.type === spot.id; });
+  const a = list[Math.floor(Math.random() * list.length)];
+  if (!a) return null;
+  return { x: a.x, y: a.y + 48, ax: a.x, ay: a.y };
+}
+// 别走进水里（干土坑也不踩）
+function pushOutOfPonds(x, y) {
+  for (const pc of PONDS) {
+    const ex = (x - pc.x) / (pc.w / 2 + 14), ey = (y - pc.y) / (pc.h / 2 + 14);
+    const d = ex * ex + ey * ey;
+    if (d < 1 && d > 0.0001) {
+      const k = 1 / Math.sqrt(d);
+      x = pc.x + (x - pc.x) * k;
+      y = pc.y + (y - pc.y) * k;
+    }
+  }
+  return { x: Math.max(24, Math.min(WORLD_W - 24, x)), y: Math.max(150, Math.min(WORLD_H - 20, y)) };
+}
+// 安排一条参观路线：按喜好排出 1~3 处
+function planVisit(c) {
+  const spots = attractionSpots();
+  if (!spots.length) return [];
+  const like = function (s) {
+    if (c.theme === 'tank') return s.id === 'tank' ? 0 : 2;
+    return s.id === 'tank' ? 2 : 0;
+  };
+  const sorted = spots.slice().sort(function (a, b) {
+    return (like(a) - like(b)) + (Math.random() - 0.5) * 0.8;
+  });
+  return sorted.slice(0, Math.min(sorted.length, 1 + Math.floor(Math.random() * 3)));
+}
+// 去下一处；没有了就准备回家
+function nextVisitStop(c) {
+  c.target = null; c.targetSpot = null;
+  let guard = 0;
+  while (c.plan && c.plan.length && guard++ < 6) {
+    const spot = c.plan.shift();
+    const at = spotLookAt(spot);
+    if (!at) continue;                       // 那处已经没东西可看了
+    c.targetSpot = spot; c.target = at; c.state = 'walk';
+    return;
+  }
+  c.state = 'leave';
+  if (c.earned > 0) { note('logVisitorLeave', { name: custName(c), n: c.earned }); }
+  sfx.happy();
+}
+function spawnVisitor() {
+  const spots = attractionSpots();
+  if (!spots.length) return;
+  const hatKeys = Object.keys(OUTFITS.hat).filter(k => k !== 'none');
+  const hairKeys = Object.keys(OUTFITS.hair).filter(k => k !== 'none');
+  const dressKeys = Object.keys(OUTFITS.dress).filter(k => k !== 'none');
+  const shoeKeys = Object.keys(OUTFITS.shoes).filter(k => k !== 'none');
+  const wearDress = Math.random() < 0.45 && dressKeys.length;
+  const c = {
+    kind: 'visitor',
+    nameObj: pick(CUSTOMER_NAMES),
+    gender: Math.random() < 0.5 ? 'boy' : 'girl',
+    hat: Math.random() < 0.4 ? 'none' : pick(hatKeys),
+    hair: Math.random() < 0.35 ? 'none' : pick(hairKeys),
+    shirt: pick(Object.keys(OUTFITS.shirt)),
+    dress: wearDress ? pick(dressKeys) : 'none',
+    pants: pick(Object.keys(OUTFITS.pants)),
+    shoes: Math.random() < 0.3 ? 'none' : pick(shoeKeys),
+    hairStyle: pick(HAIR_STYLES), hairColor: pick(HAIR_COLORS),
+    x: WORLD_W + 30, y: rand(200, 880),
+    dir: 'left', moving: true, walkPhase: 0, phase: rand(0, 6), t: 0,
+    theme: pick(['zoo', 'zoo', 'tank']),      // 想看动物 / 想看水族馆
+    state: 'walk', lookT: 0, target: null, targetSpot: null,
+    visited: 0, earned: 0, happy: false, pet: null,
+  };
+  c.plan = planVisit(c);
+  if (!c.plan.length) return;
+  nextVisitStop(c);
+  if (c.state !== 'walk') return;
+  if (Math.random() < 0.55) {   // 参观的人有时也带一只小宠物
+    c.pet = {
+      type: pick(['dog', 'cat', 'duck', 'goose']),
+      x: c.x + rand(24, 46), y: c.y + rand(8, 26), dir: 'left',
+      moving: false, walkPhase: 0, phase: rand(0, 6), happy: 0,
+      hat: Math.random() < 0.3 ? pick(Object.keys(PET_HATS)) : 'none',
+    };
+  }
+  G.customers.push(c);
+  say('logVisitorCome', { name: custName(c), what: t(c.theme === 'tank' ? 'themeTank' : 'themeZoo') }, 2600);
+  sfx.bell();
+}
+// 参观客人自己的走动逻辑
+function updateVisitor(c, dt) {
+  c.t += dt;
+  if (c.state === 'walk') {
+    if (!c.target) { nextVisitStop(c); return; }
+    const d = dist(c.x, c.y, c.target.x, c.target.y);
+    if (d < 14) {
+      c.state = 'look';
+      c.lookT = rand(4.5, 8);
+      c.moving = false;
+      if (c.targetSpot) c.dir = c.target.ax < c.x ? 'left' : 'right';
+    } else {
+      const a = Math.atan2(c.target.y - c.y, c.target.x - c.x);
+      const spd = 92;
+      const nx = c.x + Math.cos(a) * spd * dt, ny = c.y + Math.sin(a) * spd * dt;
+      const fx = pushOutOfPonds(nx, ny);
+      c.x = fx.x; c.y = fx.y;
+      c.dir = Math.cos(a) < 0 ? 'left' : 'right';
+      c.moving = true; c.walkPhase += dt * 10;
+    }
+  } else if (c.state === 'look') {
+    c.moving = false;
+    c.lookT -= dt;
+    const spot = c.targetSpot;
+    if (Math.random() < dt * 1.6) {
+      spawnParticles(c.x + rand(-14, 14), c.y - 30, pick(['💖', '✨', '👀']), 1);
+    }
+    if (c.lookT <= 0) {
+      // 看完一处 → 付观赏费
+      const fee = visitorFee(spot ? spot.n : 1);
+      c.earned += fee;
+      c.visited++;
+      G.coins += fee;
+      renderHUD();
+      coinBurst(c.x, c.y - 44, fee);
+      sfx.coin(); sfx.happy();
+      addLog(t('logVisitorPaid', { name: custName(c), spot: spot ? spot.name : '', n: fee }));
+      if (c.visited === 1 && Math.random() < 0.7) {
+        toast(t('visitorSay', { name: custName(c), spot: spot ? spot.name : '' }), 2000);
+      }
+      nextVisitStop(c);
+    }
+  } else if (c.state === 'leave') {
+    const tx = WORLD_W + 40;
+    const d = Math.abs(c.x - tx);
+    if (d < 20) { c.gone = true; return; }
+    c.x += 95 * dt;
+    c.dir = 'right';
+    c.moving = true; c.walkPhase += dt * 10;
+  }
 }
 
 // ---------------- 更新逻辑 ----------------
@@ -5050,13 +5272,24 @@ function update(dt) {
   }
 
   // --- 客人 ---
+  // 买东西的客人：最多同时 2 位
   G.customerTimer -= dt;
-  if (G.customerTimer <= 0 && G.customers.length < 2) {
+  if (G.customerTimer <= 0 && G.customers.filter(c => c.kind !== 'visitor').length < 2) {
     G.customerTimer = rand(35, 65);
     spawnCustomer();
   }
+  // 🎫 来参观的客人：农场越热闹，来的越勤、同时能接待的越多
+  G.visitorTimer -= dt;
+  if (G.visitorTimer <= 0) {
+    G.visitorTimer = rand(16, 34);
+    const now = G.customers.filter(c => c.kind === 'visitor').length;
+    if (G.started && now < visitorSlots()) spawnVisitor();
+  }
   for (let i = G.customers.length - 1; i >= 0; i--) {
     const c = G.customers[i];
+    if (c.gone) { G.customers.splice(i, 1); continue; }
+    // 参观的客人走自己的一条逻辑（逛农场、看动物、付观赏费）
+    if (c.kind === 'visitor') { updateVisitor(c, dt); continue; }
     c.t += dt;
     // 客人站在摊位正前方（下方），与商店触发区保持距离
     const targetX = c.state === 'come' ? ZONES.stall.x - 110 : WORLD_W + 40;   // 站在摊位左前方（右边留给升级木板）
@@ -5423,8 +5656,26 @@ function render() {
           ctx.fillStyle = '#c95a1a';
           ctx.fillText(custName(c), c.x, ny);
         }
+        // 参观客人：头顶挂一个 🎫，正在看的时候冒一个「👀 + 想看的东西」的泡泡
+        if (c.kind === 'visitor') {
+          ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('🎫', c.x + 20, c.y - 58 + Math.sin(t * 3 + c.phase) * 2);
+          if (c.state === 'look') {
+            const by = c.y - 52 + Math.sin(t * 3 + c.phase) * 3;
+            ctx.fillStyle = '#fff';
+            rr(ctx, c.x - 24, by - 18, 48, 30, 10); ctx.fill();
+            ctx.strokeStyle = '#7ddb6a'; ctx.lineWidth = 2.5;
+            rr(ctx, c.x - 24, by - 18, 48, 30, 10); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(c.x - 4, by + 12); ctx.lineTo(c.x + 4, by + 12); ctx.lineTo(c.x, by + 20);
+            ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill();
+            ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('👀', c.x - 6, by + 4);
+            ctx.fillText(c.theme === 'tank' ? '🐠' : '🦁', c.x + 12, by + 5);
+          }
+        }
         // 想要物品的气泡：买好几件就把清单缩写在气泡里
-        if (c.state === 'wait') {
+        if (c.kind !== 'visitor' && c.state === 'wait') {
           const by = c.y - 52 + Math.sin(t * 3 + c.phase) * 3;
           const bi = basketOf(c);
           const bw = bi.length > 1 ? 74 : 44;
@@ -5922,6 +6173,8 @@ window.__farm = {
   FACILITIES, FACILITY_ORDER, doUpgrade, applyLevels, lvOf, isMaxLv, upgradeCost,
   addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
   newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
+  attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
+  newZoo, newAnimal,
   buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, buildMathSteps, mathExpressionText,
   shopClothesOf, OUTFIT_CATS, RECIPES,
   renderShop, renderWardrobe, renderTank, renderBook, renderSell, customerPool, spawnCustomer,
