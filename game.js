@@ -291,7 +291,7 @@ const STR = {
     helpTitle: '📖 怎么玩', btnKnow: '知道啦！',
     help1: '🚶 方向键 / WASD：走来走去',
     help2: '✋ E / 空格：捡东西、种地、挤奶、剪羊毛、钓鱼、和客人说话',
-    help3: '🥚 鸡会下蛋，捡起来！',
+    help3: '🥚 母鸡会下蛋（一只母鸡一天最多下一个），捡起来！小鸡还不会下蛋',
     help4: '🐄 牛可以挤牛奶，🐑 羊可以剪羊毛',
     help5: '🌱 田里：先耕地 → 撒种子 → 浇水 → 收获',
     help6: '🍎 摇摇果树，水果掉下来',
@@ -319,6 +319,9 @@ const STR = {
     // —— 交互提示 ——
     prPickup: '捡起 {item}', prShear: '✂️ 剪羊毛', prMilk: '🥛 挤牛奶',
     prPetChicken: '🐔 摸摸小鸡', prPetChick: '🐤 摸摸小鸡', prPetHen: '🐔 摸摸母鸡',
+    prPetHenLaid: '🐔 摸摸母鸡（今天已经下过蛋啦）',
+    henLaidToday: '这只母鸡今天已经下过蛋啦，明天再来吧 🥚',
+    henWillLay: '它今天还没下蛋，等等看 🥚',
     prPetSheep: '🐑 摸摸小羊（羊毛还没长好）', prPetCow: '🐄 摸摸奶牛（等会儿才有奶）',
     prTill: '⛏️ 耕地', prPlant: '🌱 播种 {seed}', prNoSeed: '🌱 需要种子（去商店买）',
     prWater: '💧 浇水', prHarvest: '🧺 收获 {crop}', prTree: '摇一摇{fruit}树',
@@ -367,7 +370,7 @@ const STR = {
     logWater: '给菜地浇了水',
     logShear: '剪到了羊毛',
     logMilk: '挤到了牛奶',
-    logEgg: '小鸡下了一个蛋 🥚',
+    logEgg: '🥚 母鸡下了一个蛋（今天 {laid}/{hen} 只母鸡下过蛋）',
     logWoolBack: '🐑 羊毛长好啦',
     logMilkBack: '🐄 奶牛又有奶了',
     logCustomerWant: '🔔 {name} 想买 {item}',
@@ -629,7 +632,7 @@ const STR = {
     helpTitle: '📖 How to Play', btnKnow: 'Got it!',
     help1: '🚶 Arrow keys / WASD: walk around',
     help2: '✋ E / Space: pick up, plant, milk, shear, fish, talk to customers',
-    help3: '🥚 Chickens lay eggs — pick them up!',
+    help3: '🥚 Hens lay eggs (one per hen per day) — pick them up! Chicks do not lay yet',
     help4: '🐄 Milk the cow, 🐑 shear the sheep',
     help5: '🌱 Field: till → plant seeds → water → harvest',
     help6: '🍎 Shake the fruit trees to drop fruit',
@@ -655,6 +658,9 @@ const STR = {
     hudDay: '📅 Day {n}', weather: { sunny: '☀️ Sunny', cloudy: '⛅ Cloudy', rain: '🌧️ Rainy' },
     prPickup: 'Pick up {item}', prShear: '✂️ Shear wool', prMilk: '🥛 Milk the cow',
     prPetChicken: '🐔 Pet the chick', prPetChick: '🐤 Pet the chick', prPetHen: '🐔 Pet the hen',
+    prPetHenLaid: '🐔 Pet the hen (already laid today)',
+    henLaidToday: 'This hen already laid her egg today — come back tomorrow 🥚',
+    henWillLay: 'She has not laid yet today, wait a bit 🥚',
     prPetSheep: '🐑 Pet the lamb (no wool yet)', prPetCow: '🐄 Pet the cow (no milk yet)',
     prTill: '⛏️ Till the soil', prPlant: '🌱 Plant {seed}', prNoSeed: '🌱 Need seeds (buy at the shop)',
     prWater: '💧 Water it', prHarvest: '🧺 Harvest {crop}', prTree: 'Shake the {fruit} tree',
@@ -701,7 +707,7 @@ const STR = {
     logWater: 'Watered the crops',
     logShear: 'Sheared some wool',
     logMilk: 'Milked the cow',
-    logEgg: 'A chicken laid an egg 🥚',
+    logEgg: '🥚 A hen laid an egg ({laid}/{hen} hens laid today)',
     logWoolBack: '🐑 The wool grew back',
     logMilkBack: '🐄 The cow has milk again',
     logCustomerWant: '🔔 {name} wants to buy {item}',
@@ -1646,6 +1652,9 @@ function isHen(a) { return a.type === 'chicken' && a.stage !== 'chick'; }
 function isChick(a) { return a.type === 'chicken' && a.stage === 'chick'; }
 function countHens() { return G.animals.filter(isHen).length; }
 function countChicks() { return G.animals.filter(isChick).length; }
+// 今天已经下过蛋的母鸡有几只（日志和界面用）
+function countHensLaidToday() { return G.animals.filter(function (a) { return isHen(a) && a.laidToday; }).length; }
+
 // 孵蛋器里还要等最少几天
 function hatchDaysLeft() {
   if (!G.incubating.length) return 0;
@@ -2352,7 +2361,9 @@ function newAnimal(type, x, y, stage) {
     type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
     moving: false, walkPhase: 0, phase: rand(0, 6),
     tx: x, ty: y, waitT: rand(1, 3), peck: 0,
-    wool: 1, woolT: 0, milkReady: true, milkT: 0, eggT: rand(15, 40),
+    wool: 1, woolT: 0, milkReady: true, milkT: 0,
+    // 下蛋：每只母鸡**一天最多下一个蛋**，蛋会落在一天里的随机时刻
+    eggT: rand(30, 180), laidToday: false,
     stage: type === 'chicken' ? (stage === 'chick' ? 'chick' : 'hen') : undefined,
     growT: 0,                                  // 小鸡还差几天长大
     tired: isHungry(type),                     // 饿跑了：不产出、会跑出围栏
@@ -2406,13 +2417,20 @@ function dailyFeedUpdate() {
 }
 // 天亮了：小鸡长大 / 孵蛋器推进一天
 function dailyChickenUpdate() {
+  // ⓪ 新的一天：每只母鸡重新获得「今天的那个蛋」
+  //    下蛋时刻随机落在这一天里（一天 240 秒），所以不会每天都在同一秒下蛋
+  for (const a of G.animals) {
+    if (!isHen(a)) continue;
+    a.laidToday = false;
+    a.eggT = rand(30, 180);
+  }
   // ① 小鸡长大（母鸡满 5 只就保持原样）
   for (const a of G.animals) {
     if (!isChick(a)) continue;
     a.growT++;
     if (a.growT >= CHICK_GROW_DAYS) {
       if (countHens() < maxHens()) {
-        a.stage = 'hen'; a.growT = 0; a.eggT = rand(20, 45);
+        a.stage = 'hen'; a.growT = 0; a.eggT = rand(30, 180); a.laidToday = false;
         spawnParticles(a.x, a.y - 18, '✨', 6);
         sfx.sparkle();
         note('logChickGrew');
@@ -2605,7 +2623,8 @@ function saveGame(silent = true) {
     pets: G.pets.map(p => ({ type: p.type, hat: p.hat, hunger: p.hunger, poop: p.poop,
                              clean: p.clean, x: p.x, y: p.y })),
     animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady,
-                                   stage: a.stage, growT: a.growT, tired: a.tired })),
+                                   stage: a.stage, growT: a.growT, tired: a.tired,
+                                   eggT: a.eggT, laidToday: a.laidToday })),
     troughs: TROUGHS.map(tr => ({ id: tr.id, feed: tr.feed, unfed: tr.unfed })),
     vehicles: G.vehicles.slice(),
     vehicle: G.vehicle,
@@ -2715,6 +2734,9 @@ function loadGame(name) {
         na.milkReady = a.milkReady !== false;
         if (na.stage === 'chick') na.growT = Number.isFinite(a.growT) ? Math.max(0, Math.min(CHICK_GROW_DAYS, a.growT)) : 0;
         na.tired = a.tired === true;
+        // 「今天下过蛋没有」也要存：不然读档之后同一只母鸡一天能下两个
+        na.laidToday = a.laidToday === true;
+        if (Number.isFinite(a.eggT)) na.eggT = Math.max(1, Math.min(240, a.eggT));
         return na;
       });
       if (!G.animals.length) {
@@ -4428,7 +4450,7 @@ function nearestInteract() {
         bestD = d;
         best = isChick(a)
           ? { kind: 'petChicken', a, label: t('prPetChick') }
-          : { kind: 'petChicken', a, label: t('prPetHen') };
+          : { kind: 'petChicken', a, label: a.laidToday ? t('prPetHenLaid') : t('prPetHen') };
       }
       else if (a.type === 'sheep') { bestD = d; best = { kind: 'petSheep', a, label: t('prPetSheep') }; }
       else { bestD = d; best = { kind: 'petCow', a, label: t('prPetCow') }; }
@@ -4593,6 +4615,8 @@ function doInteract() {
     case 'petChicken': case 'petSheep': case 'petCow':
       spawnParticles(target.a.x, target.a.y - 20, '💖', 3);
       sfx.pet(); sfx.animalVoice(target.a.type, 130, target.a);   // 摸一摸，动物会回应你
+      // 摸母鸡的时候顺口说一句「今天下过蛋没有」，小朋友就不会一直等
+      if (isHen(target.a)) say(target.a.laidToday ? 'henLaidToday' : 'henWillLay');
       break;
     case 'till':
       target.pl.state = 'tilled'; sfx.till();
@@ -4776,9 +4800,14 @@ function custName(c) { return (lang === 'en' ? c.nameObj.en : c.nameObj.zh); }
 // 收齐了再卖给 TA（收不齐就只能看着客人走掉）。数量按价格控制：贵的只买 1 个。
 function basketQtyRange(id) {
   const price = salePriceOf(id);
-  if (price < 20) return 3;      // 便宜的多买几个
-  if (price < 40) return 2;
-  return 1;                      // 贵的一次只买 1 个
+  let max = price < 20 ? 3 : price < 40 ? 2 : 1;   // 便宜的多买几个，贵的一次只买 1 个
+  // 动物产品是「按天慢慢产出」的（一只母鸡一天才一个蛋），别一次点太多，
+  // 不然小朋友要等好几天才凑得齐 —— 客人最多点「农场一天大概能产出多少」
+  if (id === 'egg') max = Math.min(max, countHens());
+  else if (id === 'milk') max = Math.min(max, countAnimalType('cow'));
+  else if (id === 'wool') max = Math.min(max, countAnimalType('sheep'));
+  else if (id === 'honey') max = Math.min(max, 2);
+  return Math.max(1, Math.min(3, max));
 }
 function buildBasket() {
   const pool = customerPool();
@@ -5164,16 +5193,19 @@ function update(dt) {
     // 饿跑了就先不产出（要往食槽里放饲料）
     const starving = !!a.tired;
 
-    // 生产：只有母鸡会下蛋（小鸡只管到处跑、啄米）
+    // 生产：只有母鸡会下蛋，而且**一只母鸡一天最多下一个蛋**
+    //   · 小鸡（chick）只到处跑、啄米，永远不下蛋
+    //   · 母鸡今天已经下过了（laidToday）就等到第二天早上再来
+    //   · 饿跑了（starving）的母鸡不下蛋，计时器也一起停住，喂饱了继续
     if (a.type === 'chicken') {
-      if (!chick && !starving) {
+      if (!chick && !starving && !a.laidToday) {
         a.eggT -= dt;
         if (a.eggT <= 0) {
-          a.eggT = rand(35, 60);
+          a.laidToday = true;
           G.groundItems.push({ id: 'egg', x: a.x + rand(-15, 15), y: a.y + rand(5, 15), phase: rand(0, 6) });
           spawnParticles(a.x, a.y - 15, '🎵', 1);
           sfx.cluck();
-          note('logEgg');
+          note('logEgg', { hen: countHens(), laid: countHensLaidToday() });
         }
       }
     } else if (a.type === 'sheep' && a.wool < 1 && !starving) {
@@ -6174,6 +6206,7 @@ window.__farm = {
   addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
   newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
+  countHensLaidToday, countHens, countChicks, dailyFarmUpdate, isHen, isChick,
   newZoo, newAnimal,
   buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, buildMathSteps, mathExpressionText,
   shopClothesOf, OUTFIT_CATS, RECIPES,
