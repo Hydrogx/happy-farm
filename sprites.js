@@ -183,9 +183,169 @@ function drawShirtPattern(ctx, key, shirt) {
 /* ------------------------------------------------------------
  * 画小农夫（男孩 / 女孩，可换装，带走路与动作动画）
  * ---------------------------------------------------------- */
+/* ------------------------------------------------------------
+ * 交通工具：滑板车 / 自行车 / 摩托车
+ * 这些图统一按「车头朝右」画；人物往左走时整组（人 + 车）一起镜像，
+ * 所以车头永远朝着前进方向，不会倒着走。
+ * ---------------------------------------------------------- */
+function drawVehicle(ctx, id, o) {
+  o = o || {};
+  const t = o.t || 0;
+  const wp = o.walkPhase || 0;
+  const on = !!o.moving;
+  const spin = on ? wp : 0;
+  drawShadow(ctx, 0, 1, 22);
+
+  // ---- 轮子 ----
+  const wheel = (wx, r, spokes) => {
+    ctx.fillStyle = '#33373d';
+    ellipse(ctx, wx, -r, r, r); ctx.fill();
+    ctx.fillStyle = '#dfe3e8';
+    ellipse(ctx, wx, -r, r * 0.34, r * 0.34); ctx.fill();
+    if (spokes) {
+      ctx.strokeStyle = 'rgba(150,158,168,.95)'; ctx.lineWidth = 1.2;
+      for (let i = 0; i < 4; i++) {
+        const a = spin + i * Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(wx - Math.cos(a) * r * 0.85, -r - Math.sin(a) * r * 0.85);
+        ctx.lineTo(wx + Math.cos(a) * r * 0.85, -r + Math.sin(a) * r * 0.85);
+        ctx.stroke();
+      }
+    }
+  };
+
+  if (id === 'scooter') {
+    // 滑板车：小轮子 + 低踏板 + 高车把（人站在踏板上、双手扶把）
+    wheel(-12, 5, false);
+    wheel(12, 5, false);
+    ctx.fillStyle = '#8b939c';
+    rr(ctx, -16, -8, 32, 3.5, 1.5); ctx.fill();       // 踏板
+    ctx.fillStyle = '#6c757e';
+    rr(ctx, -16, -5, 32, 2, 1); ctx.fill();
+    ctx.strokeStyle = '#c9ced6'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(11, -4); ctx.lineTo(16, -27); ctx.stroke();
+    ctx.strokeStyle = '#aab2ba'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(11, -4); ctx.lineTo(12.5, -14); ctx.stroke();
+    ctx.fillStyle = '#4a5058';                          // 车把
+    rr(ctx, 10, -30, 13, 4, 2); ctx.fill();
+    ctx.fillStyle = '#e05a5a';
+    rr(ctx, 10, -30, 5, 4, 2); ctx.fill();
+    if (on) {                                          // 速度线
+      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.8;
+      for (let i = 0; i < 2; i++) {
+        const ly = -12 - i * 6;
+        ctx.beginPath(); ctx.moveTo(-22 - i * 3, ly); ctx.lineTo(-30 - i * 3, ly); ctx.stroke();
+      }
+    }
+  } else if (id === 'bicycle') {
+    // 自行车：两个大轮子、车筐在车头前方、人坐在座椅上
+    wheel(-11, 9.5, true);
+    wheel(12, 9.5, true);
+    const pa = spin * 0.9;                              // 脚踏（先画，人在上面）
+    ctx.strokeStyle = '#5a6068'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(1 - Math.cos(pa) * 5, -12 - Math.sin(pa) * 5);
+    ctx.lineTo(1 + Math.cos(pa) * 5, -12 + Math.sin(pa) * 5);
+    ctx.stroke();
+    ctx.strokeStyle = '#e05a5a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-11, -9.5); ctx.lineTo(-2, -23);         // 后上叉
+    ctx.moveTo(-2, -23); ctx.lineTo(7, -19);            // 上管
+    ctx.moveTo(7, -19); ctx.lineTo(12, -9.5);           // 前叉
+    ctx.moveTo(7, -19); ctx.lineTo(4, -24);             // 车把立管
+    ctx.moveTo(-2, -23); ctx.lineTo(1, -9.5);           // 座管
+    ctx.moveTo(1, -9.5); ctx.lineTo(-11, -9.5);         // 后下叉
+    ctx.moveTo(1, -9.5); ctx.lineTo(12, -9.5);          // 下管
+    ctx.stroke();
+    ctx.strokeStyle = '#4a5058'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(3, -25); ctx.lineTo(12, -25); ctx.stroke();   // 车把
+    ctx.fillStyle = '#d9b06a';                          // 车筐（挂在车把前面）
+    rr(ctx, 10, -22, 11, 8, 2.5); ctx.fill();
+    ctx.strokeStyle = '#b8905e'; ctx.lineWidth = 1.2;
+    rr(ctx, 10, -22, 11, 8, 2.5); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(13.5, -22); ctx.lineTo(13.5, -14);
+    ctx.moveTo(18, -22); ctx.lineTo(18, -14);
+    ctx.stroke();
+    ctx.fillStyle = '#4a5058';                          // 座椅
+    rr(ctx, -8, -26, 11, 5, 2.5); ctx.fill();
+  } else {   // motorcycle
+    wheel(-16, 10, false);
+    wheel(16, 10, false);
+    ctx.fillStyle = '#3f4a8a';                          // 车身
+    ctx.beginPath();
+    ctx.moveTo(-16, -13); ctx.quadraticCurveTo(-2, -27, 16, -18);
+    ctx.lineTo(17, -10); ctx.lineTo(-16, -10);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2f3a72';                          // 油箱
+    rr(ctx, -8, -26, 18, 8, 4); ctx.fill();
+    ctx.fillStyle = '#4a5058';                          // 座位
+    rr(ctx, -20, -28, 11, 6, 3); ctx.fill();
+    ctx.strokeStyle = '#c9ced6'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(15, -18); ctx.lineTo(20, -30); ctx.stroke();
+    ctx.fillStyle = '#4a5058';                          // 车把
+    rr(ctx, 14, -34, 14, 4.5, 2.2); ctx.fill();
+    ctx.fillStyle = '#ffe08a';                          // 车灯
+    ellipse(ctx, 21, -27, 3.6, 3); ctx.fill();
+    ctx.fillStyle = '#ffd23e';
+    ellipse(ctx, 21, -27, 1.7, 1.4); ctx.fill();
+    ctx.fillStyle = '#b8bec4';                          // 尾气管
+    rr(ctx, -26, -17, 13, 5, 2.5); ctx.fill();
+    if (on) {
+      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        const ly = -13 - i * 6;
+        ctx.beginPath(); ctx.moveTo(-28 - i * 4, ly); ctx.lineTo(-38 - i * 4, ly); ctx.stroke();
+      }
+    }
+  }
+}
+
+// 每辆车的比例 / 座位高度（人物缩小一点坐上去，看着才像真的在骑）
+const VEH_SPEC = {
+  // vs = 车辆放大倍数｜ps = 人物缩放｜px/py = 人物位置（让胯部正好坐在座位上）
+  scooter:    { vs: 1.35, ps: 0.68, px: 2,  py: -9,  pose: 'deck' },
+  bicycle:    { vs: 1.40, ps: 0.68, px: 4,  py: -14, pose: 'ride' },
+  motorcycle: { vs: 1.50, ps: 0.70, px: 2,  py: -17, pose: 'ride' },
+};
+// 画「人物 + 座驾」：mirror 由这里统一处理（人和车一起镜像，车头才不会反）
+function drawRider(ctx, x, y, o) {
+  const id = o.vehicleId;
+  const spec = VEH_SPEC[id] || VEH_SPEC.bicycle;
+  const mirror = (o.dir === 'left') ? -1 : 1;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(mirror, 1);
+  if (id === 'scooter' || o.pose === 'ride' || o.pose === 'deck') {
+    // 人在车上：先画车，再把缩小的人物放上去
+    ctx.save();
+    ctx.scale(spec.vs, spec.vs);
+    drawVehicle(ctx, id, o);
+    ctx.restore();
+    drawPlayer(ctx, spec.px, spec.py, Object.assign({}, o, {
+      scale: (o.scale || 1) * spec.ps, pose: spec.pose,
+    }));
+  } else {
+    // 站在车旁边：车停在身后
+    ctx.save();
+    ctx.scale(spec.vs, spec.vs);
+    drawVehicle(ctx, id, Object.assign({}, o, { moving: false }));
+    ctx.restore();
+    drawPlayer(ctx, 14, 0, Object.assign({}, o, { pose: 'veh' }));
+  }
+  ctx.restore();
+}
+
 function drawPlayer(ctx, x, y, o) {
-  // o: {gender, dir, walkPhase, moving, outfit, actionT, t}
-  const bob = o.moving ? Math.abs(Math.sin(o.walkPhase)) * 3 : Math.sin(o.t * 2) * 1.2;
+  // o: {gender, dir, walkPhase, moving, outfit, actionT, t, scale, pose}
+  // pose: 不填 = 走路；'ride' = 骑在车上（腿弯着）；'deck' = 站在滑板车上；'veh' = 站在车旁边
+  const pose = o.pose || 'walk';
+  const riding = pose === 'ride';
+  const deck = pose === 'deck';
+  const veh = pose === 'veh';
+  const bob = veh ? 0
+    : o.moving ? Math.abs(Math.sin(o.walkPhase)) * (riding ? 1.2 : deck ? 1.6 : 3)
+    : Math.sin(o.t * 2) * 1.2;
   const swing = o.moving ? Math.sin(o.walkPhase) * 6 : 0;
   const yy = y - bob;
   const dirX = o.dir === 'left' ? -1 : 1;
@@ -203,14 +363,44 @@ function drawPlayer(ctx, x, y, o) {
 
   // --- 腿（裤子层） ---
   ctx.fillStyle = pants.main;
-  rr(ctx, -9 + swing * 0.5, 2, 8, 15, 3); ctx.fill();
-  rr(ctx, 1 - swing * 0.5, 2, 8, 15, 3); ctx.fill();
-  // 裤子花纹
-  drawPantsPattern(ctx, o.outfit.pants, pants, swing);
-  // 鞋子
-  ctx.fillStyle = '#7a5230';
-  rr(ctx, -10 + swing * 0.6, 15, 9, 5, 2); ctx.fill();
-  rr(ctx, 1 - swing * 0.6, 15, 9, 5, 2); ctx.fill();
+  if (riding) {
+    // 骑在车上：前腿弯着踩踏板，后腿收在座位下方
+    ctx.save();
+    ctx.translate(-2, 0); ctx.rotate(-0.55);
+    rr(ctx, -4, 2, 8, 16, 3); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(4, 0); ctx.rotate(0.45);
+    rr(ctx, -3, 2, 8, 15, 3); ctx.fill();
+    ctx.restore();
+    drawPantsPattern(ctx, o.outfit.pants, pants, 0);
+    ctx.fillStyle = '#7a5230';
+    rr(ctx, 6, 12, 10, 5, 2); ctx.fill();
+    rr(ctx, -12, 11, 9, 5, 2); ctx.fill();
+  } else if (deck) {
+    // 站在滑板车上：双腿微弯、前后站稳
+    ctx.save();
+    ctx.translate(-3, 0); ctx.rotate(-0.10);
+    rr(ctx, -4, 2, 8, 15, 3); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(4, 0); ctx.rotate(0.12);
+    rr(ctx, -3, 2, 8, 15, 3); ctx.fill();
+    ctx.restore();
+    drawPantsPattern(ctx, o.outfit.pants, pants, 0);
+    ctx.fillStyle = '#7a5230';
+    rr(ctx, -11, 14, 9, 5, 2); ctx.fill();
+    rr(ctx, 3, 14, 9, 5, 2); ctx.fill();
+  } else {
+    rr(ctx, -9 + swing * 0.5, 2, 8, 15, 3); ctx.fill();
+    rr(ctx, 1 - swing * 0.5, 2, 8, 15, 3); ctx.fill();
+    // 裤子花纹
+    drawPantsPattern(ctx, o.outfit.pants, pants, swing);
+    // 鞋子
+    ctx.fillStyle = '#7a5230';
+    rr(ctx, -10 + swing * 0.6, 15, 9, 5, 2); ctx.fill();
+    rr(ctx, 1 - swing * 0.6, 15, 9, 5, 2); ctx.fill();
+  }
 
   // --- 身体（上衣层） ---
   ctx.fillStyle = shirt.main;
@@ -224,16 +414,27 @@ function drawPlayer(ctx, x, y, o) {
   // 上衣花纹
   drawShirtPattern(ctx, o.outfit.shirt, shirt);
 
-  // --- 手臂（动作时举起来） ---
+  // --- 手臂（动作时举起来；骑车时向前扶着车把） ---
   const armRaise = o.actionT > 0 ? Math.sin(o.actionT * 10) * 10 + 12 : 0;
   ctx.strokeStyle = shirt.main; ctx.lineWidth = 6; ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(-11, -11); ctx.lineTo(-16, -2 + swing * 0.4 - armRaise);
-  ctx.moveTo(11, -11); ctx.lineTo(16, -2 - swing * 0.4 - armRaise);
+  if (riding || deck) {
+    // 两只手都伸向前方（+x 方向），像抓着车把
+    ctx.moveTo(8, -13); ctx.lineTo(18, -14);
+    ctx.moveTo(6, -14); ctx.lineTo(16, -16);
+  } else {
+    ctx.moveTo(-11, -11); ctx.lineTo(-16, -2 + swing * 0.4 - armRaise);
+    ctx.moveTo(11, -11); ctx.lineTo(16, -2 - swing * 0.4 - armRaise);
+  }
   ctx.stroke();
   ctx.fillStyle = skin;
-  ellipse(ctx, -16, -2 + swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
-  ellipse(ctx, 16, -2 - swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
+  if (riding || deck) {
+    ellipse(ctx, 19, -14.5, 3.2, 3.2); ctx.fill();
+    ellipse(ctx, 17, -16.5, 3.2, 3.2); ctx.fill();
+  } else {
+    ellipse(ctx, -16, -2 + swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
+    ellipse(ctx, 16, -2 - swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
+  }
 
   // --- 手里的鱼竿（钓鱼时从手的位置伸出去） ---
   if (o.rod) {

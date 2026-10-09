@@ -162,6 +162,18 @@ const ANIMAL_SHOP = [
   { type: 'cow',     name: '小奶牛', icon: '🐄', price: 650, desc: '能挤牛奶' },
 ];
 const MAX_ANIMALS = 24;
+
+// ---------------- 交通工具（骑上以后走得快） ----------------
+const WALK_SPEED = 170;          // 走路速度（像素/秒）
+const VEHICLES = [
+  { id: 'scooter',    name: '滑板车', nameEn: 'Scooter', icon: '🛴', price: 120, speed: 1.55, desc: '轻巧好骑' },
+  { id: 'bicycle',    name: '自行车', nameEn: 'Bicycle', icon: '🚲', price: 320, speed: 1.95, desc: '踩起来飞快' },
+  { id: 'motorcycle', name: '摩托车', nameEn: 'Motorcycle', icon: '🏍️', price: 780, speed: 2.50, desc: '农场最快' },
+];
+const VEHICLE_MAP = {};
+VEHICLES.forEach(function (v) { VEHICLE_MAP[v.id] = v; });
+// 停车架：走到旁边可以「骑上 / 停下」，停下来时车停在原地
+const VEHICLE_RACK = { x: 545, y: 520, r: 86 };
 // 可购买的庭院装饰（r = 占地半径，用于防重叠）
 const DECOR_SHOP = [
   { id: 'rock',      name: '大石头', icon: '🪨', price: 20,  r: 16 },
@@ -376,6 +388,19 @@ const STR = {
     // —— 森林 / 蜂巢 ——
     prHive: '🍯 拿蜂蜜',
     prPickMushroom: '采蘑菇',
+    // —— 交通工具 ——
+    tabVehicles: '🛴 交通',
+    prRide: '骑上{v}',
+    prPark: '停下{v}',
+    prRackEmpty: '停车架（先去商店买一辆）',
+    noVehicle: '还没有交通工具，去商店的「🛴 交通」里买一辆吧',
+    mounted: '骑上{v}啦！',
+    mountedSub: '走得比以前快多了',
+    parked: '把{v}停在这里了',
+    boughtVehicle: '买到{v}！',
+    boughtVehicleSub: '速度 ×{n}，走到停车架就能骑',
+    speedNote: '速度 ×{n}',
+    vehicleShopHead: '买回来后走到停车架（小屋旁）按 {key} 就能骑上，骑上走得快；再按一次就停下',
     logPickMushroom: '🍄 在森林里采到一朵蘑菇',
     mushroomCardSub: '可以卖钱，也能做菜',
     prHiveEmpty: '🍯 蜂蜜还没酿好…',
@@ -570,6 +595,18 @@ const STR = {
     // —— forest / beehive ——
     prHive: '🍯 Take honey',
     prPickMushroom: 'Pick the mushroom',
+    tabVehicles: '🛴 Rides',
+    prRide: 'Ride the {v}',
+    prPark: 'Park the {v}',
+    prRackEmpty: 'Bike rack (buy a ride in the shop first)',
+    noVehicle: 'No ride yet — buy one in the shop「🛴 Rides」',
+    mounted: 'You are riding the {v}!',
+    mountedSub: 'Much faster than walking',
+    parked: 'Parked the {v} here',
+    boughtVehicle: 'Bought a {v}!',
+    boughtVehicleSub: 'Speed ×{n} — walk to the bike rack to ride',
+    speedNote: 'Speed ×{n}',
+    vehicleShopHead: 'Buy one, then press {key} at the bike rack (near the house) to ride — much faster!',
     logPickMushroom: '🍄 Picked a mushroom in the forest',
     mushroomCardSub: 'Sell it or cook with it',
     prHiveEmpty: '🍯 The honey is not ready yet…',
@@ -596,6 +633,7 @@ const EN_NAMES = {
     mushroom: 'Mushroom', honey_toast: 'Honey Toast', honey_cake: 'Honey Cake',
     mushroom_soup: 'Mushroom Soup', mushroom_omelet: 'Mushroom Omelet',
     veggie_soup: 'Veggie Soup', fruit_pie: 'Fruit Pie', seafood_platter: 'Seafood Platter',
+    scooter: 'Scooter', bicycle: 'Bicycle', motorcycle: 'Motorcycle',
     carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
     apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
     fish: 'Small Fish', bigfish: 'Big Fish', fried_egg: 'Fried Egg', salad: 'Fruit Salad',
@@ -624,6 +662,7 @@ const EN_NAMES = {
 // 取名字：cat = item/hat/shirt/pants/petHat/animal/decor/crop
 function nm(cat, key) {
   if (cat === 'zoo') { const z = ZOO_MAP[key]; if (z) return lang === 'en' ? z.nameEn : z.name; return key; }
+  if (cat === 'vehicle') { const v = VEHICLE_MAP[key]; return v ? (lang === 'en' ? v.nameEn : v.name) : key; }
   if (lang === 'en' && EN_NAMES[cat] && EN_NAMES[cat][key]) return EN_NAMES[cat][key];
   switch (cat) {
     case 'item': case 'crop': return (ITEMS[key] && ITEMS[key].name) || key;
@@ -850,6 +889,8 @@ const G = {
   owned: { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] },
   pet: { type: 'dog', x: 380, y: 530, dir: 'right', moving: false, walkPhase: 0, phase: 0, hat: 'none', happy: 0 },
   petHatsOwned: [],
+  vehicles: [],           // 已经买到的交通工具
+  vehicle: null,          // 正在骑的那辆（null = 走路）
   animals: [],
   incubating: [],         // 孵蛋器里的鸡蛋：[{left: 剩余天数}]
   groundItems: [],
@@ -883,6 +924,7 @@ const ZONES = {
   bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 70 },
   tank:     { x: 730, y: 470, r: 132 },
+  rack:     { x: 545, y: 520, r: 86 },    // 停车架（骑上 / 停下交通工具）
   hatchery: { x: 348, y: 742, r: 74 },    // 鸡棚里的孵蛋器
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
 };
@@ -1453,6 +1495,8 @@ function saveGame(silent = false, opts) {
     animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady,
                                    stage: a.stage, growT: a.growT, tired: a.tired })),
     troughs: TROUGHS.map(tr => ({ id: tr.id, feed: tr.feed, unfed: tr.unfed })),
+    vehicles: G.vehicles.slice(),
+    vehicle: G.vehicle,
     mushrooms: MUSHROOMS.map(m => (m.picked ? 1 : 0)),
     incubating: G.incubating.map(e => ({ left: e.left })),
     plots: G.plots.map(p => ({ state: p.state, crop: p.crop, timer: p.timer, watered: p.watered })),
@@ -1508,6 +1552,8 @@ function loadGame(name) {
     for (const k in G.inventory) if (!ITEMS[k] || !(G.inventory[k] > 0)) delete G.inventory[k];   // 丢掉旧版本残留物品
     G.owned = d.owned || { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
     G.petHatsOwned = Array.isArray(d.petHatsOwned) ? d.petHatsOwned : [];
+    G.vehicles = Array.isArray(d.vehicles) ? d.vehicles.filter(function (v) { return VEHICLE_MAP[v]; }) : [];
+    G.vehicle = (d.vehicle && G.vehicles.indexOf(d.vehicle) >= 0) ? d.vehicle : null;
     if (d.player) {
       if (Number.isFinite(d.player.x)) G.player.x = Math.max(20, Math.min(WORLD_W - 20, d.player.x));
       if (Number.isFinite(d.player.y)) G.player.y = Math.max(120, Math.min(WORLD_H - 20, d.player.y));
@@ -1628,6 +1674,7 @@ function resetGame() {
   G.inventory = { seed_carrot: 2 };
   G.owned = { hat: ['ragged'], shirt: ['ragged'], pants: ['ragged'] };
   G.petHatsOwned = [];
+  G.vehicles = []; G.vehicle = null;
   G.player.x = 420; G.player.y = 500; G.player.dir = 'down';
   G.player.gender = chosenGender;
   G.player.outfit = { hat: 'ragged', shirt: 'ragged', pants: 'ragged' };
@@ -1669,6 +1716,31 @@ function zooRandomSpot(home) {
     if (!wet) return { x, y };
   }
   return { x: home.x, y: home.y };
+}
+
+// ---------------- 交通工具：骑上 / 停下 ----------------
+function mountVehicle(id) {
+  if (!VEHICLE_MAP[id]) return;
+  G.vehicle = id;
+  sfx.equip();
+  spawnParticles(G.player.x, G.player.y - 10, '💨', 5);
+  say('mounted', { v: nm('vehicle', id) }, 2200, false, { icon: VEHICLE_MAP[id].icon, sub: t('mountedSub') });
+  saveGame(true);
+}
+function dismountVehicle() {
+  const id = G.vehicle;
+  if (!id) return;
+  G.vehicle = null;
+  sfx.close();
+  spawnParticles(G.player.x, G.player.y - 10, '✨', 4);
+  say('parked', { v: nm('vehicle', id) }, 2000);
+  saveGame(true);
+}
+// 走到停车架旁边按 E：没骑就骑上（没车就先提示去买），骑着就停下
+function useRack() {
+  if (G.vehicle) { dismountVehicle(); return; }
+  if (!G.vehicles.length) { sfx.error(); say('noVehicle', null, 2600); return; }
+  mountVehicle(G.vehicles[G.vehicles.length - 1]);   // 默认骑最新买的那辆
 }
 
 // 宠物的名字（狗 / 猫 / 鸭 / 鹅）
@@ -2025,6 +2097,25 @@ function renderShop() {
           renderShop(); renderHUD();
         }, owned);
       }
+    }
+  } else if (shopTab === 'vehicles') {
+    // 交通工具：买回来后走到停车架按 E 就能骑上，骑上走得快
+    const vhead = document.createElement('div');
+    vhead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    vhead.textContent = t('vehicleShopHead', { key: KEY_HINT });
+    box.appendChild(vhead);
+    for (const v of VEHICLES) {
+      const owned = G.vehicles.indexOf(v.id) >= 0;
+      mkCard(iconBox('emoji', v.icon), nm('vehicle', v.id), v.price, () => {
+        G.coins -= v.price;
+        G.vehicles.push(v.id);
+        G.vehicle = v.id;                 // 买到就直接骑上
+        sfx.buy(); sfx.equip();
+        spawnParticles(G.player.x, G.player.y - 20, '💨', 6);
+        say('boughtVehicle', { v: nm('vehicle', v.id) }, 2600, false,
+            { icon: v.icon, sub: t('boughtVehicleSub', { n: v.speed }) });
+        renderShop(); renderHUD();
+      }, owned, t('speedNote', { n: v.speed }));
     }
   } else if (shopTab === 'animals') {
     // 动物列表：买回来会在自己的棚舍附近自由散步
@@ -2425,6 +2516,9 @@ function nearestInteract() {
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
     ['tank', 'tank', t('prTank')],
+    ['rack', 'rack', G.vehicle
+        ? t('prPark', { v: nm('vehicle', G.vehicle) })
+        : (G.vehicles.length ? t('prRide', { v: nm('vehicle', G.vehicles[G.vehicles.length - 1]) }) : t('prRackEmpty'))],
     ['hatchery', 'hatch', G.incubating.length
         ? t('hatchDays', { n: G.incubating.length, d: hatchDaysLeft() })
         : t('prHatch', { n: G.incubating.length, max: MAX_INCUBATE })],
@@ -2573,6 +2667,7 @@ function doInteract() {
     case 'sell': renderSell(); sfx.open(); openModal('sell-modal'); break;
     case 'shop': renderShop(); sfx.open(); openModal('shop-modal'); break;
     case 'tank': renderTank(); sfx.open(); openModal('tank-modal'); break;
+    case 'rack': useRack(); break;
     case 'hatch':   // 把背包里的鸡蛋放进孵蛋器（3 天后孵出小鸡）
       putEggInHatchery();
       if (G.incubating.length) {
@@ -2729,7 +2824,8 @@ function update(dt) {
     if (keys['arrowdown'] || keys['s']) dy++;
     dx += touchMove.x; dy += touchMove.y;   // 虚拟摇杆
     if (dx || dy) {
-      const len = Math.hypot(dx, dy), spd = 170;
+      const len = Math.hypot(dx, dy);
+      const spd = WALK_SPEED * (G.vehicle ? (VEHICLE_MAP[G.vehicle] || {}).speed || 1 : 1);
       p.x = Math.max(20, Math.min(WORLD_W - 20, p.x + dx / len * spd * dt));
       p.y = Math.max(120, Math.min(WORLD_H - 20, p.y + dy / len * spd * dt));
       p.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
@@ -3256,12 +3352,22 @@ function render() {
   drawables.push({ y: G.pet.y + 10, draw: () => drawPet(ctx, G.pet.x, G.pet.y, { ...G.pet, t, scale: PET_SCALE }) });
   drawables.push({
     y: p_y() + 20,
-    draw: () => drawPlayer(ctx, G.player.x, G.player.y, {
-      gender: G.player.gender, dir: G.player.dir,
-      walkPhase: G.player.walkPhase, moving: G.player.moving,
-      outfit: G.player.outfit, actionT: G.player.actionT, rod: !!G.fishing, t,
-      scale: PET_SCALE,          // 人物整体放大一点
-    }),
+    draw: () => {
+      const pl = {
+        gender: G.player.gender, dir: G.player.dir,
+        walkPhase: G.player.walkPhase, moving: G.player.moving,
+        outfit: G.player.outfit, actionT: G.player.actionT, rod: !!G.fishing, t,
+        scale: PET_SCALE,          // 人物整体放大一点
+      };
+      if (G.vehicle) {
+        // 骑上交通工具：整组（人 + 车）一起镜像，车头永远朝前进方向
+        pl.vehicleId = G.vehicle;
+        pl.pose = G.vehicle === 'scooter' ? 'deck' : 'ride';
+        drawRider(ctx, G.player.x, G.player.y, pl);
+      } else {
+        drawPlayer(ctx, G.player.x, G.player.y, pl);
+      }
+    },
   });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
@@ -3663,6 +3769,7 @@ window.__farm = {
   G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo,
   SEA_ALL, SEA_SET, PONDS, emojiDrawable, RECIPES, OBTAINABLE, MUSHROOMS, MUSHROOM_REGROW,
   FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
+  VEHICLES, VEHICLE_MAP, WALK_SPEED, useRack, mountVehicle, dismountVehicle,
   renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
