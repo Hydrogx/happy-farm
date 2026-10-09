@@ -895,6 +895,13 @@ const NO_ANIM_CP = {
   '1f999': 1,  // 羊驼（官网没动画 → 用呼吸效果）
 };
 function needsBreath(cp) { return !!NO_ANIM_CP[cp] && !emojiFrameReady(cp); }
+// 每个物种一个固定相位（同一个 emoji 的动画在所有实例上同步）
+function cpPhase(cp) {
+  let h = 0;
+  const s = String(cp || '');
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 6283;
+  return h / 1000;
+}
 // 呼吸缩放系数（1.5 秒一个来回，幅度 ±6%）
 function breathScale(t, phase) {
   return 1 + Math.sin((t || 0) * 4.2 + (phase || 0)) * 0.06;
@@ -908,7 +915,8 @@ function emojiFrameReady(cp) {
 function emojiFrameIndex(cp, tSec) {
   const a = emojiAnims[cp];
   if (!a || !a.frames || a.frames.length < 2) return -1;
-  let ms = ((tSec * 1000) % a.total + a.total) % a.total;
+  const t0 = Number.isFinite(a.startedAt) ? a.startedAt : 0;
+  let ms = (((tSec - t0) * 1000) % a.total + a.total) % a.total;
   for (let i = 0; i < a.frames.length; i++) {
     if (ms < a.delay[i]) return i;
     ms -= a.delay[i];
@@ -923,12 +931,14 @@ function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
   ctx.drawImage(a.frames[i], cx - size / 2, cy - size / 2, size, size);
   return true;
 }
-// 把 GIF 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
+// 把 GIF / webp 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
+// 注意：同一个 emoji 只允许有一路解码在跑 —— 否则先成功的那一路
+// 可能被后失败的那一路删掉，动物就会卡在静态图（只播第一帧）不动。
 function decodeEmojiAnim(cp, url, cb, attempt) {
   if (emojiAnims[cp]) {                                        // 已经解过 / 正在解
     const a = emojiAnims[cp];
     if (a.frames && a.frames.length > 1) { if (cb) cb(true); return; }
-    if (a.pending && cb) a.cbs.push(cb);
+    if (cb) (a.cbs = a.cbs || []).push(cb);                    // 排队等这一路的结果
     return;
   }
   if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') { if (cb) cb(false); return; }
@@ -995,9 +1005,11 @@ function decodeEmojiAnim(cp, url, cb, attempt) {
         if (!list || list.length < 2) { fail('few:' + (list ? list.length : 0)); return; }
         if (!anyPixels) { fail('blank'); return; }               // 每帧都是空的：这种素材做不了动画
         const a = emojiAnims[cp];
-        a.frames = list.map(x => x.cv);
+        a.src = url; a.frames = list.map(x => x.cv);
         a.delay = list.map(x => x.dur);
         a.total = a.delay.reduce((x, y) => x + y, 0) || 1200;
+        // 记下解好的时刻：动画相位从现在开始算，保证解出来的瞬间就在动
+        a.startedAt = (typeof G !== 'undefined' && G && Number.isFinite(G.t)) ? G.t : 0;
         emojiAnimQueue.push(cp);
         finishCb(true);
         // 超出上限就把最早解的那几套丢掉，避免越积越多占内存
@@ -3833,7 +3845,8 @@ function render() {
       draw: () => drawZoo(ctx, z.x, z.y, {
         type: z.type, fly: !!ZOO_FLY[z.type],
         size: zd.size, rec, moving: z.moving, walkPhase: z.walkPhase,
-        phase: z.phase, emoji: zd.icon, dir: z.dir, t,
+        // 动画相位按物种固定（和商店里同一条动画同步），不再用每只一个的随机相位
+        phase: cpPhase(zd.cp), emoji: zd.icon, dir: z.dir, t,
       }),
     });
   }
