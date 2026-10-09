@@ -1031,13 +1031,9 @@ const ZOO_ANIM_SPEED = 1;      // 地图上观赏动物的动画速度（1 = 原
 function drawEmojiCreature(ctx, cp, cx, cy, size, tSec, rec, speed, phase, callerScale) {
   if (!rec || !rec.ok || !rec.img) return false;
   const sp = speed || 1;
-  // 关于倍速：emojiFrameIndex 算的是 (传入时刻 - startedAt)，startedAt 记在**游戏时间轴**上。
-  // 为了让水族箱的 0.5 倍速真的只是「放慢」，这里传「游戏时刻按 1/sp 缩放后的值」，
-  // 同时把动画进度原点也挪一下，保证放慢之后仍然是**往前播**、不会倒退或定格。
-  const at = tSec / sp;
-  const elapsed = sp === 1 ? tSec : tSec - at;   // 相位补偿
-  // ① 逐帧动画（水族箱里半速，看着更悠闲；地图上的动物原速）
-  if (drawEmojiAnimated(ctx, cp, cx, cy, size, at, rec, elapsed)) {
+  // ① 逐帧动画：时刻直接传游戏时间，倍速交给 emojiFrameIndex 按 (t - startedAt) * speed 算，
+  //    这样 0.5 就是真的半速（不动 startedAt，也不会倒退或定格）。
+  if (drawEmojiAnimated(ctx, cp, cx, cy, size, tSec, rec, sp)) {
     // 注意：缩放要**留在当前变换里**（调用方 drawZoo 靠它做呼吸/走路的缩放，
     // 由它自己的 ctx.restore() 收尾）。所以这里不能包 save/restore，
     // 否则缩放会被 restore 抵消掉，调用方每帧再乘一次 → 变换指数级膨胀。

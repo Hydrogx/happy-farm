@@ -945,14 +945,14 @@ function emojiFrameReady(cp) {
   return !!(a && a.frames && a.frames.length > 1);
 }
 // 取这一时刻该显示第几帧
-// offset 是「相位补偿」：水族箱里的生物按半速播放时，调用方传进来的时刻和
-// startedAt 之间会差一段，用它补齐，保证动画始终是往前播的。
-function emojiFrameIndex(cp, tSec, offset) {
+// speed 是**播放倍率**：0.5 = 半速（水族箱里的生物），1 = 原速（地图上的动物、商店）。
+// 只按 (时刻 - startedAt) * speed 算动画进度，所以放慢之后仍然是往前播、不会倒退或定格。
+function emojiFrameIndex(cp, tSec, speed) {
   const a = emojiAnims[cp];
   if (!a || !a.frames || a.frames.length < 2) return -1;
   const t0 = Number.isFinite(a.startedAt) ? a.startedAt : 0;
-  const k = offset || 0;
-  let ms = (((tSec - t0 - k) * 1000) % a.total + a.total) % a.total;
+  const sp = speed || 1;
+  let ms = (((tSec - t0) * sp * 1000) % a.total + a.total) % a.total;
   for (let i = 0; i < a.frames.length; i++) {
     if (ms < a.delay[i]) return i;
     ms -= a.delay[i];
@@ -960,8 +960,8 @@ function emojiFrameIndex(cp, tSec, offset) {
   return a.frames.length - 1;
 }
 // 画一帧动画（没有动画就返回 false，让调用方退回静态图）
-function drawEmojiFrame(ctx, cp, cx, cy, size, tSec, offset) {
-  const i = emojiFrameIndex(cp, tSec, offset);
+function drawEmojiFrame(ctx, cp, cx, cy, size, tSec, speed) {
+  const i = emojiFrameIndex(cp, tSec, speed);
   if (i < 0) return false;
   const a = emojiAnims[cp];
   ctx.drawImage(a.frames[i], cx - size / 2, cy - size / 2, size, size);
@@ -976,10 +976,10 @@ function drawEmojiFrame(ctx, cp, cx, cy, size, tSec, offset) {
 // 这就是「商店里的动物会动、地图上的动物却像贴纸」的真正原因。
 // 所以这里的顺序是：有帧就用帧，没帧先拿原图顶着，帧一到就自动切过去。
 // cp 拿不到时（老调用点）退回 rec.cp，避免又出现「找不到帧」。
-function drawEmojiAnimated(ctx, cp, cx, cy, size, tSec, rec, offset) {
+function drawEmojiAnimated(ctx, cp, cx, cy, size, tSec, rec, speed) {
   const key = cp || (rec && rec.cp);
   if (emojiFrameReady(key)) {
-    if (drawEmojiFrame(ctx, key, cx, cy, size, tSec, offset)) return true;
+    if (drawEmojiFrame(ctx, key, cx, cy, size, tSec, speed)) return true;
   } else {
     ensureEmojiAnim(key, rec);                    // 帧被缓存淘汰掉了 → 重新解一次
   }
