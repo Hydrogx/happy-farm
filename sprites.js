@@ -1016,6 +1016,9 @@ function drawCustomer(ctx, x, y, c) {
 const FRUIT_COLORS = {
   apple: '#ff5a4e', orange: '#ffa02e', pear: '#c8e05a',
   peach: '#ff9a90', strawberry: '#ff4e6a',
+  cherry: '#d6203c', watermelon: '#3fae4a', mango: '#ff9f1c',
+  pineapple: '#e8b23a', lemon: '#ffe14d', melon: '#b7e07a',
+  grape: '#8e5bd4', kiwi: '#8bc34a',
 };
 
 function drawTree(ctx, x, y, t, phase, fruits, type = 'apple') {

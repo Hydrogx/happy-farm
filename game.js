@@ -11,6 +11,25 @@ const DAY_START = 8 * 60, DAY_END = 20 * 60;   // 游戏内分钟
 const DAY_LENGTH = 240;                        // 现实秒 / 天
 const CAMERA_ZOOM = 1.2;                       // 画面整体放大一点（人物/动物/文字在手机上更清楚）
 
+// ---------------- 蔬菜作物表（来自 Noto 动画 Food and drink 部分的蔬菜） ----------------
+// rate = 生长速度倍率（越大越快）；seed 价格越贵、卖价越高
+const CROPS = [
+  { id: 'carrot',     icon: '🥕', name: '胡萝卜',   nameEn: 'Carrot',      seedPrice: 5,  cropPrice: 15, rate: 1.0 },
+  { id: 'tomato',     icon: '🍅', name: '番茄',     nameEn: 'Tomato',      seedPrice: 8,  cropPrice: 20, rate: 0.95 },
+  { id: 'corn',       icon: '🌽', name: '玉米',     nameEn: 'Corn',        seedPrice: 12, cropPrice: 25, rate: 0.9 },
+  { id: 'pea',        icon: '🫛', name: '豌豆',     nameEn: 'Pea Pod',     seedPrice: 10, cropPrice: 28, rate: 1.1,  cp: '1fadb' },
+  { id: 'lettuce',    icon: '🥬', name: '生菜',     nameEn: 'Lettuce',     seedPrice: 12, cropPrice: 32, rate: 1.15, cp: '1f96c' },
+  { id: 'pepper',     icon: '🫑', name: '青椒',     nameEn: 'Bell Pepper', seedPrice: 16, cropPrice: 40, rate: 0.95, cp: '1fad1' },
+  { id: 'broccoli',   icon: '🥦', name: '西兰花',   nameEn: 'Broccoli',    seedPrice: 20, cropPrice: 48, rate: 0.9,  cp: '1f966' },
+  { id: 'cucumber',   icon: '🥒', name: '黄瓜',     nameEn: 'Cucumber',    seedPrice: 18, cropPrice: 44, rate: 1.05, cp: '1f952' },
+  { id: 'beet',       icon: '🍠', name: '甜菜根',   nameEn: 'Beet',        seedPrice: 22, cropPrice: 52, rate: 0.85, cp: '1fadc' },
+  { id: 'potato',     icon: '🥔', name: '土豆',     nameEn: 'Potato',      seedPrice: 14, cropPrice: 34, rate: 1.2,  cp: '1f954' },
+  { id: 'onion',      icon: '🧅', name: '洋葱',     nameEn: 'Onion',       seedPrice: 16, cropPrice: 38, rate: 1.1,  cp: '1f9c5' },
+  { id: 'garlic',     icon: '🧄', name: '大蒜',     nameEn: 'Garlic',      seedPrice: 24, cropPrice: 56, rate: 0.85, cp: '1f9c4' },
+];
+const CROP_MAP = {};
+CROPS.forEach(function (c) { CROP_MAP[c.id] = c; });
+
 // ---------------- 物品数据 ----------------
 const ITEMS = {
   egg: { name: '鸡蛋', icon: '🥚', price: 10, cp: '1f95a' },
@@ -27,6 +46,15 @@ const ITEMS = {
   pear: { name: '梨子', icon: '🍐', price: 16, cp: '1f350' },
   peach: { name: '桃子', icon: '🍑', price: 20, cp: '1f351' },
   strawberry: { name: '草莓', icon: '🍓', price: 25, cp: '1f353' },
+  // —— 新增水果（Noto 动画食物清单）——
+  cherry:     { name: '樱桃',   icon: '🍒', price: 30, cp: '1f352' },
+  watermelon: { name: '西瓜',   icon: '🍉', price: 45, cp: '1f349' },
+  mango:      { name: '芒果',   icon: '🥭', price: 55, cp: '1f96d' },
+  pineapple:  { name: '菠萝',   icon: '🍍', price: 70, cp: '1f34d' },
+  lemon:      { name: '柠檬',   icon: '🍋', price: 26, cp: '1f34b' },
+  melon:      { name: '甜瓜',   icon: '🍈', price: 50, cp: '1f348' },
+  grape:      { name: '葡萄',   icon: '🍇', price: 60, cp: '1f347' },
+  kiwi:       { name: '奇异果', icon: '🥝', price: 40, cp: '1f95d' },
   fish:       { name: '小鱼',     icon: '🐟', price: 22, cp: '1f41f' },
   shrimp:     { name: '小龙虾',   icon: '🦞', price: 14, cp: '1f99e' },
   shell:      { name: '小海星',   icon: '⭐', price: 8,  cp: '2b50' },
@@ -54,10 +82,41 @@ const ITEMS = {
   veggie_soup: { name: '蔬菜浓汤', icon: '🥣', price: 70, cp: '1f963' },
   fruit_pie: { name: '水果派', icon: '🥧', price: 130, cp: '1f967' },
   seafood_platter: { name: '海鲜小炒', icon: '🍤', price: 120, cp: '1f364' },
+  // —— 新增菜肴（Noto 动画食物清单）——
+  pasta:     { name: '番茄意面', icon: '🍝', price: 96,  cp: '1f35d' },
+  pancakes:  { name: '松饼',     icon: '🥞', price: 105, cp: '1f95e' },
+  doughnut:  { name: '甜甜圈',   icon: '🍩', price: 120, cp: '1f369' },
+  cookie:    { name: '蜂蜜饼干', icon: '🍪', price: 130, cp: '1f36a' },
+  popcorn:   { name: '爆米花',   icon: '🍿', price: 78,  cp: '1f37f' },
+  pizza:     { name: '田园披萨', icon: '🍕', price: 145, cp: '1f355' },
   seed_carrot:{ name: '胡萝卜种子', icon: '🌱', price: 5,  seed: 'carrot' },
   seed_tomato:{ name: '番茄种子',  icon: '🫘', price: 8,  seed: 'tomato' },
   seed_corn: { name: '玉米种子', icon: '🌾', price: 12, cp: '1f331', seed: 'corn' },
+  // —— 新增蔬菜（来自 Noto 动画食物清单）——
+  pea:       { name: '豌豆',   icon: '🫛', price: 28, cp: '1fadb' },
+  lettuce:   { name: '生菜',   icon: '🥬', price: 32, cp: '1f96c' },
+  pepper:    { name: '青椒',   icon: '🫑', price: 40, cp: '1fad1' },
+  broccoli:  { name: '西兰花', icon: '🥦', price: 48, cp: '1f966' },
+  cucumber:  { name: '黄瓜',   icon: '🥒', price: 44, cp: '1f952' },
+  beet:      { name: '甜菜根', icon: '🍠', price: 52, cp: '1fadc' },
+  potato:    { name: '土豆',   icon: '🥔', price: 34, cp: '1f954' },
+  onion:     { name: '洋葱',   icon: '🧅', price: 38, cp: '1f9c5' },
+  garlic:    { name: '大蒜',   icon: '🧄', price: 56, cp: '1f9c4' },
 };
+// 种子物品：按 CROPS 自动补齐（名称 / 图标 / 价格 / 对应作物）
+CROPS.forEach(function (c) {
+  const key = 'seed_' + c.id;
+  if (!ITEMS[key]) {
+    ITEMS[key] = {
+      name: c.name + '种子', icon: c.id === 'corn' ? '🌾' : '🌱',
+      price: c.seedPrice, seed: c.id,
+    };
+  } else {
+    ITEMS[key].price = c.seedPrice;
+    ITEMS[key].seed = c.id;
+  }
+});
+
 const RECIPES = [
   // —— 基础（材料很容易凑齐）——
   { id: 'fried_egg',       needs: { egg: 1 } },
@@ -75,8 +134,19 @@ const RECIPES = [
   { id: 'fruit_cake',      needs: { strawberry: 2, egg: 1, milk: 1 } },
   { id: 'fruit_pie',       needs: { fruit: 3, honey: 1 } },             // 任意 3 个水果 + 蜂蜜
   { id: 'seafood_platter', needs: { shrimp: 1, squid: 1, crab: 1 } },   // 钓上来的小海鲜
+  // —— 新增菜肴（材料都能种 / 能养 / 能采）——
+  { id: 'pasta',    needs: { tomato: 2, corn: 1 } },
+  { id: 'pancakes', needs: { egg: 1, milk: 1, honey: 1 } },
+  { id: 'doughnut', needs: { egg: 1, milk: 1, corn: 1 } },
+  { id: 'cookie',   needs: { egg: 1, honey: 1, honey: 1 } },
+  { id: 'popcorn',  needs: { corn: 2 } },
+  { id: 'pizza',    needs: { tomato: 2, pepper: 1, milk: 1 } },
 ];
-const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry'];
+// 水果：前 5 种是原有的（草莓是灌木），后面几种是新增的果树
+const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry',
+  'cherry', 'watermelon', 'mango', 'pineapple', 'lemon', 'melon', 'grape', 'kiwi'];
+
+
 // ---------------- 钓鱼：5 种大小的水波纹，每种 3 种渔获 ----------------
 // 三个不同位置的水坑：小水坑 / 中水坑 / 大水坑，每个水坑 5 种渔获
 const PONDS = [
@@ -143,11 +213,12 @@ function pondDist(p, x, y) {
 // 动物产出 3 种 + 饲料 + 森林蘑菇/蜂蜜 + 3 种作物 + 5 种水果 + 15 种渔获
 const OBTAINABLE = {};
 ['egg', 'milk', 'wool', 'feed', 'mushroom', 'honey',
- 'carrot', 'tomato', 'corn', ...FRUIT_IDS, ...SEA_ALL].forEach(function (k) { OBTAINABLE[k] = 1; });
+ ...CROPS.map(c => c.id), ...FRUIT_IDS, ...SEA_ALL].forEach(function (k) { OBTAINABLE[k] = 1; });
 
-const SELLABLE = ['egg','milk','wool','honey','mushroom','feed','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,
+const SELLABLE = ['egg','milk','wool','honey','mushroom','feed',...CROPS.map(c => c.id),...FRUIT_IDS,...SEA_ALL,
   'fried_egg','salad','fish_grill','pudding','fruit_cake','honey_toast','honey_cake',
-  'mushroom_soup','mushroom_omelet','veggie_soup','fruit_pie','seafood_platter'];
+  'mushroom_soup','mushroom_omelet','veggie_soup','fruit_pie','seafood_platter',
+  'pasta','pancakes','doughnut','cookie','popcorn','pizza'];
 const PET_HATS = {
   bow:    { name: '宠物蝴蝶结', icon: '🎀', price: 30 },
   straw:  { name: '宠物草帽',   icon: '👒', price: 30 },
@@ -386,6 +457,8 @@ const STR = {
     // —— 森林 / 蜂巢 ——
     prHive: '🍯 拿蜂蜜',
     prPickMushroom: '采蘑菇',
+    cropInfo: '约 {sec} 秒长好',
+    logPlantCrop: '种下了{crop}（约 {sec} 秒长好）',
     // —— 找零钱小挑战 ——
     mathTitle: '🧮 帮忙算零钱',
     mathAsk: '客人买了 {item}（{price} 金币），给了 {paid} 金币，要找他多少零钱？',
@@ -602,6 +675,8 @@ const STR = {
     // —— forest / beehive ——
     prHive: '🍯 Take honey',
     prPickMushroom: 'Pick the mushroom',
+    cropInfo: 'about {sec}s to grow',
+    logPlantCrop: 'Planted {crop} (about {sec}s to grow)',
     mathTitle: '🧮 Count the Change',
     mathAsk: 'Your customer buys {item} ({price} coins) and pays {paid} coins. How much change do you give back?',
     mathHint: 'Money paid − price of the item = change',
@@ -650,12 +725,21 @@ const EN_NAMES = {
     mushroom: 'Mushroom', honey_toast: 'Honey Toast', honey_cake: 'Honey Cake',
     mushroom_soup: 'Mushroom Soup', mushroom_omelet: 'Mushroom Omelet',
     veggie_soup: 'Veggie Soup', fruit_pie: 'Fruit Pie', seafood_platter: 'Seafood Platter',
+    cherry: 'Cherry', watermelon: 'Watermelon', mango: 'Mango', pineapple: 'Pineapple',
+    lemon: 'Lemon', melon: 'Melon', grape: 'Grape', kiwi: 'Kiwi',
+    pea: 'Pea Pod', lettuce: 'Lettuce', pepper: 'Bell Pepper', broccoli: 'Broccoli',
+    cucumber: 'Cucumber', beet: 'Beet', potato: 'Potato', onion: 'Onion', garlic: 'Garlic',
+    pasta: 'Pasta', pancakes: 'Pancakes', doughnut: 'Doughnut', cookie: 'Cookie',
+    popcorn: 'Popcorn', pizza: 'Pizza',
     scooter: 'Scooter', bicycle: 'Bicycle', motorcycle: 'Motorcycle',
     carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
     apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
     fish: 'Small Fish', bigfish: 'Big Fish', fried_egg: 'Fried Egg', salad: 'Fruit Salad',
     fish_grill: 'Grilled Fish', pudding: 'Milk Pudding', fruit_cake: 'Strawberry Cake',
     seed_carrot: 'Carrot Seeds', seed_tomato: 'Tomato Seeds', seed_corn: 'Corn Seeds',
+    seed_pea: 'Pea Seeds', seed_lettuce: 'Lettuce Seeds', seed_pepper: 'Pepper Seeds',
+    seed_broccoli: 'Broccoli Seeds', seed_cucumber: 'Cucumber Seeds', seed_beet: 'Beet Seeds',
+    seed_potato: 'Potato Seeds', seed_onion: 'Onion Seeds', seed_garlic: 'Garlic Seeds',
     shrimp: 'Shrimp', shell: 'Seashell', goldfish: 'Goldfish', crab: 'Crab', squid: 'Squid',
     puffer: 'Pufferfish', octopus: 'Octopus', lobster: 'Lobster', seaturtle: 'Sea Turtle',
     croc: 'Crocodile', seal: 'Seal', dolphin: 'Dolphin', shark: 'Shark', whale: 'Whale' },
@@ -1435,6 +1519,15 @@ function initWorld() {
     mkTree('pear', 280, 360),
     mkTree('peach', 470, 380),
     mkTree('strawberry', 600, 250),
+    // 新增的果树（排在果园右侧那片空地）
+    mkTree('cherry', 180, 300),
+    mkTree('lemon', 350, 320),
+    mkTree('kiwi', 480, 300),
+    mkTree('melon', 250, 250),
+    mkTree('watermelon', 420, 130),
+    mkTree('grape', 560, 380),
+    mkTree('mango', 190, 460),
+    mkTree('pineapple', 320, 460),
   ];
   // 动物（各自住在自己的棚舍里）：一开始是 2 只母鸡 + 1 只小鸡
   G.animals = [
@@ -2385,15 +2478,29 @@ function renderInventory() {
   if (!bar) return;
   bar.innerHTML = '';
   const ids = Object.keys(G.inventory).filter(id => ITEMS[id]);
-  // 东西多的时候把格子自动缩小，保证物品栏只占一行、不会压住日志和提示
-  const maxW = (VIEW_W - 96) * 0.94;          // 左右各留一点，别顶到边上
-  const gap = 6;
-  let slot = ids.length ? Math.floor((maxW - gap * (ids.length - 1)) / ids.length) : 62;
-  slot = Math.max(30, Math.min(62, slot));
+  // 物品栏排布：格子大小 / 行数按「种类数量」自动算。
+  // 目标：整体高度不超过屏高的 12%（≈72px、最多 3 行），单格尽量大但不小于 22px，
+  // 这样手机上图标看得清，也不会挡住上面和中间的提示。
+  const gap = 5;
+  const maxW = VIEW_W - 40;                        // 左右各留 20
+  const maxH = VIEW_H * 0.12;                      // 物品栏总高度上限
+  const n = ids.length || 1;
+  let slot = 44, rows = 1;
+  for (var r2 = 1; r2 <= 2; r2++) {                // 最多两行（三行会占到提示位置）
+    const per = Math.ceil(n / r2);
+    const sByW = Math.floor((maxW - gap * (per - 1)) / per);
+    const sByH = Math.floor((maxH - gap * (r2 - 1)) / r2);
+    const cand = Math.min(44, sByW, sByH);
+    if (cand >= 22) { slot = cand; rows = r2; break; }
+    slot = Math.max(18, Math.min(44, sByW, sByH)); rows = r2;
+  }
+  bar.style.setProperty('--inv-gap', gap + 'px');
   bar.style.setProperty('--inv-slot', slot + 'px');
-  bar.style.setProperty('--inv-emoji', Math.round(slot * 0.66) + 'px');
-  bar.style.setProperty('--inv-font', Math.round(slot * 0.44) + 'px');
+  bar.style.setProperty('--inv-emoji', Math.round(slot * 0.62) + 'px');
+  bar.style.setProperty('--inv-font', Math.round(slot * 0.42) + 'px');
   bar.style.setProperty('--inv-cnt', Math.max(10, Math.round(slot * 0.26)) + 'px');
+  // 两行时把物品栏整体抬高一行，别贴到屏幕最下面
+  bar.style.bottom = (rows > 1 ? 8 + (rows - 1) * (slot + gap) : 10) + 'px';
   for (const id of ids) {
     const n = G.inventory[id];
     const d = document.createElement('div');
@@ -2466,12 +2573,13 @@ function renderShop() {
     box.appendChild(d);
   };
   if (shopTab === 'seeds') {
-    for (const id of ['seed_carrot', 'seed_tomato', 'seed_corn']) {
-      mkCard(iconBox('item', id), nm('item', id), ITEMS[id].price, () => {
+    for (const c of CROPS) {
+      const id = 'seed_' + c.id;
+      mkCard(iconBox('item', id), c.name + '种子', ITEMS[id].price, () => {
         G.coins -= ITEMS[id].price; addItem(id); sfx.buy();
         say('bought', { item: nm('item', id) }, 2200, false, { icon: id, sub: t('boughtCardSub') });
         renderShop(); renderHUD();
-      });
+      }, false, t('cropInfo', { sec: Math.round(55 / c.rate) }));
     }
     // 动物饲料：一次买 5 份，够喂几天
     mkCard(iconBox('item', 'feed'), nm('item', 'feed'), ITEMS.feed.price * 5, () => {
@@ -3010,6 +3118,8 @@ function doInteract() {
       const seed = Object.keys(G.inventory).find(id => ITEMS[id].seed);
       if (seed && removeItem(seed)) {
         target.pl.state = 'seed'; target.pl.crop = ITEMS[seed].seed; target.pl.stage = 0; target.pl.timer = 0;
+        const cd = CROP_MAP[target.pl.crop];
+        if (cd) note('logPlantCrop', { crop: nm('crop', target.pl.crop), sec: Math.round(55 / cd.rate) });
         sfx.plant();
         note('logPlant', { seed: nm('item', seed) });
       }
@@ -3120,7 +3230,7 @@ function reelIn() {
 // ---------------- 客人系统 ----------------
 // 客人只会买「农场能产出」的东西：已采摘的、还能摘/挤/剪的、材料够做的菜
 // 鱼类和海洋生物不在此列（准备太久、太随机）
-const FARM_GOODS = ['egg', 'milk', 'wool', 'honey', 'mushroom', 'carrot', 'tomato', 'corn', ...FRUIT_IDS];
+const FARM_GOODS = ['egg', 'milk', 'wool', 'honey', 'mushroom', ...CROPS.map(c => c.id), ...FRUIT_IDS];
 const SEA_SET = {};
 SEA_ALL.forEach(id => { SEA_SET[id] = true; });
 
@@ -3357,7 +3467,8 @@ function update(dt) {
   for (const pl of G.plots) {
     if (pl.state === 'seed' || pl.state === 'growing') {
       const speed = (pl.watered || G.weather === 'rain') ? 1 : 0.25;
-      pl.timer += dt * speed;
+      const cdef = CROP_MAP[pl.crop];
+      pl.timer += dt * speed * ((cdef && cdef.rate) || 1);      // 不同蔬菜生长快慢不同
       if (G.weather === 'rain') pl.watered = true;
       if (pl.timer > 25 && pl.state === 'seed') { pl.state = 'growing'; }
       else if (pl.timer > 55 && pl.state === 'growing') {
@@ -4184,6 +4295,7 @@ renderHUD();
 window.__farm = {
   G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo,
   SEA_ALL, SEA_SET, PONDS, emojiDrawable, RECIPES, OBTAINABLE, MUSHROOMS, MUSHROOM_REGROW,
+  CROPS, CROP_MAP, FRUIT_IDS,
   FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
   VEHICLES, VEHICLE_MAP, WALK_SPEED, useRack, mountVehicle, dismountVehicle,
   openMathChallenge, answerMath, renderMathChallenge, coinChoices, makeChoices, spawnCustomer,

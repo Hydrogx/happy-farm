@@ -106,11 +106,14 @@ canvas {
 /* ---------- 物品栏 ---------- */
 #inventory {
   position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 6px; pointer-events: none;
-  max-width: 94%; flex-wrap: nowrap; justify-content: center;
-  /* --inv-slot / --inv-emoji 由 renderInventory() 按物品数量设置：
-     东西多的时候格子自动缩小，永远只占一行、不会压住日志框和提示 */
-  --inv-slot: 62px; --inv-emoji: 40px; --inv-font: 26px; --inv-cnt: 15px;
+  display: flex; gap: var(--inv-gap, 6px); pointer-events: none;
+  /* 宽度必须给满：否则 flex 收缩成一条窄带，格子会被挤到很多行。
+     高度交给 renderInventory() 算（最多两行），所以这里不限制行数。 */
+  width: 100%; box-sizing: border-box; padding: 0 12px;
+  flex-wrap: wrap; justify-content: center; align-content: flex-end;
+  row-gap: var(--inv-gap, 6px);
+  /* --inv-slot / --inv-emoji / --inv-gap 由 renderInventory() 按物品数量设置 */
+  --inv-slot: 62px; --inv-emoji: 40px; --inv-font: 26px; --inv-cnt: 15px; --inv-gap: 6px;
 }
 .inv-slot {
   width: var(--inv-slot); height: var(--inv-slot);
@@ -131,7 +134,7 @@ canvas {
 /* ---------- 交互提示 ---------- */
 #prompt {
   position: absolute; left: 50%; transform: translateX(-50%);
-  bottom: 92px;
+  bottom: 128px;                 /* 抬到物品栏上面（物品栏最多两行） */
   background: #fffbe8; border: 3px solid #7ac74f;
   border-radius: 999px; padding: 7px 20px;
   font-size: 21px; font-weight: bold; color: #3f7a1e;
