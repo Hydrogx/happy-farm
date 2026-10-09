@@ -388,6 +388,17 @@ const STR = {
     // —— 森林 / 蜂巢 ——
     prHive: '🍯 拿蜂蜜',
     prPickMushroom: '采蘑菇',
+    // —— 找零钱小挑战 ——
+    mathTitle: '🧮 帮忙算零钱',
+    mathAsk: '客人买了 {item}（{price} 金币），给了 {paid} 金币，要找他多少零钱？',
+    mathHint: '客人给的钱 − 东西的价格 = 要找的零钱',
+    nlPrice: '价格',
+    nlPaid: '付的钱',
+    coinUnit: '{n} 金币',
+    mathWrong: '再想想～',
+    mathRight: '零钱算对啦：找了 {n} 金币 ✅',
+    logCustomerLeftMath: '🧮 {name} 等太久，走了…（下次算快一点）',
+    prCustomerMath: '把 {item} 卖给{name}（要算零钱）',
     // —— 交通工具 ——
     tabVehicles: '🛴 交通',
     prRide: '骑上{v}',
@@ -595,6 +606,16 @@ const STR = {
     // —— forest / beehive ——
     prHive: '🍯 Take honey',
     prPickMushroom: 'Pick the mushroom',
+    mathTitle: '🧮 Count the Change',
+    mathAsk: 'Your customer buys {item} ({price} coins) and pays {paid} coins. How much change do you give back?',
+    mathHint: 'Money paid − price of the item = change',
+    nlPrice: 'price',
+    nlPaid: 'paid',
+    coinUnit: '{n} coins',
+    mathWrong: 'Try again~',
+    mathRight: 'Correct! You gave {n} coins change ✅',
+    logCustomerLeftMath: '🧮 {name} waited too long and left… (be quicker next time)',
+    prCustomerMath: 'Sell {item} to {name} (count the change)',
     tabVehicles: '🛴 Rides',
     prRide: 'Ride the {v}',
     prPark: 'Park the {v}',
@@ -891,6 +912,7 @@ const G = {
   petHatsOwned: [],
   vehicles: [],           // 已经买到的交通工具
   vehicle: null,          // 正在骑的那辆（null = 走路）
+  math: null,             // 找零钱小挑战：{c, price, paid, change, choices, t, total}
   animals: [],
   incubating: [],         // 孵蛋器里的鸡蛋：[{left: 剩余天数}]
   groundItems: [],
@@ -1743,6 +1765,159 @@ function useRack() {
   mountVehicle(G.vehicles[G.vehicles.length - 1]);   // 默认骑最新买的那辆
 }
 
+// ---------------- 卖东西：找零钱小挑战（小学二年级难度） ----------------
+// 客人用整钱付款，小朋友要算「该找多少零钱」，答对才成交
+const MATH_TIME = 16;                    // 每题给 16 秒
+function coinChoices(price) {
+  // 价格不可能大于 20，凑一个「整钱」付款额（5 / 10 / 20 / 50 / 100）
+  const pays = [5, 10, 20].filter(p => p > price);
+  const pay = pays.length ? pick(pays) : pick([20, 50, 100].filter(p => p > price));
+  return { pay, change: pay - price };
+}
+// 生成四个选项：一个正确答案 + 三个贴近答案的错项
+function makeChoices(correct) {
+  const set = [correct];
+  const near = [1, 2, 5, 10, 3, 4, 20];
+  const cand = [];
+  for (let i = 0; i < near.length; i++) {
+    cand.push(correct + near[i]);
+    if (correct - near[i] > 0) cand.push(correct - near[i]);
+  }
+  // 打乱候选，挑三个不重复、不为负的
+  cand.sort(function () { return Math.random() - 0.5; });
+  for (let i = 0; i < cand.length && set.length < 4; i++) {
+    const v = cand[i];
+    if (v > 0 && set.indexOf(v) < 0) set.push(v);
+  }
+  let extra = 1;
+  while (set.length < 4) { if (set.indexOf(correct + extra) < 0) set.push(correct + extra); extra++; }
+  set.sort(function () { return Math.random() - 0.5; });
+  return set;
+}
+function openMathChallenge(c) {
+  const price = ITEMS[c.want].price;
+  const cc = coinChoices(price);
+  G.math = {
+    c: c, item: c.want, price: price, paid: cc.pay, change: cc.change,
+    choices: makeChoices(cc.change), t: MATH_TIME,
+    payLabel: t('coinUnit', { n: cc.pay }),   // 用「50 金币」这种说法
+  };
+  G.modalOpen = 'math-modal';
+  renderMathChallenge();
+  const el = $('math-modal');
+  if (el) el.classList.remove('hidden');
+  sfx.open();
+}
+function closeMathChallenge() {
+  G.math = null;
+  const el = $('math-modal');
+  if (el) el.classList.add('hidden');
+  if (G.modalOpen === 'math-modal') G.modalOpen = null;
+}
+function renderMathChallenge() {
+  const q = $('math-question'), box = $('math-choices'), info = $('math-info'), bar = $('math-bar');
+  if (!q || !box || !G.math) return;
+  const m = G.math;
+  q.innerHTML = t('mathAsk', { item: nm('item', m.item), price: m.price, paid: m.paid });
+  if (info) info.innerHTML = numberLineHTML(m.price, m.paid);
+  box.innerHTML = '';
+  m.choices.forEach(function (v) {
+    const b = document.createElement('button');
+    b.className = 'math-choice';
+    b.textContent = v + ' 💰';
+    b.onclick = function () { answerMath(v); };
+    box.appendChild(b);
+  });
+  if (bar) bar.style.width = '100%';
+}
+// 数轴：把「价格」和「付的钱」标在一条线上，小朋友一眼看出要往前跳多少
+function numberLineHTML(price, paid) {
+  const max = Math.max(paid, price) + 5;
+  const pPct = (price / max) * 100, dPct = (paid / max) * 100;
+  let ticks = '';
+  for (let v = 0; v <= max; v += 5) {
+    const pct = (v / max) * 100;
+    ticks += '<span class="nl-tick" style="left:' + pct + '%"></span>' +
+             '<span class="nl-label" style="left:' + pct + '%">' + v + '</span>';
+  }
+  return '<div class="nl-wrap">' +
+      '<div class="nl-dot price" style="left:' + pPct + '%"><b>' + price + '</b></div>' +
+      '<div class="nl-dot paid" style="left:' + dPct + '%"><b>' + paid + '</b></div>' +
+      '<div class="nl-jump" style="left:' + pPct + '%;width:' + Math.max(0, dPct - pPct) + '%"></div>' +
+      '<div class="nl-line">' + ticks + '</div>' +
+      '<div class="nl-caption">' +
+        '<span class="nl-key price">' + t('nlPrice') + ' ' + price + ' 金币</span>' +
+        '<span class="nl-key paid">' + t('nlPaid') + ' ' + paid + ' 金币</span>' +
+      '</div>' +
+    '</div>';
+}
+// 把金额画成硬币（10 / 5 / 1）
+function coinHTML(n) {
+  let left = n, out = '';
+  const coins = [[10, '#ffd23e', '#d9a62e', '10'], [5, '#ffb84d', '#e09a2f', '5'], [1, '#e8d9b0', '#c9a86a', '1']];
+  const MAX = 6;                        // 最多画 6 枚，剩下用数字表示
+  let drawn = 0;
+  for (let i = 0; i < coins.length; i++) {
+    const [val, fill, edge, label] = coins[i];
+    while (left >= val && drawn < MAX) {
+      out += '<i class="coin" style="background:' + fill + ';border-color:' + edge + '">' + label + '</i>';
+      left -= val; drawn++;
+    }
+  }
+  if (left > 0) out += '<i class="coin more">+' + left + '</i>';
+  return out;
+}
+function answerMath(v) {
+  const m = G.math;
+  if (!m) return;
+  const c = m.c;
+  if (v === m.change) {
+    // 答对：成交，客人开开心心走了
+    closeMathChallenge();
+    if (!removeItem(c.want)) { sfx.error(); say('noSuchItem', { item: nm('item', c.want) }); return; }
+    const gain = Math.round(ITEMS[c.want].price * 1.5);
+    G.coins += gain; renderHUD();
+    coinBurst(c.x, c.y - 30, gain);
+    spawnParticles(c.x, c.y - 25, '💖', 6);
+    c.state = 'leave'; c.happy = true;
+    sfx.happy(); sfx.coin();
+    const msg = t('logSoldCustomer', { item: nm('item', c.want), name: custName(c), n: gain });
+    toast(msg, 2200);
+    addLog(msg);
+    addLog(t('mathRight', { n: m.change }));
+    saveGame(true);
+  } else {
+    // 答错：再给一次机会，时间也在走
+    sfx.error();
+    const box = $('math-choices');
+    if (box) {
+      box.classList.add('shake');
+      setTimeout(function () { box.classList.remove('shake'); }, 420);
+    }
+    toast(t('mathWrong'), 1500);
+  }
+}
+// 时间到 = 客人等太久，走了
+function mathTimeout() {
+  const m = G.math;
+  if (!m) return;
+  const c = m.c;
+  closeMathChallenge();
+  c.state = 'leave';
+  spawnParticles(c.x, c.y - 30, '💦', 3);
+  sfx.sad();
+  say('logCustomerLeftMath', { name: custName(c) }, 2400);
+}
+// 客人等不及走了（没卖掉的那件东西不算）
+function resolveCustomerSale(c) {
+  if (removeItem(c.want)) {
+    const gain = Math.round(ITEMS[c.want].price * 1.5);
+    G.coins += gain; renderHUD();
+    coinBurst(c.x, c.y - 30, gain);
+    c.state = 'leave'; c.happy = true;
+  }
+}
+
 // 宠物的名字（狗 / 猫 / 鸭 / 鹅）
 function petName() {
   const ty = G.pet.type;
@@ -1905,6 +2080,7 @@ function applyLang() {
   else if (G.modalOpen === 'sell-modal') renderSell();
   else if (G.modalOpen === 'book-modal') renderBook();
   else if (G.modalOpen === 'tank-modal') renderTank();
+  else if (G.modalOpen === 'math-modal') renderMathChallenge();
 }
 function setLang(l) {
   lang = (l === 'en') ? 'en' : 'zh';
@@ -2439,7 +2615,7 @@ function nearestInteract() {
     const d = dist(p.x, p.y, c.x, c.y);
     if (d < bestD + 30) {
       bestD = Math.min(bestD, d);
-      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomer', { item: nm('item', c.want), name: custName(c) })}` };
+      best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomerMath', { item: nm('item', c.want), name: custName(c) })}` };
     }
   }
   // 3. 动物（饿跑了的动物只会告诉你它饿了）
@@ -2574,14 +2750,9 @@ function doInteract() {
     }
     case 'customer': {
       const c = target.c;
-      if (removeItem(c.want)) {
-        const gain = Math.round(ITEMS[c.want].price * 1.5);
-        G.coins += gain; renderHUD();
-        coinBurst(c.x, c.y - 30, gain);
-        spawnParticles(c.x, c.y - 25, '💖', 6);
-        c.state = 'leave'; c.happy = true;
-        sfx.happy();
-        say('logSoldCustomer', { item: nm('item', c.want), name: custName(c), n: gain });
+      if (G.inventory[c.want] > 0) {
+        // 先请小朋友帮忙算要找多少零钱（小学二年级难度），答对才算成交
+        openMathChallenge(c);
       } else {
         sfx.error();
         say('noSuchItem', { item: nm('item', c.want) });
@@ -2977,6 +3148,22 @@ function update(dt) {
         spawnParticles(pl.x, pl.y - 15, '✨', 4);
       }
     }
+  }
+
+  // --- 找零钱小挑战的倒计时 ---
+  if (G.math) {
+    G.math.t -= dt;
+    const bar = $('math-bar');
+    if (bar) {
+      bar.style.width = Math.max(0, (G.math.t / MATH_TIME) * 100) + '%';
+      bar.classList.toggle('hurry', G.math.t <= 5);
+    }
+    const timeBox = $('math-time');
+    if (timeBox) {
+      timeBox.textContent = Math.max(0, Math.ceil(G.math.t)) + 's';
+      timeBox.classList.toggle('hurry', G.math.t <= 5);
+    }
+    if (G.math.t <= 0) mathTimeout();
   }
 
   // --- 森林蘑菇长回来 ---
@@ -3770,6 +3957,8 @@ window.__farm = {
   SEA_ALL, SEA_SET, PONDS, emojiDrawable, RECIPES, OBTAINABLE, MUSHROOMS, MUSHROOM_REGROW,
   FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
   VEHICLES, VEHICLE_MAP, WALK_SPEED, useRack, mountVehicle, dismountVehicle,
+  openMathChallenge, answerMath, renderMathChallenge, coinChoices, makeChoices, spawnCustomer,
+  MATH_TIME, resolveCustomerSale,
   renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,

@@ -384,6 +384,97 @@ body.touch #btn-book { display: none; }
 }
 #btn-help:active { transform: translateY(2px); box-shadow: none; }
 
+/* ---------- 找零钱小挑战 ---------- */
+.math-card { max-width: 620px; }
+.math-question {
+  width: 100%; font-size: 26px; font-weight: bold; color: #7a4a12; text-align: center; line-height: 1.5;
+}
+.math-question b { color: #d35400; font-size: 30px; }
+.math-info {
+  display: block; width: 100%; box-sizing: border-box;
+  background: #fff8e0; border: 3px dashed #ffd88a; border-radius: 14px;
+  padding: 8px 14px; font-size: 20px; color: #6a5a3a;
+}
+.money-line { display: inline-flex; align-items: center; gap: 4px; }
+.money-line.minus b { color: #c0392b; }
+.coin {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%; border: 2px solid #d9a62e;
+  font-size: 12px; font-weight: bold; color: #7a4a12; font-style: normal;
+}
+.coin.more { background: #fff; border-style: dashed; font-size: 11px; }
+/* 数轴 */
+.nl-wrap { position: relative; width: 100%; height: 116px; margin: 4px 0 2px; }
+.nl-line {
+  position: absolute; left: 8%; right: 8%; bottom: 44px; height: 6px;
+  background: #e0cfa8; border-radius: 999px;
+}
+.nl-tick {
+  position: absolute; top: -4px; width: 2px; height: 14px; background: #c9ab7a;
+  transform: translateX(-50%);
+}
+.nl-label {
+  position: absolute; top: 12px; transform: translateX(-50%);
+  font-size: 12px; color: #a8906a; font-weight: bold;
+}
+/* 标记：用「定高容器 + 居中圆点」，上下位置一目了然 */
+.nl-dot {
+  position: absolute; top: 0; bottom: 56px; width: 38px; margin-left: -19px;
+  display: flex; align-items: center; justify-content: center;
+}
+.nl-dot b {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: #fff; box-shadow: 0 3px 0 rgba(0,0,0,.18);
+}
+.nl-dot.price b { background: #e2701d; }
+.nl-dot.paid b { background: #4fb83a; }
+.nl-jump {
+  position: absolute; bottom: 56px; height: 9px; border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #ffd23e 0 6px, rgba(255,210,62,.25) 6px 12px);
+  transform: translateY(50%);
+}
+.nl-caption {
+  position: absolute; left: 8%; right: 8%; bottom: 6px;
+  display: flex; justify-content: space-between; font-size: 17px; font-weight: bold;
+}
+.nl-key.price { color: #e2701d; }
+.nl-key.paid { color: #4fb83a; }
+.math-timer-bar.hurry { background: linear-gradient(90deg, #ff8a5c, #ff5a5a); }
+.math-time.hurry { color: #d13b3b; }
+
+.math-timerow { display: flex; align-items: center; gap: 10px; width: 100%; flex: 0 0 auto; }
+.math-timer-track {
+  flex: 1; height: 14px; background: #f0e6cf; border-radius: 999px; overflow: hidden;
+  border: 2px solid #ffd88a;
+}
+.math-timer-bar {
+  height: 100%; width: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #7ddb6a, #ffd23e);
+  transition: width .15s linear;
+}
+.math-time { font-size: 18px; font-weight: bold; color: #a8906a; min-width: 46px; }
+.math-choices {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  width: 100%; box-sizing: border-box;
+}
+.math-choices.shake { animation: shake .4s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+.math-choice {
+  background: linear-gradient(180deg, #fff3d6, #ffe0a8);
+  border: 4px solid #ffb84d; border-radius: 18px;
+  padding: 14px 10px; cursor: pointer; font-family: inherit;
+  font-size: 30px; font-weight: bold; color: #d35400;
+  box-shadow: 0 4px 0 #e09a2f; transition: transform .12s;
+}
+.math-choice:hover { transform: scale(1.04); }
+.math-choice:active { transform: translateY(3px); box-shadow: none; }
+.math-hint { font-size: 16px; color: #a8906a; }
+
 /* ---------- 触摸控件（手机 / 平板） ---------- */
 #touch-ui { display: none; position: fixed; inset: 0; z-index: 200; pointer-events: none; }
 body.touch #touch-ui { display: block; }
