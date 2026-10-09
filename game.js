@@ -931,6 +931,53 @@ function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
   ctx.drawImage(a.frames[i], cx - size / 2, cy - size / 2, size, size);
   return true;
 }
+// 画一只 emoji 动物 / 生物：优先「浏览器原生播放原动图」，其次「自己逐帧画」，
+// 都不行就画静态底图（此时调用方可以再叠呼吸效果）。
+// 返回 true 表示已经由动画画完了。
+function drawEmojiAnimated(ctx, cp, cx, cy, size, tSec, rec) {
+  if (rec && rec.raw && rawAnimState[cp] !== 'frames') {
+    // 浏览器会自动推进这张动图的帧：直接画，最省事也最顺
+    ctx.drawImage(rec.raw, cx - size / 2, cy - size / 2, size, size);
+    return true;
+  }
+  return drawEmojiFrame(ctx, cp, cx, cy, size, tSec);
+}
+const rawAnimState = {};        // cp -> 'raw'（直接画原动图）| 'frames'（逐帧画）
+const rawCheckPending = {};     // 正在检测的 cp（避免重复检测）
+
+// 有些环境（例如无头浏览器）把动图画到 canvas 上是不会动的一帧。
+// 这里用一张很小的离屏画布抽样两次：画面有变化 → 浏览器会自动播放，
+// 地图上就直接画原动图；没有变化 → 标记成要逐帧画。
+function detectRawAnim(cp, raw) {
+  if (!raw || typeof cp !== 'string') return;
+  if (rawAnimState[cp] || rawCheckPending[cp]) return;
+  rawCheckPending[cp] = true;
+  const N = 24;
+  setTimeout(function () {
+    if (rawAnimState[cp]) return;
+    let c1, c2;
+    try {
+      const c = document.createElement('canvas');
+      c.width = c.height = N;
+      const x = c.getContext('2d');
+      x.clearRect(0, 0, N, N);
+      x.drawImage(raw, 0, 0, N, N);
+      c1 = x.getImageData(0, 0, N, N).data;
+      setTimeout(function () {
+        try {
+          x.clearRect(0, 0, N, N);
+          x.drawImage(raw, 0, 0, N, N);
+          c2 = x.getImageData(0, 0, N, N).data;
+          let diff = 0;
+          for (let i = 0; i < c1.length; i += 4) {
+            if (c1[i] !== c2[i] || c1[i + 1] !== c2[i + 1] || c1[i + 2] !== c2[i + 2] || c1[i + 3] !== c2[i + 3]) diff++;
+          }
+          rawAnimState[cp] = diff > 0 ? 'raw' : 'frames';
+        } catch (e) { rawAnimState[cp] = 'frames'; }
+      }, 280);
+    } catch (e) { rawAnimState[cp] = 'frames'; }
+  }, 160);
+}
 // 把 GIF / webp 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
 // 注意：同一个 emoji 只允许有一路解码在跑 —— 否则先成功的那一路
 // 可能被后失败的那一路删掉，动物就会卡在静态图（只播第一帧）不动。
@@ -1063,15 +1110,30 @@ function loadEmoji(cp) {
   };
   const tryAnim = (url, kind, next) => {
     rec.animUrl = url;                           // DOM 立刻用动图地址（浏览器自己播）
+    // 同时用一个 <img> 加载原动图：地图上可以直接把它画到 canvas 上，
+    // 由浏览器原生播放（比逐帧画更省事、也更顺）；不行再退回逐帧画。
+    const raw = make();
+    raw.onload = () => {
+      if (!emojiDrawable(raw)) return;           // 首帧全透明的（海豚等）交给逐帧画判断
+      rec.raw = raw;
+      detectRawAnim(cp, raw);                    // 确认浏览器会不会原生播放
+      rec.img = raw; rec.ok = true; rec.kind = kind; rec.animUrl = url;
+      if (kind === 'webp') rec.webpOk = true; else rec.gifOk = true;
+      rec.domUrl = url;
+    };
+    raw.onerror = () => {};
+    raw.src = url;
     decodeEmojiAnim(cp, url, function (ok) {
-      if (!ok) rec.animUrl = rec.pngUrl;         // 动图不可用就退回静态图
-      if (ok) {
-        rec.img = emojiAnims[cp].frames[0];      // 用解出来的第一帧当静态底图
+      if (!ok) {
+        if (!rec.ok) rec.animUrl = rec.pngUrl;   // 动图完全不可用才退回静态图
+        return;
+      }
+      if (!rec.ok) {                             // 原图没能直接用，就用解出来的第一帧当底图
+        rec.img = emojiAnims[cp].frames[0];
         rec.ok = true; rec.kind = kind; rec.animUrl = url;
         if (kind === 'webp') rec.webpOk = true; else rec.gifOk = true;
-        // DOM 里还是要原始动图地址（<img> 由浏览器自己播）
         rec.domUrl = url;
-      } else if (next) next();
+      }
     });
   };
   pickAnim(false);
@@ -4354,6 +4416,7 @@ window.__farm = {
   needsBreath, breathScale, loadEmoji, emojiFrameReady,
   notoAnimState, notoAnimSet, notoHasAnim,
   canvasHasPixels, animSlot, ANIM_PARALLEL, notoNorm, MAX_INCUBATE,
+  drawEmojiAnimated, rawAnimState, detectRawAnim,
 };
 
 requestAnimationFrame(loop);

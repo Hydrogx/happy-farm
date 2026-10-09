@@ -1426,7 +1426,7 @@ function drawAquarium(ctx, x, y, t, fish) {
     if (rec && rec.ok) {
       // 优先用自己解码的动画帧；没有动画的用呼吸效果
       // 水族箱里的动画用半速播放，看着更悠闲（鱼游动的速度不变）
-      if (!drawEmojiFrame(ctx, it.cp, 0, 0, size, t * TANK_ANIM_SPEED)) {
+      if (!drawEmojiAnimated(ctx, it.cp, 0, 0, size, t * TANK_ANIM_SPEED, rec)) {
         const bs = needsBreath(it.cp) ? breathScale(t, i) : 1;
         ctx.drawImage(rec.img, -size * bs / 2, -size * bs / 2, size * bs, size * bs);
       }
@@ -1487,7 +1487,7 @@ function drawZoo(ctx, x, y, o) {
   const lean = moving ? (fly ? Math.sin(wp * 2) * 0.05 : 0.055) : 0;
   ctx.rotate(-lean);
   if (o.rec && o.rec.ok && o.rec.img) {
-    const swapped = !drawEmojiFrame(ctx, o.rec.cp, 0, -s / 2, s, o.t);   // 动画帧优先
+    const swapped = !drawEmojiAnimated(ctx, o.rec.cp, 0, -s / 2, s, o.t, o.rec);   // 原生动图 / 逐帧
     if (swapped) {
       // 没有动画素材的（大象等）：用呼吸缩放 + 轻微左右摇摆，看起来也是「活的」
       const bs = breathScale(o.t, o.phase);
