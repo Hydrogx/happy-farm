@@ -309,7 +309,9 @@ const STR = {
     petSwitchSub: '它会一直跟着你',
     // —— 饲料 / 放牧 ——
     prTrough: '🌾 放饲料（{animal}，槽里还有 {n}/{max} 份）',
-    prTroughEmpty: '🌾 放饲料（{animal} 饿啦！连续 {n} 天没喂会跑出围栏）',
+    prTroughEmpty: '🌾 快放饲料！{animal} 饿啦（{n}）',
+    feedToday: '今天必须喂，不然就跑出去了',
+    runOff: '已经跑出围栏了',
     prHungryAnimal: '🌾 {animal} 饿跑了（去食槽放饲料）',
     noFeed: '背包里没有饲料，去商店买或收获玉米吧 🌾',
     feedFull: '食槽已经满满的啦',
@@ -498,7 +500,9 @@ const STR = {
     petSwitchSub: 'It will follow you everywhere',
     // —— feed / grazing ——
     prTrough: '🌾 Put in feed ({animal}, {n}/{max} left)',
-    prTroughEmpty: '🌾 Put in feed ({animal} is hungry! {n} days without food)',
+    prTroughEmpty: '🌾 Feed me! {animal} is hungry ({n})',
+    feedToday: 'feed today or it runs off',
+    runOff: 'it already ran off',
     prHungryAnimal: '🌾 {animal} ran off hungry (put feed in the trough)',
     noFeed: 'No feed in your bag — buy some or harvest corn 🌾',
     feedFull: 'The trough is already full',
@@ -592,7 +596,11 @@ function nm(cat, key) {
 function t(key, p) {
   const tbl = STR[lang] || STR.zh;
   let s = tbl[key] !== undefined ? tbl[key] : (STR.zh[key] !== undefined ? STR.zh[key] : key);
-  if (p && typeof s === 'string') for (const k in p) s = s.split('{' + k + '}').join(p[k]);
+  if (p && typeof s === 'string') {
+    // 英文单复数：文案里写 day{s}，数字为 1 时 {s} 变空（1 day），否则变 s（2 days）
+    if (s.indexOf('{s}') >= 0) s = s.split('{s}').join(p.n === 1 ? '' : 's');
+    for (const k in p) s = s.split('{' + k + '}').join(p[k]);
+  }
   return s;
 }
 function weatherText() { const w = STR[lang].weather || STR.zh.weather; return w[G.weather] || w.sunny; }
@@ -2344,9 +2352,15 @@ function nearestInteract() {
     const d = dist(p.x, p.y, tr.x, tr.y);
     if (d < tr.r && d < bestD + 6) {
       bestD = Math.min(bestD, d);
+      // 饿跑的进度：还能撑几天 / 今天必须喂 / 已经跑出去了
+      const left = UNFED_LIMIT - 1 - tr.unfed;
+      const hunger = tr.unfed >= UNFED_LIMIT ? t('runOff')
+                   : left <= 0 ? t('feedToday')
+                   : lang === 'en' ? (left + ' day' + (left === 1 ? '' : 's') + ' left')
+                   : ('还剩 ' + left + ' 天');
       best = tr.feed > 0
         ? { kind: 'trough', tr, label: t('prTrough', { animal: nm('animal', tr.type), n: tr.feed, max: FEED_MAX }) }
-        : { kind: 'trough', tr, label: t('prTroughEmpty', { animal: nm('animal', tr.type) }) };
+        : { kind: 'trough', tr, label: t('prTroughEmpty', { animal: nm('animal', tr.type), n: hunger }) };
     }
   }
   // 6. 设施
