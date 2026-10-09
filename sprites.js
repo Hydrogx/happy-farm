@@ -1013,6 +1013,8 @@ function drawCustomer(ctx, x, y, c) {
 /* ------------------------------------------------------------
  * 场景物件
  * ---------------------------------------------------------- */
+const TANK_ANIM_SPEED = 0.5;   // 水族箱里的生物动画速度（0.5 = 半速）
+
 const FRUIT_COLORS = {
   apple: '#ff5a4e', orange: '#ffa02e', pear: '#c8e05a',
   peach: '#ff9a90', strawberry: '#ff4e6a',
@@ -1423,7 +1425,8 @@ function drawAquarium(ctx, x, y, t, fish) {
     if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
     if (rec && rec.ok) {
       // 优先用自己解码的动画帧；没有动画的用呼吸效果
-      if (!drawEmojiFrame(ctx, it.cp, 0, 0, size, t)) {
+      // 水族箱里的动画用半速播放，看着更悠闲（鱼游动的速度不变）
+      if (!drawEmojiFrame(ctx, it.cp, 0, 0, size, t * TANK_ANIM_SPEED)) {
         const bs = needsBreath(it.cp) ? breathScale(t, i) : 1;
         ctx.drawImage(rec.img, -size * bs / 2, -size * bs / 2, size * bs, size * bs);
       }

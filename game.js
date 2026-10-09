@@ -924,7 +924,7 @@ function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
   return true;
 }
 // 把 GIF 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
-function decodeEmojiAnim(cp, url, cb) {
+function decodeEmojiAnim(cp, url, cb, isRetry) {
   if (emojiAnims[cp]) {                                        // 已经解过 / 正在解
     const a = emojiAnims[cp];
     if (a.frames && a.frames.length > 1) { if (cb) cb(true); return; }
@@ -934,6 +934,16 @@ function decodeEmojiAnim(cp, url, cb) {
   if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') { if (cb) cb(false); return; }
   const cbList = cb ? [cb] : [];                                // 必须在下面赋值之前定义
   emojiAnims[cp] = { frames: [], delay: [], total: 0, pending: true, cbs: cbList };
+  // 万一这次没解出来（网络慢 / 解析失败），过几秒再试一次，
+  // 否则这只动物会一直停在静态图上不动
+  if (!isRetry) {
+    setTimeout(function () {
+      const a2 = emojiAnims[cp];
+      if (a2 && a2.frames && a2.frames.length > 1) return;       // 已经成功了
+      if (a2) delete emojiAnims[cp];                            // 卡住了 → 清掉重来
+      decodeEmojiAnim(cp, url, null, true);
+    }, 12000);
+  }
   const finishCb = (ok) => {
     const list = cbList.slice();
     cbList.length = 0;
@@ -4314,8 +4324,9 @@ window.__farm = {
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
   emojiCache, emojiAnimUrl, emojiPngUrl, emojiWebpUrl, emojiSrcFor, emojiDrawable,
   emojiAnims, emojiFrameIndex, drawEmojiFrame, decodeEmojiAnim, ANIM_DEBUG,
+  needsBreath, breathScale, loadEmoji, emojiFrameReady,
   notoAnimState, notoAnimSet, notoHasAnim,
-  canvasHasPixels, animSlot, ANIM_PARALLEL, notoHasAnim, notoAnimSet, notoNorm,
+  canvasHasPixels, animSlot, ANIM_PARALLEL, notoNorm, MAX_INCUBATE,
 };
 
 requestAnimationFrame(loop);
