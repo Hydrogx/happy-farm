@@ -305,6 +305,7 @@ const STR = {
     shopTitle: '🛒 牧场商店', tabSeeds: '🌱 种子', tabClothes: '👕 服装',
     tabAnimals: '🐮 动物', tabDecor: '🎡 装饰', tabPet: '🐾 宠物装扮',
     btnLeaveShop: '离开商店',
+    btnQuitHint: '离开',
     cookTitle: '🍳 小厨房', btnCookDone: '做好啦',
     wardrobeTitle: '👕 我的衣柜', wtabHat: '🎩 帽子', wtabShirt: '👕 上衣', wtabPants: '👖 裤子',
     btnWardrobeDone: '换好啦',
@@ -527,6 +528,7 @@ const STR = {
     shopTitle: '🛒 Farm Shop', tabSeeds: '🌱 Seeds', tabClothes: '👕 Clothes',
     tabAnimals: '🐮 Animals', tabDecor: '🎡 Decor', tabPet: '🐾 Pet Hats',
     btnLeaveShop: 'Leave Shop',
+    btnQuitHint: 'Leave',
     cookTitle: '🍳 Kitchen', btnCookDone: 'Done',
     wardrobeTitle: '👕 My Wardrobe', wtabHat: '🎩 Hats', wtabShirt: '👕 Tops', wtabPants: '👖 Pants',
     btnWardrobeDone: 'Done',
@@ -1127,7 +1129,7 @@ const MAX_HENS = 5;              // 最多 5 只母鸡
 const MAX_CHICKS = 10;           // 最多 10 只小鸡
 const HATCH_DAYS = 15;           // 鸡蛋放进孵蛋器，15 天（游戏内天数）后孵出小鸡
 const CHICK_GROW_DAYS = 30;      // 小鸡出生 30 天后长成母鸡
-const MAX_INCUBATE = 12;         // 孵蛋器最多同时放 12 个蛋（要等 15 天，一次多放几个才够玩）
+const MAX_INCUBATE = 6;          // 孵蛋器最多同时放 6 个蛋
 const HEN_GROW = 1.15;           // 母鸡整体放大一点
 const CHICK_SCALE = 0.62;        // 小鸡小小一只
 
@@ -2368,6 +2370,11 @@ function applyLang() {
   for (let i = 0; i < els.length; i++) {
     const k = els[i].getAttribute && els[i].getAttribute('data-i18n');
     if (k) els[i].textContent = t(k);
+  }
+  const tts = (document.querySelectorAll ? document.querySelectorAll('[data-i18n-title]') : []) || [];
+  for (let i = 0; i < tts.length; i++) {
+    const k = tts[i].getAttribute && tts[i].getAttribute('data-i18n-title');
+    if (k) tts[i].title = t(k);
   }
   const phs = (document.querySelectorAll ? document.querySelectorAll('[data-i18n-ph]') : []) || [];
   for (let i = 0; i < phs.length; i++) {

@@ -129,7 +129,11 @@
       <!-- ============ 商店 ============ -->
       <div id="shop-modal" class="modal hidden">
         <div class="modal-card">
-          <h2 data-i18n="shopTitle">🛒 牧场商店</h2>
+          <div class="modal-head">
+            <h2 data-i18n="shopTitle">🛒 牧场商店</h2>
+            <button class="modal-x close-modal" data-close="shop-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
+          </div>
           <div class="tab-row">
             <button class="tab-btn selected" data-tab="seeds" data-i18n="tabSeeds">🌱 种子</button>
             <button class="tab-btn" data-tab="clothes" data-i18n="tabClothes">👕 服装</button>
@@ -147,7 +151,11 @@
       <!-- ============ 厨房 ============ -->
       <div id="cook-modal" class="modal hidden">
         <div class="modal-card">
-          <h2 data-i18n="cookTitle">🍳 小厨房</h2>
+          <div class="modal-head">
+            <h2 data-i18n="cookTitle">🍳 小厨房</h2>
+            <button class="modal-x close-modal" data-close="cook-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
+          </div>
           <div id="cook-items" class="shop-grid"></div>
           <button class="big-btn close-modal" data-close="cook-modal" data-i18n="btnCookDone">做好啦</button>
         </div>

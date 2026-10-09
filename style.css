@@ -290,6 +290,26 @@ canvas {
   animation: pop .25s ease-out;
 }
 .modal-card h2 { color: #e2701d; font-size: 30px; }
+/* 标题栏固定在卡片顶部：列表再长，「离开」按钮也一直看得见、点得到 */
+.modal-head {
+  position: sticky; top: -20px; z-index: 3;
+  width: 100%; display: flex; align-items: center; justify-content: center;
+  padding: 14px 0 8px; margin: -20px 0 0;
+  background: #fffdf4; border-bottom: 3px solid #ffe3a3;
+}
+.modal-x {
+  position: absolute; right: 12px; top: 12px;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: #ffe3a3; border: 3px solid #ff9f43; color: #d35400;
+  font-size: 24px; font-weight: bold; line-height: 1; cursor: pointer;
+  font-family: inherit; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 0 #e08a2e;
+}
+.modal-x:hover { background: #ffd280; }
+.modal-x:active { transform: translateY(2px); box-shadow: 0 1px 0 #e08a2e; }
+@media (max-width: 700px) {
+  .modal-x { width: 40px; height: 40px; font-size: 21px; right: 8px; top: 8px; }
+}
 .help-list { text-align: left; font-size: 20px; color: #5a4a2a; line-height: 1.75; list-style: none; }
 
 .tab-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
