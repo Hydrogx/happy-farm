@@ -7,21 +7,27 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;      /* 手机上不自动放大字体 */
   text-size-adjust: 100%;
+  width: 100%; height: 100%;
+  margin: 0; padding: 0;
+  overflow: hidden;
 }
 
 body {
   background: linear-gradient(180deg, #aee7ff 0%, #d8f7c5 100%);
   font-family: "Comic Sans MS", "Chalkboard SE", "PingFang SC", "Microsoft YaHei", sans-serif;
-  display: flex; justify-content: center; align-items: center;
-  min-height: 100vh; overflow: hidden;
   user-select: none; -webkit-user-select: none;
 }
 
-/* 屏幕适配：外层按比例缩放，内层游戏保持 960x600 */
-#scale-wrap { position: relative; }
+/* 屏幕适配：外层按比例缩放，内层游戏保持 960x600。
+   用「绝对定位 + 左上角 50% 再回退自身一半」来居中 ——
+   比 flex 居中更稳（不受 body 高度、滚动条、100vh 差异影响），
+   PC 上各种窗口比例都能正正好居中。 */
+#scale-wrap {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+}
 #game-wrap { position: absolute; top: 0; left: 0; transform-origin: top left; }
-
-#game-wrap { position: relative; }
 
 canvas {
   border-radius: 18px;

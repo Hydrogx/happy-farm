@@ -1261,6 +1261,26 @@ let playerName = '';
 let playerPid = -1;
 function slotKey(i) { return 'happy-farm-save-p' + i; }
 
+// 开局随机名字（都控制在 3 个字以内）
+const RANDOM_NAMES = [
+  '小明', '小红', '小刚', '小美', '小星', '小豆', '小虎', '小兔', '小鹿', '小熊',
+  '小雨', '小云', '小沐', '小满', '小禾', '小穗', '小果', '小朵', '小糖', '小铃',
+  '阿宝', '阿福', '阿吉', '豆豆', '糖糖', '团团', '圆圆', '乐乐', '欢欢', '多多',
+  '毛毛', '球球', '布丁', '团子', '年年', '贝贝', '点点', '闪闪', '花花', '喵喵',
+];
+// 生成一个「这台电脑上还没人用」的随机名字；万一都占了就加个数字
+function randomName() {
+  const used = {};
+  loadIndex().forEach(function (p) { used[nameKey(p.name)] = 1; });
+  const free = RANDOM_NAMES.filter(function (n) { return !used[n.toLowerCase()]; });
+  if (free.length) return pick(free);
+  for (let i = 0; i < 60; i++) {
+    const n = pick(RANDOM_NAMES) + (2 + Math.floor(Math.random() * 9));
+    if (!used[n.toLowerCase()]) return n.slice(0, MAX_NAME_LEN);
+  }
+  return pick(RANDOM_NAMES);
+}
+
 // 名字统一处理：去空格 + 限制长度
 function normalizeName(s) { return String(s == null ? '' : s).trim().slice(0, MAX_NAME_LEN); }
 function nameKey(s) { return normalizeName(s).toLowerCase(); }
@@ -3289,7 +3309,14 @@ setupChooser('choose-dog', 'choose-cat', (i) => { chosenPet = i === 0 ? 'dog' : 
 // 输入名字（最多 8 个字）
 const nameInput = $('name-input');
 if (nameInput) {
-  if (playerName) nameInput.value = playerName;
+  // 开局给个随机名字（3 个字以内），小朋友直接点开始就能玩；想改名直接输入即可。
+  // 如果这台电脑上上次玩过（有上次的名字），就先填上次的名字，方便直接接着玩。
+  if (!playerName) {
+    nameInput.value = randomName();
+    playerName = normalizeName(nameInput.value);
+  } else {
+    nameInput.value = playerName;
+  }
   nameInput.addEventListener('input', function () {
     if (this.value.length > MAX_NAME_LEN) this.value = this.value.slice(0, MAX_NAME_LEN);
     playerName = normalizeName(this.value);          // 列表里高亮当前这个名字
