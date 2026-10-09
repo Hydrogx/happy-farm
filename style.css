@@ -776,3 +776,16 @@ body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助�
 }
 /* 宠物卡片上写着「花了多少钱」的小字 */
 .pet-cost { font-size: 12px; color: #8a7a52; }
+
+/* ---------- 卖货箱：一件商品两颗按钮（卖 1 个 / 卖一半） ---------- */
+.sell-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.shop-item .sell-btns button { padding: 6px 12px; font-size: 16px; }
+.shop-item .sell-btns button.half {
+  background: linear-gradient(180deg, #7ec96a, #57b043);
+  box-shadow: 0 3px 0 #3f8a30;
+}
+.shop-item .sell-btns button.half:active { box-shadow: none; }
+@media (max-width: 720px) {
+  .shop-item .sell-btns button { font-size: 14px; padding: 5px 9px; }
+  .sell-btns { gap: 4px; }
+}

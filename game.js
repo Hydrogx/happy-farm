@@ -349,6 +349,7 @@ const STR = {
     equipDone: '换上 {name}！',
     cookDone: '香喷喷的{dish}做好啦！',
     soldBin: '卖掉 {item}，+{n} 金币！',
+    sellHalf: '卖一半（{k} 个）💰{n}',
     soldCustomer: '客人好开心！+{n} 金币',
     noSuchItem: '背包里没有 {item} 哦',
     gotWool: '剪到一团软软的羊毛！',
@@ -687,6 +688,7 @@ const STR = {
     equipDone: 'Wearing {name}!',
     cookDone: 'Yummy {dish} is ready!',
     soldBin: 'Sold {item}, +{n} coins!',
+    sellHalf: 'Sell half ({k}) 💰{n}',
     soldCustomer: 'The customer is happy! +{n} coins',
     noSuchItem: 'No {item} in your bag',
     gotWool: 'Got a fluffy ball of wool!',
@@ -4396,18 +4398,38 @@ function renderSell() {
   }
   for (const id of ids) {
     const it = ITEMS[id];
+    const have = G.inventory[id] || 0;
     const d = document.createElement('div');
     d.className = 'shop-item';
-    d.innerHTML = `<div class="icon">${emojiImgHTML(it.cp, it.icon, 'emoji-img big')}</div><div>${nm('item', id)} ×${G.inventory[id]}</div>`;
-    const b = document.createElement('button');
-    b.textContent = t('sellOne', { n: it.price });
-    b.onclick = () => {
+    d.innerHTML = `<div class="icon">${emojiImgHTML(it.cp, it.icon, 'emoji-img big')}</div><div>${nm('item', id)} ×${have}</div>`;
+    const row = document.createElement('div');
+    row.className = 'sell-btns';
+    // ① 卖 1 个
+    const b1 = document.createElement('button');
+    b1.textContent = t('sellOne', { n: it.price });
+    b1.onclick = () => {
       if (removeItem(id)) {
         G.coins += it.price; sfx.coin(); renderHUD(); renderSell();
         say('soldBin', { item: nm('item', id), n: it.price });
       }
     };
-    d.appendChild(b);
+    row.appendChild(b1);
+    // ② 卖一半（数量不足 2 个就不显示这一颗，按钮上写清楚到底卖几个）
+    const half = Math.floor(have / 2);
+    if (half >= 1) {
+      const b2 = document.createElement('button');
+      b2.className = 'half';
+      b2.textContent = t('sellHalf', { k: half, n: half * it.price });
+      b2.onclick = () => {
+        if (removeItem(id, half)) {
+          const gain = half * it.price;
+          G.coins += gain; sfx.coin(); renderHUD(); renderSell();
+          say('soldBin', { item: nm('item', id) + ' ×' + half, n: gain });
+        }
+      };
+      row.appendChild(b2);
+    }
+    d.appendChild(row);
     box.appendChild(d);
   }
 }

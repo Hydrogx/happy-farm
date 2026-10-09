@@ -237,7 +237,11 @@
       <!-- ============ 卖货箱 ============ -->
       <div id="sell-modal" class="modal hidden">
         <div class="modal-card">
-          <h2 data-i18n="sellTitle">📦 卖货箱</h2>
+          <div class="modal-head">
+            <h2 data-i18n="sellTitle">📦 卖货箱</h2>
+            <button class="modal-x close-modal" data-close="sell-modal"
+                    data-i18n-title="btnQuitHint" title="离开">✕</button>
+          </div>
           <p class="subtitle" data-i18n="sellSubtitle">点一点，把东西换成金币！</p>
           <div id="sell-items" class="shop-grid"></div>
           <button class="big-btn close-modal" data-close="sell-modal" data-i18n="btnCloseBin">关上门</button>
