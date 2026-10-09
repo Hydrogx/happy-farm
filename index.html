@@ -15,14 +15,18 @@
 
       <!-- 顶部状态栏 -->
       <div id="hud">
-        <div class="hud-box">💰 <span id="coins">0</span></div>
-        <div class="hud-box" id="day-box">📅 第 1 天</div>
-        <div class="hud-box">🕐 <span id="clock">08:00</span></div>
-        <div class="hud-box" id="weather-box">☀️ 晴天</div>
-        <div class="hud-box" id="save-box" title="自动存档">💾</div>
-        <button id="btn-lang" class="hud-box" title="中文 / English">中</button>
-        <button id="btn-music" class="hud-box" title="背景音乐开关">🎵</button>
-        <button id="btn-mute" class="hud-box" title="声音开关">🔊</button>
+        <div class="hud-left">
+          <div class="hud-box">💰 <span id="coins">0</span></div>
+          <div class="hud-box" id="day-box">📅 第 1 天</div>
+          <div class="hud-box">🕐 <span id="clock">08:00</span></div>
+        </div>
+        <div class="hud-right">
+          <div class="hud-box" id="weather-box">☀️ 晴天</div>
+          <button id="save-box" class="hud-box" title="保存游戏">💾</button>
+          <button id="btn-lang" class="hud-box" title="中文 / English">中</button>
+          <button id="btn-music" class="hud-box" title="背景音乐开关">🎵</button>
+          <button id="btn-mute" class="hud-box" title="声音开关">🔊</button>
+        </div>
       </div>
 
       <!-- 底部物品栏 -->
@@ -43,6 +47,11 @@
       <!-- ============ 开始界面 ============ -->
       <div id="start-screen" class="panel-full">
         <h1 class="title" data-i18n="title">🌈 快乐小牧场</h1>
+        <div class="name-row">
+          <label class="name-label" for="name-input" data-i18n="nameLabel">✏️ 我的名字</label>
+          <input id="name-input" type="text" maxlength="8" autocomplete="off"
+                 data-i18n-ph="namePlaceholder" placeholder="输入名字，比如 小明">
+        </div>
         <p class="subtitle" data-i18n="subtitle1">选择你的角色开始农场生活吧！</p>
         <div class="choose-row">
           <div class="choose-card selected" id="choose-boy">
@@ -63,10 +72,20 @@
           <div class="choose-card" id="choose-duck">
             <div class="big-emoji">🦆</div><div data-i18n="petDuck">小鸭</div>
           </div>
+          <div class="choose-card" id="choose-goose">
+            <div class="big-emoji">🦢</div><div data-i18n="petGoose">小鹅</div>
+          </div>
         </div>
-        <button id="btn-continue" class="big-btn hidden" data-i18n="btnContinue">📂 继续上次的牧场</button>
+        <!-- 这台电脑上的存档（每个名字一个存档） -->
+        <div id="save-panel" class="save-panel hidden">
+          <div class="save-panel-head" data-i18n="saveListHead">💾 这台电脑上的存档（点名字继续玩）</div>
+          <div id="save-list" class="save-list"></div>
+        </div>
         <div id="save-info" class="save-info hidden"></div>
-        <button id="btn-start" class="big-btn" data-i18n="btnStart">🎮 开始新游戏</button>
+        <div class="btn-row">
+          <button id="btn-continue" class="big-btn hidden" data-i18n="btnContinue">📂 继续上次的牧场</button>
+          <button id="btn-start" class="big-btn" data-i18n="btnStart">🎮 开始新游戏</button>
+        </div>
         <div class="help-hint" data-i18n="helpHint">⌨️ 方向键 / WASD 走路 · E 或 空格 做动作 · H 帮助</div>
         <button id="btn-lang-big" class="lang-big">🌏 中文 / English</button>
       </div>
@@ -78,7 +97,7 @@
           <ul class="help-list">
             <li data-i18n="help1">🚶 方向键 / WASD：走来走去</li>
             <li data-i18n="help2">✋ E / 空格：捡东西、种地、挤奶、剪羊毛、钓鱼、和客人说话</li>
-            <li data-i18n="help3">🥚 鸡会下蛋，捡起来！</li>
+            <li data-i18n="help3">🐔 母鸡会下蛋，捡起来！放进鸡棚的孵蛋器，过 3 天就有小鸡</li>
             <li data-i18n="help4">🐄 牛可以挤牛奶，🐑 羊可以剪羊毛</li>
             <li data-i18n="help5">🌱 田里：先耕地 → 撒种子 → 浇水 → 收获</li>
             <li data-i18n="help6">🍎 摇摇果树，水果掉下来</li>
@@ -88,7 +107,9 @@
             <li data-i18n="help10">🛒 客人来买你头上的东西，卖给TA赚金币</li>
             <li data-i18n="help11">📦 卖货箱可以卖掉任何东西</li>
             <li data-i18n="help12">🎡 商店还能买动物和庭院装饰，自己摆放！</li>
-            <li data-i18n="help13">🌧️ 下雨天水会自动浇好；💾 游戏会自动存档</li>
+            <li data-i18n="help13">🌧️ 下雨天水会自动浇好；💾 点右上角的 💾 就能随时存档</li>
+            <li data-i18n="help14">🌳 森林里的蜂巢有蜂蜜，走过去按 E 就能拿到</li>
+            <li data-i18n="help15">🐤 小鸡出生 5 天后长成母鸡；最多 5 只母鸡、10 只小鸡</li>
           </ul>
           <button class="big-btn close-modal" data-close="help-modal" data-i18n="btnKnow">知道啦！</button>
         </div>
@@ -131,6 +152,7 @@
             <button class="tab-btn" id="pick-dog" data-i18n="dog">小狗</button>
             <button class="tab-btn" id="pick-cat" data-i18n="cat">小猫</button>
             <button class="tab-btn" id="pick-duck" data-i18n="petDuck">小鸭</button>
+            <button class="tab-btn" id="pick-goose" data-i18n="petGoose">小鹅</button>
           </div>
           <div class="tab-row">
             <button class="tab-btn selected" data-wtab="hat" data-i18n="wtabHat">🎩 帽子</button>

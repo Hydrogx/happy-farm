@@ -15,6 +15,7 @@ const ITEMS = {
   egg: { name: '鸡蛋', icon: '🥚', price: 10, cp: '1f95a' },
   milk: { name: '牛奶', icon: '🥛', price: 18, cp: '1f95b' },
   wool: { name: '羊毛', icon: '🧶', price: 25, cp: '1f9f6' },
+  honey: { name: '蜂蜜', icon: '🍯', price: 60, cp: '1f36f' },
   carrot: { name: '胡萝卜', icon: '🥕', price: 15, cp: '1f955' },
   tomato: { name: '番茄', icon: '🍅', price: 20, cp: '1f345' },
   corn: { name: '玉米', icon: '🌽', price: 25, cp: '1f33d' },
@@ -43,6 +44,8 @@ const ITEMS = {
   fish_grill: { name: '烤鱼', icon: '🍢', price: 55, cp: '1f362' },
   pudding: { name: '蛋奶布丁', icon: '🍮', price: 65, cp: '1f36e' },
   fruit_cake: { name: '草莓蛋糕', icon: '🍰', price: 90, cp: '1f370' },
+  honey_toast: { name: '蜂蜜吐司', icon: '🍞', price: 95, cp: '1f35e' },
+  honey_cake: { name: '蜂蜜蛋糕', icon: '🧁', price: 140, cp: '1f9c1' },
   seed_carrot:{ name: '胡萝卜种子', icon: '🌱', price: 5,  seed: 'carrot' },
   seed_tomato:{ name: '番茄种子',  icon: '🫘', price: 8,  seed: 'tomato' },
   seed_corn: { name: '玉米种子', icon: '🌾', price: 12, cp: '1f331', seed: 'corn' },
@@ -53,6 +56,8 @@ const RECIPES = [
   { id: 'fish_grill', needs: { fish: 1 } },
   { id: 'pudding',    needs: { egg: 1, milk: 1 } },
   { id: 'fruit_cake', needs: { strawberry: 2, egg: 1, milk: 1 } },
+  { id: 'honey_toast', needs: { honey: 1, corn: 1 } },     // 森林蜂蜜
+  { id: 'honey_cake',  needs: { honey: 2, egg: 2, milk: 1 } },
 ];
 const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry'];
 // ---------------- 钓鱼：5 种大小的水波纹，每种 3 种渔获 ----------------
@@ -71,7 +76,31 @@ const PONDS = [
 const POND_MAP = {};
 PONDS.forEach(p => { POND_MAP[p.id] = p; });
 const SEA_ALL = PONDS.reduce(function (a, p) { return a.concat(p.pool); }, []);
-function pondName(p) { return lang === 'en' ? p.nameEn : p.name; }
+function pondLabel(p) { return lang === 'en' ? p.nameEn : p.name; }
+
+// ---------------- 森林 & 蜂巢 ----------------
+// 森林在农场的右上角（摊位与小水坑之间那片树林），里面有一个蜂巢可以拿蜂蜜
+const FOREST = { x: 1150, y: 34, w: 430, h: 436 };   // 房子和摊位都在森林左边，不重叠
+const HIVE = { x: 1500, y: 300, r: 82, honey: 1, honeyT: 0, max: 2 };
+const HONEY_EVERY = 55;          // 秒：蜂巢重新酿出蜂蜜
+// 小工具（提前定义，下面的数据表初始化就要用）
+function dist(x1, y1, x2, y2) { return Math.hypot(x1 - x2, y1 - y2); }
+function rand(a, b) { return a + Math.random() * (b - a); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+const FOREST_TREES = [           // 森林里的大树（蜂巢就挂在那棵树上）
+  { x: 1500, y: 300, kind: 'big', phase: 0.4 },
+  { x: 1220, y: 120, kind: 'pine', phase: 1.2 },
+  { x: 1550, y: 140, kind: 'pine', phase: 2.1 },
+  { x: 1230, y: 420, kind: 'pine', phase: 3.4 },
+];
+const FOREST_DECOR = [];         // 小蘑菇/树桩/灌木（纯装饰）
+[['mushroom', 1190, 220], ['mushroom', 1520, 420], ['mushroom', 1320, 370],
+ ['stump', 1450, 110], ['stump', 1190, 400], ['bush', 1400, 430], ['bush', 1470, 210]]
+  .forEach(function (d) { FOREST_DECOR.push({ kind: d[0], x: d[1], y: d[2], phase: rand(0, 6) }); });
+function inForest(x, y) {
+  return x > FOREST.x && x < FOREST.x + FOREST.w && y > FOREST.y && y < FOREST.y + FOREST.h;
+}
+function inHiveReach(x, y) { return dist(x, y, HIVE.x, HIVE.y) < HIVE.r; }
 // 离水坑边缘的距离（负数表示站在水里）
 function pondDist(p, x, y) {
   const ex = (x - p.x) / (p.w / 2), ey = (y - p.y) / (p.h / 2);
@@ -79,7 +108,8 @@ function pondDist(p, x, y) {
   return (d - 1) * Math.min(p.w, p.h) / 2;
 }
 
-const SELLABLE = ['egg','milk','wool','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,'fried_egg','salad','fish_grill','pudding','fruit_cake'];
+const SELLABLE = ['egg','milk','wool','honey','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,
+  'fried_egg','salad','fish_grill','pudding','fruit_cake','honey_toast','honey_cake'];
 const PET_HATS = {
   bow:    { name: '宠物蝴蝶结', icon: '🎀', price: 30 },
   straw:  { name: '宠物草帽',   icon: '👒', price: 30 },
@@ -89,7 +119,7 @@ const PET_HATS = {
 };
 // 可购买的动物
 const ANIMAL_SHOP = [
-  { type: 'chicken', name: '小鸡',   icon: '🐔', price: 150, desc: '会下蛋' },
+  { type: 'chicken', name: '母鸡',   icon: '🐔', price: 150, desc: '会下蛋' },
   { type: 'sheep',   name: '小绵羊', icon: '🐑', price: 320, desc: '能剪羊毛' },
   { type: 'cow',     name: '小奶牛', icon: '🐄', price: 650, desc: '能挤牛奶' },
 ];
@@ -163,7 +193,8 @@ const STR = {
     hudDay: '📅 第 {n} 天', weather: { sunny: '☀️ 晴天', cloudy: '⛅ 多云', rain: '🌧️ 下雨' },
     // —— 交互提示 ——
     prPickup: '捡起 {item}', prShear: '✂️ 剪羊毛', prMilk: '🥛 挤牛奶',
-    prPetChicken: '🐔 摸摸小鸡', prPetSheep: '🐑 摸摸小羊（羊毛还没长好）', prPetCow: '🐄 摸摸奶牛（等会儿才有奶）',
+    prPetChicken: '🐔 摸摸小鸡', prPetChick: '🐤 摸摸小鸡', prPetHen: '🐔 摸摸母鸡',
+    prPetSheep: '🐑 摸摸小羊（羊毛还没长好）', prPetCow: '🐄 摸摸奶牛（等会儿才有奶）',
     prTill: '⛏️ 耕地', prPlant: '🌱 播种 {seed}', prNoSeed: '🌱 需要种子（去商店买）',
     prWater: '💧 浇水', prHarvest: '🧺 收获 {crop}', prTree: '摇一摇{fruit}树',
     prCook: '🍳 做饭', prWardrobe: '👕 换衣服', prSell: '📦 卖东西', prShop: '🛒 打开商店',
@@ -171,8 +202,8 @@ const STR = {
     prPlace: '放置「{decor}」：[{key}] 放下{extra}',
     prFishing: '🎣 等待中…（按 {key} 提前收杆）', prBite: '❗ 快按 {key} 收杆！',
     // —— 日志 / 提示 ——
-    welcome: '欢迎来到快乐小牧场！去找点事情做吧 🌱',
-    welcomeBack: '欢迎回来！第 {day} 天继续加油 🌻',
+    welcome: '欢迎来到快乐小牧场，{name}！去找点事情做吧 🌱',
+    welcomeBack: '欢迎回来，{name}！第 {day} 天继续加油 🌻',
     loadFailed: '存档读不出来，重新开始吧',
     saveOk: '💾 游戏已保存',
     night: '🌙 天黑啦，睡觉觉…',
@@ -244,9 +275,46 @@ const STR = {
     bookHint: '买到的观赏动物和钓到的海洋生物都会记录在这里',
     caughtTimes: '钓到过 {n} 次',
     petDuck: '小鸭',
+    petGoose: '小鹅',
+    animalHen: '母鸡',
+    tooManyHens: '鸡棚里已经有 {max} 只母鸡啦，先让小鸡长大吧',
+    shopHenDesc: '会下蛋 · 最多 {hm} 只',
     logSoldCustomer: '把 {item} 卖给了{name}，+{n} 金币',
     rotateHint: '🔄 横过来玩，画面更大更清楚',
     logTitle2: '最近发生的事',
+    // —— 取名字 / 多存档 ——
+    nameLabel: '✏️ 我的名字',
+    namePlaceholder: '输入名字，比如 小明',
+    saveListHead: '💾 这台电脑上的存档（点名字继续玩）',
+    enterName: '✏️ 先写下你的名字吧（这样才好分辨谁的存档）',
+    nameTooLong: '名字太长啦，最多 8 个字',
+    maxProfiles: '存档太多了，先删掉一个再用新名字吧',
+    nameOccupied: '这个名字已经有存档了，点下面的存档继续玩，或换个名字',
+    saveDeleted: '删掉了「{name}」的存档',
+    saveOkName: '💾 {name} 的牧场已保存',
+    saveFailed: '存档失败，浏览器空间可能满了',
+    dayUnit: '天',
+    saveSummary: '第 {day} 天 · 💰{coins} · {time}',
+    // —— 鸡棚：孵蛋 / 小鸡长大 ——
+    prHatch: '🐣 孵蛋器（鸡蛋 {n}/{max}）',
+    prHatchReady: '🐣 小鸡孵出来啦！',
+    logHatchPut: '把鸡蛋放进了孵蛋器 🥚',
+    logHatched: '🐣 孵出了一只小鸡！',
+    logChickGrew: '🐤 小鸡长大了，变成母鸡！',
+    logHensFull: '🐔 已经有 {max} 只母鸡了，小鸡就先这样吧',
+    logChicksFull: '🐤 小鸡已经满 {max} 只啦',
+    logHens: '🐔 母鸡 {h}/{hm} 只 · 🐤 小鸡 {c}/{cm} 只',
+    noEggForHatch: '背包里没有鸡蛋，先去捡一个吧 🥚',
+    hatchFull: '孵蛋器满了（最多 {max} 个），等小鸡孵出来吧',
+    hatchWait: '🥚 孵蛋器里有 {n} 个鸡蛋，再过 {d} 天小鸡就出来啦',
+    hatchNone: '🥚 孵蛋器空着，把鸡蛋放进去吧',
+    // —— 森林 / 蜂巢 ——
+    prHive: '🍯 拿蜂蜜',
+    prHiveEmpty: '🍯 蜂蜜还没酿好…',
+    logHoney: '🍯 从蜂巢拿到了蜂蜜',
+    logHoneyReady: '🍯 蜂巢又有蜂蜜啦',
+    honeyGot: '拿到蜂蜜啦，甜甜的！🍯',
+    honeyNotReady: '蜂蜜还没酿好，等一等吧 🐝',
     owned: '已有啦 ✓', buyFor: '💰{n} 买',
     animalCount: '牧场现在有 {n} 只动物（最多 {max} 只）',
     decorCount: '农场已有 {n} 件装饰 · 买好后走到想放的地方，按 {key} 放下',
@@ -291,15 +359,16 @@ const STR = {
     logTitle: '📜 Farm Log',
     hudDay: '📅 Day {n}', weather: { sunny: '☀️ Sunny', cloudy: '⛅ Cloudy', rain: '🌧️ Rainy' },
     prPickup: 'Pick up {item}', prShear: '✂️ Shear wool', prMilk: '🥛 Milk the cow',
-    prPetChicken: '🐔 Pet the chick', prPetSheep: '🐑 Pet the lamb (no wool yet)', prPetCow: '🐄 Pet the cow (no milk yet)',
+    prPetChicken: '🐔 Pet the chick', prPetChick: '🐤 Pet the chick', prPetHen: '🐔 Pet the hen',
+    prPetSheep: '🐑 Pet the lamb (no wool yet)', prPetCow: '🐄 Pet the cow (no milk yet)',
     prTill: '⛏️ Till the soil', prPlant: '🌱 Plant {seed}', prNoSeed: '🌱 Need seeds (buy at the shop)',
     prWater: '💧 Water it', prHarvest: '🧺 Harvest {crop}', prTree: 'Shake the {fruit} tree',
     prCook: '🍳 Cook', prWardrobe: '👕 Change clothes', prSell: '📦 Sell things', prShop: '🛒 Open the shop',
     prFish: '🎣 Go fishing', prCustomer: 'Sell {item} to {name}',
     prPlace: 'Place "{decor}": [{key}] put down{extra}',
     prFishing: '🎣 Waiting… (press {key} to reel in)', prBite: '❗ Press {key} now!',
-    welcome: 'Welcome to Happy Little Farm! Go find something to do 🌱',
-    welcomeBack: 'Welcome back! Day {day} — let\'s go 🌻',
+    welcome: 'Welcome to Happy Little Farm, {name}! Go find something to do 🌱',
+    welcomeBack: 'Welcome back, {name}! Day {day} — let\'s go 🌻',
     loadFailed: 'Could not read the save — starting fresh',
     saveOk: '💾 Game saved',
     night: '🌙 It\'s dark — time to sleep…',
@@ -370,9 +439,46 @@ const STR = {
     bookHint: 'Zoo animals you buy and sea creatures you catch are recorded here',
     caughtTimes: 'Caught {n} times',
     petDuck: 'Duck',
+    petGoose: 'Goose',
+    animalHen: 'Hen',
+    tooManyHens: 'You already have {max} hens — let a chick grow up first',
+    shopHenDesc: 'Lays eggs · max {hm}',
     logSoldCustomer: 'Sold {item} to {name}, +{n} coins',
     rotateHint: '🔄 Turn your phone sideways for a bigger view',
     logTitle2: 'Recent events',
+    // —— names / multiple saves ——
+    nameLabel: '✏️ My Name',
+    namePlaceholder: 'Type a name, e.g. Sam',
+    saveListHead: '💾 Saves on this computer (tap a name to play)',
+    enterName: '✏️ Please write your name first (so we know whose farm it is)',
+    nameTooLong: 'That name is too long — 8 letters max',
+    maxProfiles: 'Too many saves — delete one before using a new name',
+    nameOccupied: 'That name already has a save. Tap it below, or pick another name',
+    saveDeleted: 'Deleted "{name}"\'s save',
+    saveOkName: '💾 {name}\'s farm is saved',
+    saveFailed: 'Could not save — browser storage may be full',
+    dayUnit: 'd',
+    saveSummary: 'Day {day} · 💰{coins} · {time}',
+    // —— chicken coop: incubator / chicks ——
+    prHatch: '🐣 Incubator (eggs {n}/{max})',
+    prHatchReady: '🐣 A chick hatched!',
+    logHatchPut: 'Put an egg in the incubator 🥚',
+    logHatched: '🐣 A chick hatched!',
+    logChickGrew: '🐤 The chick grew into a hen!',
+    logHensFull: '🐔 You already have {max} hens — the chicks stay small',
+    logChicksFull: '🐤 You already have {max} chicks',
+    logHens: '🐔 Hens {h}/{hm} · 🐤 Chicks {c}/{cm}',
+    noEggForHatch: 'No egg in your bag — go pick one up 🥚',
+    hatchFull: 'The incubator is full (max {max}) — wait for a chick',
+    hatchWait: '🥚 {n} egg(s) incubating — {d} day(s) until they hatch',
+    hatchNone: '🥚 The incubator is empty — put an egg in',
+    // —— forest / beehive ——
+    prHive: '🍯 Take honey',
+    prHiveEmpty: '🍯 The honey is not ready yet…',
+    logHoney: '🍯 Got honey from the beehive',
+    logHoneyReady: '🍯 The beehive has honey again',
+    honeyGot: 'Yummy honey! 🍯',
+    honeyNotReady: 'The honey is not ready yet 🐝',
     owned: 'Owned ✓', buyFor: '💰{n} Buy',
     animalCount: 'You have {n} animals (max {max})',
     decorCount: '{n} decorations placed · walk somewhere and press {key} to place',
@@ -388,7 +494,9 @@ const STR = {
 
 // 英文名表（中文名直接用原表）
 const EN_NAMES = {
-  item: { egg: 'Egg', milk: 'Milk', wool: 'Wool', carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
+  item: { egg: 'Egg', milk: 'Milk', wool: 'Wool', honey: 'Honey',
+    honey_toast: 'Honey Toast', honey_cake: 'Honey Cake',
+    carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
     apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
     fish: 'Small Fish', bigfish: 'Big Fish', fried_egg: 'Fried Egg', salad: 'Fruit Salad',
     fish_grill: 'Grilled Fish', pudding: 'Milk Pudding', fruit_cake: 'Strawberry Cake',
@@ -406,7 +514,7 @@ const EN_NAMES = {
     green: 'Green Pants', orange: 'Orange Shorts', white: 'White Pants', pink: 'Pink Pants',
     purple: 'Purple Pants', stripepants: 'Striped Pants', polka: 'Polka Pants' },
   petHat: { bow: 'Pet Bow', straw: 'Pet Straw Hat', cap: 'Pet Cap', flower: 'Pet Flower Crown', crown: 'Pet Crown' },
-  animal: { chicken: 'Chick', sheep: 'Lamb', cow: 'Calf' },
+  animal: { chicken: 'Hen', sheep: 'Lamb', cow: 'Calf' },
   decor: { rock: 'Big Rock', mushroom: 'Mushroom', fence: 'Small Fence', flowerbed: 'Flower Bed',
     lamp: 'Lamp Post', bench: 'Bench', scarecrow: 'Scarecrow', blossom: 'Cherry Tree',
     christmas: 'Christmas Tree', fountain: 'Fountain', windmill: 'Windmill' },
@@ -495,6 +603,31 @@ const ZOO_MAP = {};
 ZOO_SHOP.forEach(function (z) { ZOO_MAP[z.type] = z; });
 const MAX_ZOO = 30;
 
+// ---------------- 鸡棚规则（母鸡 / 孵蛋 / 小鸡） ----------------
+const MAX_HENS = 5;              // 最多 5 只母鸡
+const MAX_CHICKS = 10;           // 最多 10 只小鸡
+const HATCH_DAYS = 3;            // 鸡蛋放进孵蛋器，3 天后孵出小鸡
+const CHICK_GROW_DAYS = 5;       // 小鸡出生 5 天后长成母鸡
+const MAX_INCUBATE = 6;          // 孵蛋器最多同时放 6 个蛋
+const HEN_GROW = 1.15;           // 母鸡整体放大一点
+const CHICK_SCALE = 0.62;        // 小鸡小小一只
+function isHen(a) { return a.type === 'chicken' && a.stage !== 'chick'; }
+function isChick(a) { return a.type === 'chicken' && a.stage === 'chick'; }
+function countHens() { return G.animals.filter(isHen).length; }
+function countChicks() { return G.animals.filter(isChick).length; }
+// 孵蛋器里还要等最少几天
+function hatchDaysLeft() {
+  if (!G.incubating.length) return 0;
+  let m = Infinity;
+  for (const e of G.incubating) m = Math.min(m, e.left);
+  return m;
+}
+
+// 成年动物总数上限（鸡棚的母鸡/小鸡另有各自上限，单独判断）
+function cappedAnimalCount() {
+  return G.animals.filter(a => a.type !== 'chicken').length;
+}
+
 // ---------------- 游戏状态 ----------------
 const G = {
   started: false,
@@ -513,6 +646,7 @@ const G = {
   pet: { type: 'dog', x: 380, y: 530, dir: 'right', moving: false, walkPhase: 0, phase: 0, hat: 'none', happy: 0 },
   petHatsOwned: [],
   animals: [],
+  incubating: [],         // 孵蛋器里的鸡蛋：[{left: 剩余天数}]
   groundItems: [],
   zoo: [],                // 动物园观赏动物（只看不产出）
   tank: [],               // 大型水族箱里养的鱼（最多 20）
@@ -544,6 +678,7 @@ const ZONES = {
   bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 70 },
   tank:     { x: 730, y: 470, r: 95 },
+  hatchery: { x: 348, y: 742, r: 74 },    // 鸡棚里的孵蛋器
   pond:     { x: 1300, y: 800, w: 280, h: 140 },
 };
 
@@ -630,12 +765,14 @@ const sfx = {
   moo:    () => { tone(165, 110, 0.5, 'sawtooth', 0.09); tone(82, 60, 0.5, 'triangle', 0.05); },
   baa:    () => { for (let i = 0; i < 5; i++) tone(620 + Math.sin(i * 2.2) * 120, 620, 0.09, 'square', 0.045, i * 0.09); },
   pet:    () => { tone(700, 1050, 0.1, 'sine', 0.1); tone(1050, 1400, 0.12, 'sine', 0.09, 0.09); },
-  // 动物自己的叫声（可延时，用在和玩家互动之后）
-  animalVoice: (type, delay = 0) => setTimeout(() => {
-    if (type === 'chicken') sfx.cluck();
+  // 动物自己的叫声（可延时，用在和玩家互动之后）；小鸡是细细的叫声
+  animalVoice: (type, delay = 0, a) => setTimeout(() => {
+    if (type === 'chicken') { if (a && isChick(a)) sfx.chick(); else sfx.cluck(); }
     else if (type === 'sheep') sfx.baa();
     else sfx.moo();
   }, delay),
+  // 小鸡的啾啾声
+  chick:  () => { tone(1500, 2100, 0.05, 'sine', 0.05); tone(1700, 2400, 0.06, 'sine', 0.045, 0.08); },
   // 动物园动物的叫声（v=音色, p=音高）
   zooVoice: (v, p, delay = 0) => {
     p = p || 1;
@@ -646,12 +783,15 @@ const sfx = {
     else if (v === 'trill') { for (let i = 0; i < 4; i++) tone(1100 * p, 1500 * p, 0.06, 'sine', 0.04, delay + i * 0.07); }
     else { tone(900 * p, 1400 * p, 0.07, 'sine', 0.045, delay); tone(1500 * p, 800 * p, 0.09, 'sine', 0.04, delay + 0.07); }
   },
-  // 宠物叫声（狗/猫/鸭）
+  // 宠物叫声（狗/猫/鸭/鹅）
   petVoice: (type, delay = 0) => {
-    if (type === 'duck') { tone(420, 300, 0.1, 'square', 0.06, delay); tone(380, 260, 0.12, 'square', 0.055, delay + 0.13); }
+    if (type === 'goose') { tone(300, 420, 0.22, 'sawtooth', 0.055, delay); tone(420, 300, 0.26, 'sawtooth', 0.05, delay + 0.24); }
+    else if (type === 'duck') { tone(420, 300, 0.1, 'square', 0.06, delay); tone(380, 260, 0.12, 'square', 0.055, delay + 0.13); }
     else if (type === 'cat') { tone(620, 900, 0.25, 'triangle', 0.06, delay); tone(900, 700, 0.3, 'sine', 0.045, delay + 0.22); }
     else { tone(300, 200, 0.1, 'square', 0.07, delay); tone(260, 180, 0.1, 'square', 0.06, delay + 0.12); }
   },
+  // 蜜蜂嗡嗡（蜂巢附近）
+  buzz:   (delay = 0) => { tone(220, 260, 0.35, 'sawtooth', 0.03, delay); tone(180, 210, 0.4, 'sawtooth', 0.025, delay + 0.2); },
   // ---- 商店 / 烹饪 ----
   coin:   () => { tone(988, 988, 0.06, 'square', 0.07); tone(1319, 1319, 0.1, 'square', 0.07, 0.06); },
   buy:    () => { sfx.coin(); tone(1976, 1976, 0.12, 'sine', 0.06, 0.14); },
@@ -729,20 +869,21 @@ function setMusic(on) {
 const keys = {};
 let interactQueued = false;
 window.addEventListener('keydown', (e) => {
+  // 在输入名字的框里打字时，不要触发游戏操作
+  if (playerTyping()) { if (e.key === 'Enter') e.target.blur(); return; }
   const k = e.key.toLowerCase();
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
   keys[k] = true;
   if (k === 'e' || k === ' ') interactQueued = true;
   if (k === 'h') toggleModal('help-modal');
+  if (k === 's' && G.started && !G.modalOpen && !keys['arrowdown'] && !keys['w'] && !keys['a'] && !keys['d']) manualSave();
   if (k === 'q' && G.placing) { G.placing = null; sfx.close(); say('decorCancel'); }
   if (k === 'escape' && G.modalOpen) closeModal(G.modalOpen);
 });
 window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
 // ---------------- 工具 ----------------
-const dist = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
-const rand = (a, b) => a + Math.random() * (b - a);
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+// dist / rand / pick 在前面已定义（数据表初始化时要用）
 
 function addItem(id, n = 1) {
   G.inventory[id] = (G.inventory[id] || 0) + n;
@@ -802,13 +943,15 @@ function initWorld() {
     mkTree('peach', 470, 380),
     mkTree('strawberry', 600, 250),
   ];
-  // 动物（各自住在自己的棚舍里）
+  // 动物（各自住在自己的棚舍里）：一开始是 2 只母鸡 + 1 只小鸡
   G.animals = [
-    newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810), newAnimal('chicken', 350, 770),
+    newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810),
+    newAnimal('chicken', 350, 770, 'chick'),
     newAnimal('sheep', 600, 870), newAnimal('sheep', 690, 900),
     newAnimal('cow', 970, 870),
   ];
-  // 装饰（避开建筑/田地/池塘/棚舍/果树）
+  G.incubating = [];
+  // 装饰（避开建筑/田地/池塘/棚舍/果树/森林）
   const avoid = [
     { x: 890, y: 90, w: 330, h: 460 },    // 房子区（近商店）
     { x: 470, y: 570, w: 240, h: 190 },   // 田地
@@ -821,6 +964,7 @@ function initWorld() {
     { x: 830, y: 770, w: 280, h: 190 },   // 牛棚
     { x: 160, y: 120, w: 500, h: 320 },   // 果树区（房子左侧）
     { x: 610, y: 345, w: 250, h: 140 },   // 水族箱
+    { x: FOREST.x, y: FOREST.y, w: FOREST.w, h: FOREST.h },   // 森林
   ];
   const okSpot = (x, y) => !avoid.some(a => x > a.x - 20 && x < a.x + a.w + 20 && y > a.y - 20 && y < a.y + a.h + 20);
   for (let i = 0; i < 60; i++) {
@@ -836,24 +980,207 @@ function initWorld() {
 }
 
 // 创建一只动物（初始动物和商店买的动物都用它）
-function newAnimal(type, x, y) {
+// stage: 'hen'（母鸡，会下蛋）/ 'chick'（小鸡，出生 5 天后长成母鸡）
+function newAnimal(type, x, y, stage) {
   return {
     type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
     moving: false, walkPhase: 0, phase: rand(0, 6),
     tx: x, ty: y, waitT: rand(1, 3), peck: 0,
     wool: 1, woolT: 0, milkReady: true, milkT: 0, eggT: rand(15, 40),
+    stage: type === 'chicken' ? (stage === 'chick' ? 'chick' : 'hen') : undefined,
+    growT: 0,                                  // 小鸡还差几天长大
     home: { ...PENS[type].home },
   };
 }
+// 在鸡棚附近找个能站的地方
+function chickenSpot(r) {
+  const h = PENS.chicken.home;
+  return {
+    x: Math.max(60, Math.min(WORLD_W - 40, h.x + rand(-(r || 50), r || 50))),
+    y: Math.max(660, Math.min(PENS.chicken.y + PENS.chicken.h - 14, h.y + rand(-(r || 40), r || 40))),
+  };
+}
+// 孵蛋器里孵出一只小鸡（超过 10 只就不孵了）
+function spawnChick() {
+  if (countChicks() >= MAX_CHICKS) { note('logChicksFull', { max: MAX_CHICKS }); return null; }
+  const sp = chickenSpot(46);
+  const c = newAnimal('chicken', sp.x, sp.y, 'chick');
+  G.animals.push(c);
+  spawnParticles(c.x, c.y - 16, '🐣', 5);
+  return c;
+}
+// 天亮了：小鸡长大 / 孵蛋器推进一天
+function dailyChickenUpdate() {
+  // ① 小鸡长大（母鸡满 5 只就保持原样）
+  for (const a of G.animals) {
+    if (!isChick(a)) continue;
+    a.growT++;
+    if (a.growT >= CHICK_GROW_DAYS) {
+      if (countHens() < MAX_HENS) {
+        a.stage = 'hen'; a.growT = 0; a.eggT = rand(20, 45);
+        spawnParticles(a.x, a.y - 18, '✨', 6);
+        sfx.sparkle();
+        note('logChickGrew');
+      } else {
+        a.growT = CHICK_GROW_DAYS;   // 保持原样，等母鸡位置空出来
+        note('logHensFull', { max: MAX_HENS });
+      }
+    }
+  }
+  // ② 孵蛋器：3 天后孵出小鸡
+  for (let i = G.incubating.length - 1; i >= 0; i--) {
+    const e = G.incubating[i];
+    e.left--;
+    if (e.left <= 0) {
+      if (countChicks() >= MAX_CHICKS) { e.left = 1; continue; }   // 小鸡满了，再等等
+      G.incubating.splice(i, 1);
+      const c = spawnChick();
+      if (c) {
+        sfx.chick();
+        note('logHatched');
+      }
+    }
+  }
+}
+// 拿一个鸡蛋放进孵蛋器
+function putEggInHatchery() {
+  if (G.incubating.length >= MAX_INCUBATE) { sfx.error(); say('hatchFull', { max: MAX_INCUBATE }); return; }
+  if (!removeItem('egg')) { sfx.error(); say('noEggForHatch'); return; }
+  G.incubating.push({ left: HATCH_DAYS });
+  sfx.pop();
+  spawnParticles(ZONES.hatchery.x, ZONES.hatchery.y - 40, '🥚', 3);
+  say('logHatchPut');
+  saveGame(true);
+}
 
-// ---------------- 存档 / 读档（localStorage） ----------------
-const SAVE_KEY = 'happy-farm-save-v1';
-const SAVE_EVERY = 10;         // 每 10 秒自动存一次
+// ---------------- 存档 / 读档（localStorage，按名字分档） ----------------
+// 一台电脑上可以有很多个小朋友：每个名字一个存档，互不影响
+const SAVE_EVERY = 10;             // 每 10 秒自动存一次
+const OLD_SAVE_KEY = 'happy-farm-save-v1';    // 旧版本的单存档，会自动搬进来
+const SAVE_KEY = 'happy-farm-save-v2';        // 当前正在玩的那一档（自动存档写这里）
+const SAVE_INDEX = 'happy-farm-profiles-v1';  // 名字列表（含摘要）
+const LAST_NAME_KEY = 'happy-farm-last-name';
+const MAX_PROFILES = 12;
+const MAX_NAME_LEN = 8;
 
-function saveGame(silent = false) {
+// 当前玩家名字（每档的「档名」）；pid = 在存档列表里的下标
+let playerName = '';
+let playerPid = -1;
+function slotKey(i) { return 'happy-farm-save-p' + i; }
+
+// 名字统一处理：去空格 + 限制长度
+function normalizeName(s) { return String(s == null ? '' : s).trim().slice(0, MAX_NAME_LEN); }
+function nameKey(s) { return normalizeName(s).toLowerCase(); }
+
+function loadIndex() {
+  try {
+    const raw = localStorage.getItem(SAVE_INDEX);
+    const a = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(a)) return a.filter(p => p && typeof p.name === 'string' && Number.isFinite(p.pid));
+  } catch (e) {}
+  return [];
+}
+function writeIndex(list) {
+  try { localStorage.setItem(SAVE_INDEX, JSON.stringify(list)); return true; }
+  catch (e) { return false; }
+}
+function getLastProfile() {
+  try { const n = localStorage.getItem(LAST_NAME_KEY); return n ? normalizeName(n) : null; } catch (e) { return null; }
+}
+function setLastProfile(name) { try { localStorage.setItem(LAST_NAME_KEY, name); } catch (e) {} }
+function pidInUse(pid) { return loadIndex().some(x => x.pid === pid); }
+function freePid() { for (let i = 0; i < MAX_PROFILES; i++) if (!pidInUse(i)) return i; return -1; }
+function profileFor(name) {
+  const k = nameKey(name);
+  return loadIndex().find(x => nameKey(x.name) === k) || null;
+}
+// 旧版本单存档 → 搬进多存档（第一个名字）
+function migrateOldSave() {
+  let raw = null;
+  try { raw = localStorage.getItem(OLD_SAVE_KEY); } catch (e) {}
+  if (!raw) return;
+  try { if (JSON.parse(raw)) { try { localStorage.setItem(slotKey(0), raw); } catch (e) {} } } catch (e) {}
+  try { localStorage.removeItem(OLD_SAVE_KEY); } catch (e) {}
+  const list = loadIndex();
+  if (!list.some(x => x.pid === 0)) {
+    let nm = '小农夫';
+    try { const d = JSON.parse(raw); if (d && d.profile && d.profile.name) nm = normalizeName(d.profile.name) || nm; } catch (e) {}
+    list.unshift({ pid: 0, name: nm, savedAt: 0, day: 1, coins: 20 });
+    writeIndex(list);
+  }
+  setLastProfile(loadIndex()[0].name);
+}
+migrateOldSave();
+// 还没开始玩也把正在玩的那一档的名字准备好（开始界面要用）
+(function initCurrentName() {
+  const last = getLastProfile();
+  const list = loadIndex();
+  const p = (last && profileFor(last)) || list[0] || null;
+  if (p) { playerName = p.name; playerPid = p.pid; }
+})();
+
+// 取某一档的存档数据（不传就用当前这一档）
+function readSave(name) {
+  let pid = playerPid;
+  if (name !== undefined) { const p = profileFor(name); pid = p ? p.pid : -1; }
+  if (pid < 0) {
+    // 还没有任何档案时的兜底：尝试旧的单存档键
+    try {
+      const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(OLD_SAVE_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      return (d && d.v === 1) ? d : null;
+    } catch (e) { return null; }
+  }
+  try {
+    const raw = localStorage.getItem(slotKey(pid));
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return (d && d.v === 1) ? d : null;
+  } catch (e) { return null; }
+}
+function hasSave() { return readSave() !== null; }
+// 开始界面上的存档列表（按最近保存排序）
+function listProfiles() {
+  return loadIndex()
+    .map(p => ({ p, d: readSave(p.name) }))
+    .sort((a, b) => ((b.d && b.d.savedAt) || b.p.savedAt || 0) - ((a.d && a.d.savedAt) || a.p.savedAt || 0));
+}
+function deleteProfile(name) {
+  const p = profileFor(name);
+  if (!p) return false;
+  try { localStorage.removeItem(slotKey(p.pid)); } catch (e) {}
+  writeIndex(loadIndex().filter(x => x.pid !== p.pid));
+  if (playerPid === p.pid) {
+    const rest = loadIndex();
+    playerPid = rest.length ? rest[0].pid : -1;
+    playerName = rest.length ? rest[0].name : '';
+  }
+  if (nameKey(getLastProfile() || '') === nameKey(p.name)) setLastProfile(playerName || '');
+  return true;
+}
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  if (playerPid >= 0) { try { localStorage.removeItem(slotKey(playerPid)); } catch (e) {} }
+}
+
+function saveGame(silent = false, opts) {
   if (!G.started) return false;   // 还没开始玩就不存
+  opts = opts || {};
+  const showLog = opts.log || !silent;   // 手动点 💾 时即使 silent 也写日志
+  // 还没定名字（比如直接继续了旧存档）：自动补一个
+  if (playerPid < 0) {
+    let pid = 0; while (pidInUse(pid)) pid++;
+    if (pid >= MAX_PROFILES) return false;
+    playerPid = pid;
+    if (!playerName) playerName = '小农夫';
+    const list = loadIndex(); list.push({ pid, name: playerName, savedAt: 0, day: G.day, coins: G.coins });
+    writeIndex(list);
+    setLastProfile(playerName);
+  }
   const data = {
     v: 1,
+    profile: { name: playerName },
     coins: G.coins, day: G.day, timeMin: G.timeMin, weather: G.weather,
     inventory: G.inventory, owned: G.owned, petHatsOwned: G.petHatsOwned,
     player: {
@@ -861,7 +1188,9 @@ function saveGame(silent = false) {
       gender: G.player.gender, outfit: { ...G.player.outfit },
     },
     pet: { type: G.pet.type, hat: G.pet.hat },
-    animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady })),
+    animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady,
+                                   stage: a.stage, growT: a.growT })),
+    incubating: G.incubating.map(e => ({ left: e.left })),
     plots: G.plots.map(p => ({ state: p.state, crop: p.crop, timer: p.timer, watered: p.watered })),
     trees: G.trees.map(t => ({ type: t.type, fruits: t.fruits, timer: t.timer })),
     items: G.groundItems.map(i => ({ id: i.id, x: i.x, y: i.y })),
@@ -869,33 +1198,44 @@ function saveGame(silent = false) {
     zoo: G.zoo.map(z => ({ type: z.type, x: z.x, y: z.y })),
     tank: G.tank.slice(0, TANK_MAX),
     seaCaught: G.seaCaught,
+    hive: { honey: HIVE.honey, honeyT: HIVE.honeyT },
     music: musicOn, muted,
     savedAt: Date.now(),
   };
+  const json = JSON.stringify(data);
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(slotKey(playerPid), json);
+    localStorage.setItem(SAVE_KEY, json);         // 兼容旧键
+    setLastProfile(playerName);
+    const list = loadIndex();
+    const rec = list.find(x => x.pid === playerPid);
+    if (rec) { rec.name = playerName; rec.savedAt = data.savedAt; rec.day = G.day; rec.coins = G.coins; }
+    else list.push({ pid: playerPid, name: playerName, savedAt: data.savedAt, day: G.day, coins: G.coins });
+    writeIndex(list);
     G.saveT = 0;
     flashSaveIcon();
-    if (!silent) note('saveOk');
+    if (showLog) {
+      const msg = playerName ? t('saveOkName', { name: playerName }) : t('saveOk');
+      toast(msg, 2000);
+      addLog(msg);
+    }
     return true;
-  } catch (e) { return false; }
+  } catch (e) {
+    if (!silent) { toast(t('saveFailed'), 2400); }
+    return false;
+  }
 }
 
-function readSave() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const d = JSON.parse(raw);
-    return (d && d.v === 1) ? d : null;
-  } catch (e) { return null; }
-}
-function hasSave() { return readSave() !== null; }
-function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
-
-function loadGame() {
+function loadGame(name) {
+  // 指定名字就切到那一档（多人同机：各自的牧场互不影响）
+  if (name !== undefined && name !== null && name !== '') {
+    const p = profileFor(name);
+    if (p) { playerPid = p.pid; playerName = p.name; setLastProfile(p.name); }
+  }
   const d = readSave();
   if (!d) return false;
   try {
+    if (d.profile && d.profile.name) playerName = normalizeName(d.profile.name) || playerName;
     G.coins = Number.isFinite(d.coins) ? d.coins : 20;
     G.day = Number.isFinite(d.day) ? d.day : 1;
     G.timeMin = Number.isFinite(d.timeMin) ? d.timeMin : DAY_START;
@@ -918,20 +1258,32 @@ function loadGame() {
       }
     }
     if (d.pet) {
-      G.pet.type = ['cat', 'duck'].includes(d.pet.type) ? d.pet.type : 'dog';
+      G.pet.type = ['cat', 'duck', 'goose'].includes(d.pet.type) ? d.pet.type : 'dog';
       G.pet.hat = (d.pet.hat && OUTFITS.hat[d.pet.hat]) ? d.pet.hat : 'none';
       G.pet.x = G.player.x - 40; G.pet.y = G.player.y + 30;
     }
-    // 动物
+    // 动物（老存档里的鸡都是成年母鸡；小鸡记录生长天数）
     if (Array.isArray(d.animals) && d.animals.length) {
       G.animals = d.animals.filter(a => a && PENS[a.type]).map(a => {
         const na = newAnimal(a.type, Number.isFinite(a.x) ? a.x : PENS[a.type].home.x,
-                                      Number.isFinite(a.y) ? a.y : PENS[a.type].home.y);
+                                      Number.isFinite(a.y) ? a.y : PENS[a.type].home.y,
+                                      a.stage === 'chick' ? 'chick' : 'hen');
         if (typeof a.wool === 'number') na.wool = a.wool;
         na.milkReady = a.milkReady !== false;
+        if (na.stage === 'chick') na.growT = Number.isFinite(a.growT) ? Math.max(0, Math.min(CHICK_GROW_DAYS, a.growT)) : 0;
         return na;
       });
-      if (!G.animals.length) G.animals = [newAnimal('chicken', 270, 780)];
+      if (!G.animals.length) G.animals = [newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810)];
+    }
+    // 孵蛋器
+    G.incubating = Array.isArray(d.incubating)
+      ? d.incubating.filter(e => e && Number.isFinite(e.left)).slice(0, MAX_INCUBATE)
+                    .map(e => ({ left: Math.max(1, Math.min(HATCH_DAYS, Math.round(e.left))) }))
+      : [];
+    // 蜂巢（森林里的蜂蜜）
+    if (d.hive) {
+      HIVE.honey = Number.isFinite(d.hive.honey) ? Math.max(0, Math.min(HIVE.max, d.hive.honey)) : 1;
+      HIVE.honeyT = Number.isFinite(d.hive.honeyT) ? Math.max(0, d.hive.honeyT) : 0;
     }
     // 田地（按下标恢复）
     if (Array.isArray(d.plots)) {
@@ -1005,8 +1357,9 @@ function resetGame() {
   G.pet.type = chosenPet; G.pet.hat = 'none'; G.pet.happy = 0;
   G.pet.x = 380; G.pet.y = 530;
   G.groundItems = []; G.customers = []; G.particles = [];
-  G.plots = []; G.trees = []; G.decor = []; G.animals = [];
+  G.plots = []; G.trees = []; G.decor = []; G.animals = []; G.incubating = [];
   G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
+  HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
   G.customerTimer = 18; G.ambientT = 6; G.saveT = 0;
   initWorld();
@@ -1047,11 +1400,11 @@ function setGender(g) {
   saveGame(true); renderWardrobe();
 }
 function setPet(type) {
-  G.pet.type = ['cat', 'duck'].includes(type) ? type : 'dog';
+  G.pet.type = ['cat', 'duck', 'goose'].includes(type) ? type : 'dog';
   G.pet.happy = 3;
   sfx.petVoice(G.pet.type);
   spawnParticles(G.pet.x, G.pet.y - 20, '💖', 5);
-  say('petSwitched', { pet: t(G.pet.type === 'duck' ? 'petDuck' : G.pet.type) });
+  say('petSwitched', { pet: t(G.pet.type === 'duck' ? 'petDuck' : G.pet.type === 'goose' ? 'petGoose' : G.pet.type) });
   saveGame(true); renderWardrobe();
 }
 
@@ -1086,16 +1439,83 @@ function placeDecoration() {
 }
 
 // ---------------- 界面语言切换 ----------------
+// 存档列表（开始界面：一台电脑上每个名字一份存档）
+function fmtSaveTime(ms) {
+  return new Date(ms || Date.now()).toLocaleString(
+    lang === 'en' ? 'en-US' : 'zh-CN',
+    { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function renderProfiles() {
+  const list = $('save-list'), panel = $('save-panel');
+  if (!list || !panel) return;
+  const profs = listProfiles();
+  // 没有存档：隐藏面板，只留一行「继续上次」
+  // 有存档：显示列表，那一行信息就不用了（列表里已经写得很清楚）
+  const infoEl = $('save-info');
+  if (!profs.length) {
+    panel.classList.add('hidden'); list.innerHTML = '';
+    if (infoEl) infoEl.classList.remove('hidden');
+    updateSaveInfo();
+    return;
+  }
+  panel.classList.remove('hidden');
+  if (infoEl) infoEl.classList.add('hidden');
+  list.innerHTML = '';  profs.forEach(function (it) {
+    const d = it.d;
+    const chip = document.createElement('div');
+    chip.className = 'save-chip' + (nameKey(it.p.name) === nameKey(playerName) ? ' current' : '');
+    const main = document.createElement('button');
+    main.className = 'save-chip-main';
+    const nmEl = document.createElement('span');
+    nmEl.className = 'save-chip-name';
+    nmEl.textContent = '👦 ' + it.p.name;
+    const infoEl = document.createElement('span');
+    infoEl.className = 'save-chip-info';
+    infoEl.textContent = d
+      ? t('saveSummary', { day: d.day || 1, coins: d.coins || 0, time: fmtSaveTime(d.savedAt) })
+      : t('saveSummary', { day: it.p.day || 1, coins: it.p.coins || 0, time: fmtSaveTime(it.p.savedAt) });
+    main.appendChild(nmEl); main.appendChild(infoEl);
+    main.onclick = function () {
+      sfx.click();
+      const input = $('name-input');
+      if (input) input.value = it.p.name;
+      startFarm(it.p.name, true);      // 点名字直接继续这个牧场
+    };
+    const del = document.createElement('button');
+    del.className = 'save-chip-del';
+    del.textContent = '✕';
+    del.title = '删除';
+    del.onclick = function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      const name = it.p.name;
+      if (typeof confirm === 'function' && !confirm('删除「' + name + '」的存档？')) return;
+      deleteProfile(name);
+      sfx.close();
+      say('saveDeleted', { name: name });
+      renderProfiles();
+    };
+    chip.appendChild(main); chip.appendChild(del);
+    list.appendChild(chip);
+  });
+  updateSaveInfo();
+}
 function updateSaveInfo() {
   const info = $('save-info');
   if (!info) return;
-  const d = readSave();
+  const last = getLastProfile();
+  const d = last ? readSave(last) : readSave();
   if (!d) { info.classList.add('hidden'); return; }
-  const time = new Date(d.savedAt || Date.now()).toLocaleString(
-    lang === 'en' ? 'en-US' : 'zh-CN',
-    { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  info.textContent = t('saveInfo', { day: d.day || 1, coins: d.coins || 0, time });
+  const nm = (d.profile && d.profile.name) || last || '';
+  info.textContent = (nm ? '👦 ' + nm + ' · ' : '') +
+    t('saveInfo', { day: d.day || 1, coins: d.coins || 0, time: fmtSaveTime(d.savedAt) });
   info.classList.remove('hidden');
+}
+// 手动存档（点右上角的 💾）
+function manualSave() {
+  if (!G.started) return false;
+  const ok = saveGame(true, { log: true });
+  if (ok) { sfx.buy(); spawnParticles(G.player.x, G.player.y - 30, '💾', 3); }
+  return ok;
 }
 function applyLang() {
   // 静态界面文字
@@ -1103,6 +1523,11 @@ function applyLang() {
   for (let i = 0; i < els.length; i++) {
     const k = els[i].getAttribute && els[i].getAttribute('data-i18n');
     if (k) els[i].textContent = t(k);
+  }
+  const phs = (document.querySelectorAll ? document.querySelectorAll('[data-i18n-ph]') : []) || [];
+  for (let i = 0; i < phs.length; i++) {
+    const k = phs[i].getAttribute && phs[i].getAttribute('data-i18n-ph');
+    if (k) phs[i].placeholder = t(k);
   }
   const rh = $('rotate-hint'); if (rh) rh.textContent = t('rotateHint');
   const lh = $('log-head'); if (lh) lh.textContent = t('logTitle');
@@ -1113,7 +1538,7 @@ function applyLang() {
   for (const id in btns) { const b = $(id); if (b) b.title = t(btns[id]); }
   document.title = t('title');
   // 动态内容
-  renderHUD(); renderInventory(); renderLog(); updateSaveInfo();
+  renderHUD(); renderInventory(); renderLog(); renderProfiles();
   if (G.modalOpen === 'shop-modal') renderShop();
   else if (G.modalOpen === 'wardrobe-modal') renderWardrobe();
   else if (G.modalOpen === 'cook-modal') renderCook();
@@ -1173,6 +1598,12 @@ function renderHUD() {
   const h = Math.floor(G.timeMin / 60), m = Math.floor(G.timeMin % 60);
   $('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   $('weather-box').textContent = weatherText();
+  // 存档按钮：显示是谁的牧场（名字放 title，按钮本身保持小巧不越界）
+  const sb = $('save-box');
+  if (sb) {
+    sb.textContent = '💾';
+    sb.title = t('saveTitle2') + (playerName ? ' · ' + playerName : '');
+  }
 }
 function renderInventory() {
   const bar = $('inventory');
@@ -1201,6 +1632,13 @@ $('btn-book').addEventListener('click', () => { sfx.open(); renderBook(); toggle
 $('touch-book').addEventListener('pointerdown', (e) => { e.preventDefault(); sfx.open(); renderBook(); toggleModal('book-modal'); });
 $('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); note(muted ? 'logSoundOff' : 'logSoundOn'); });
 $('btn-music').addEventListener('click', () => { sfx.click(); setMusic(!musicOn); note(musicOn ? 'logMusicOn' : 'logMusicOff'); });
+// 点右上角的 💾 或按 S 随时手动存档（S 也能往下走，所以只在没在走路时存）
+$('save-box').addEventListener('click', () => { manualSave(); });
+// 正在输入名字的时候不要触发游戏快捷键
+function playerTyping() {
+  const el = document.activeElement;
+  return !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'));
+}
 
 // ---------------- 商店 ----------------
 let shopTab = 'seeds';
@@ -1259,14 +1697,20 @@ function renderShop() {
     }
   } else if (shopTab === 'animals') {
     // 动物列表：买回来会在自己的棚舍附近自由散步
+    // 母鸡最多 5 只、小鸡最多 10 只（孵蛋器孵出来的也算），其它动物最多 24 只
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
-    head.textContent = t('animalCount', { n: G.animals.length, max: MAX_ANIMALS });
+    head.textContent = t('animalCount', { n: cappedAnimalCount(), max: MAX_ANIMALS })
+      + ' · ' + t('logHens', { h: countHens(), hm: MAX_HENS, c: countChicks(), cm: MAX_CHICKS });
     box.appendChild(head);
     for (const a of ANIMAL_SHOP) {
-      const full = G.animals.length >= MAX_ANIMALS;
-      mkCard(iconBox('emoji', a.icon), a.name, a.price, () => {
-        if (G.animals.length >= MAX_ANIMALS) { sfx.error(); say('tooManyAnimals'); return; }
+      const isHenBuy = a.type === 'chicken';
+      const full = isHenBuy ? (countHens() >= MAX_HENS)
+                            : (cappedAnimalCount() >= MAX_ANIMALS);
+      const sub = isHenBuy ? t('shopHenDesc', { hm: MAX_HENS }) : a.desc;
+      mkCard(iconBox('emoji', a.icon), isHenBuy ? t('animalHen') : a.name, a.price, () => {
+        if (isHenBuy && countHens() >= MAX_HENS) { sfx.error(); say('tooManyHens', { max: MAX_HENS }); return; }
+        if (!isHenBuy && cappedAnimalCount() >= MAX_ANIMALS) { sfx.error(); say('tooManyAnimals'); return; }
         G.coins -= a.price;
         const h = PENS[a.type].home;
         const na = newAnimal(a.type, h.x + rand(-30, 30), h.y + rand(-20, 20));
@@ -1275,9 +1719,9 @@ function renderShop() {
         sfx.buy();
         sfx.animalVoice(a.type, 260);
         spawnParticles(na.x, na.y - 20, '💖', 5);
-        say('boughtAnimal', { animal: nm('animal', a.type) }, 2400);
+        say('boughtAnimal', { animal: isHenBuy ? t('animalHen') : nm('animal', a.type) }, 2400);
         renderShop(); renderHUD();
-      }, false, a.desc);
+      }, false, sub);
     }
   } else if (shopTab === 'zoo') {
     // 动物园：观赏动物，不产出
@@ -1508,7 +1952,7 @@ function renderBook() {
     for (const pond of PONDS) {
       const head = document.createElement('div');
       head.style.cssText = 'grid-column:1/-1;font-size:13px;font-weight:bold;color:#3a7fbf;margin-top:4px;';
-      head.textContent = pondName(pond) + ' 💧';
+      head.textContent = pondLabel(pond) + ' 💧';
       box.appendChild(head);
       for (const id of pond.pool) {
         const n = G.seaCaught[id] || 0;
@@ -1578,7 +2022,12 @@ function nearestInteract() {
     if (d < bestD) {
       if (a.type === 'sheep' && a.wool > 0.5) { bestD = d; best = { kind: 'shear', a, label: t('prShear') }; }
       else if (a.type === 'cow' && a.milkReady) { bestD = d; best = { kind: 'milk', a, label: t('prMilk') }; }
-      else if (a.type === 'chicken') { bestD = d; best = { kind: 'petChicken', a, label: t('prPetChicken') }; }
+      else if (a.type === 'chicken') {
+        bestD = d;
+        best = isChick(a)
+          ? { kind: 'petChicken', a, label: t('prPetChick') }
+          : { kind: 'petChicken', a, label: t('prPetHen') };
+      }
       else if (a.type === 'sheep') { bestD = d; best = { kind: 'petSheep', a, label: t('prPetSheep') }; }
       else { bestD = d; best = { kind: 'petCow', a, label: t('prPetCow') }; }
     }
@@ -1614,11 +2063,22 @@ function nearestInteract() {
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
     ['tank', 'tank', t('prTank')],
+    ['hatchery', 'hatch', t('prHatch', { n: G.incubating.length, max: MAX_INCUBATE })],
   ];
   for (const [zk, kind, label] of zoneChecks) {
     const z = ZONES[zk];
     const d = dist(p.x, p.y, z.x, z.y);
     if (d < z.r && d < bestD) { bestD = d; best = { kind, label }; }
+  }
+  // 6.5 森林里的蜂巢（走到蜂巢下面就能拿蜂蜜）
+  if (inHiveReach(p.x, p.y)) {
+    const d = dist(p.x, p.y, HIVE.x, HIVE.y);
+    if (d < bestD) {
+      bestD = d;
+      best = HIVE.honey > 0
+        ? { kind: 'honey', label: `🍯 ${t('prHive')}` }
+        : { kind: 'honeyWait', label: t('prHiveEmpty') };
+    }
   }
   // 7. 池塘钓鱼：附近没有别的可交互对象时，才提示钓鱼
   //    （捡蛋、挤奶、种地这些操作优先，避免在岸边抢走交互）
@@ -1630,7 +2090,7 @@ function nearestInteract() {
       if (d < nearPondD) { nearPondD = d; nearPond = pond; }
     }
   }
-  if (!best && nearPond) best = { kind: 'fish', pond: nearPond, label: t('prFishAt', { pond: pondName(nearPond) }) };
+  if (!best && nearPond) best = { kind: 'fish', pond: nearPond, label: t('prFishAt', { pond: pondLabel(nearPond) }) };
   return best;
 }
 
@@ -1685,7 +2145,7 @@ function doInteract() {
       break;
     case 'petChicken': case 'petSheep': case 'petCow':
       spawnParticles(t.a.x, t.a.y - 20, '💖', 3);
-      sfx.pet(); sfx.animalVoice(t.a.type, 130);   // 摸一摸，动物会回应你
+      sfx.pet(); sfx.animalVoice(t.a.type, 130, t.a);   // 摸一摸，动物会回应你
       break;
     case 'till':
       t.pl.state = 'tilled'; sfx.till();
@@ -1729,6 +2189,26 @@ function doInteract() {
     case 'sell': renderSell(); sfx.open(); openModal('sell-modal'); break;
     case 'shop': renderShop(); sfx.open(); openModal('shop-modal'); break;
     case 'tank': renderTank(); sfx.open(); openModal('tank-modal'); break;
+    case 'hatch':   // 把背包里的鸡蛋放进孵蛋器（3 天后孵出小鸡）
+      putEggInHatchery();
+      if (G.incubating.length) {
+        const left = hatchDaysLeft();
+        say('hatchWait', { n: G.incubating.length, d: left }, 2200);
+      }
+      break;
+    case 'honey':   // 森林蜂巢
+      HIVE.honey--;
+      addItem('honey');
+      HIVE.honeyT = 0;
+      sfx.pickup(); sfx.buzz(120);
+      spawnParticles(HIVE.x, HIVE.y - 40, '🍯', 5);
+      say('honeyGot', null, 2200);
+      note('logHoney');
+      saveGame(true);
+      break;
+    case 'honeyWait':
+      sfx.error(); say('honeyNotReady');
+      break;
     case 'fish': startFishing(t.pond); break;
   }
 }
@@ -1749,7 +2229,7 @@ function startFishing(pond) {
   p.dir = pond.x < p.x ? 'left' : 'right';   // 面朝水坑，鱼竿握在手里
   sfx.cast();
   say('castLine');
-  note('logRipple', { pond: pondName(pond), size: lang === 'en' ? rip.nameEn : rip.name });
+  note('logRipple', { pond: pondLabel(pond), size: lang === 'en' ? rip.nameEn : rip.name });
 }
 function reelIn() {
   const f = G.fishing;
@@ -1761,7 +2241,7 @@ function reelIn() {
     sfx.catchf();
     spawnParticles(f.bx, f.by, '💦', 8);
     spawnParticles(f.bx, f.by - 12, ITEMS[id].icon, 1);
-    say('caught', { fish: nm('item', id), pond: pondName(pond) }, 2600);
+    say('caught', { fish: nm('item', id), pond: pondLabel(pond) }, 2600);
     G.pet.happy = 2;
     saveGame(true);
   } else {
@@ -1773,7 +2253,7 @@ function reelIn() {
 // ---------------- 客人系统 ----------------
 // 客人只会买「农场能产出」的东西：已采摘的、还能摘/挤/剪的、材料够做的菜
 // 鱼类和海洋生物不在此列（准备太久、太随机）
-const FARM_GOODS = ['egg', 'milk', 'wool', 'carrot', 'tomato', 'corn', ...FRUIT_IDS];
+const FARM_GOODS = ['egg', 'milk', 'wool', 'honey', 'carrot', 'tomato', 'corn', ...FRUIT_IDS];
 const SEA_SET = {};
 SEA_ALL.forEach(id => { SEA_SET[id] = true; });
 
@@ -1821,7 +2301,7 @@ function spawnCustomer() {
   };
   if (Math.random() < 0.7) {   // 大部分客人带一只小宠物
     c.pet = {
-      type: pick(['dog', 'cat', 'duck']),
+      type: pick(['dog', 'cat', 'duck', 'goose']),
       x: c.x + rand(24, 46), y: c.y + rand(8, 26), dir: 'left',
       moving: false, walkPhase: 0, phase: rand(0, 6), happy: 0,
       hat: Math.random() < 0.3 ? pick(Object.keys(PET_HATS)) : 'none',
@@ -1913,40 +2393,47 @@ function update(dt) {
   } else pet.moving = false;
   if (pet.happy > 0) pet.happy -= dt;
 
-  // --- 动物 AI：闲逛 + 生产 ---
+  // --- 动物 AI：闲逛 + 生产（母鸡下蛋、小鸡只在鸡棚附近乱走） ---
   for (const a of G.animals) {
     a.peck = Math.max(0, a.peck - dt);
+    const chick = isChick(a);
     if (a.moving) {
       const d = dist(a.x, a.y, a.tx, a.ty);
       if (d < 6) { a.moving = false; a.waitT = rand(1.5, 4); }
       else {
         const ang = Math.atan2(a.ty - a.y, a.tx - a.x);
-        const spd = a.type === 'chicken' ? 55 : 32;
+        const spd = a.type === 'chicken' ? (chick ? 42 : 55) : 32;
         a.x += Math.cos(ang) * spd * dt;
         a.y += Math.sin(ang) * spd * dt;
         a.dir = Math.cos(ang) < 0 ? 'left' : 'right';
-        a.walkPhase += dt * (a.type === 'chicken' ? 12 : 7);
+        a.walkPhase += dt * (a.type === 'chicken' ? (chick ? 15 : 12) : 7);
       }
     } else {
       a.waitT -= dt;
-      if (a.type === 'chicken' && Math.random() < dt * 0.5) a.peck = 0.5;
+      if (a.type === 'chicken' && Math.random() < dt * (chick ? 0.85 : 0.5)) a.peck = 0.5;
       if (a.waitT <= 0) {
-        a.tx = a.home.x + rand(-a.home.r, a.home.r);
-        a.ty = a.home.y + rand(-a.home.r, a.home.r);
+        // 小鸡就在鸡棚附近走走，母鸡可以走远一点
+        const r = a.type === 'chicken' ? (chick ? a.home.r * 0.55 : a.home.r) : a.home.r;
+        a.tx = a.home.x + rand(-r, r);
+        a.ty = a.home.y + rand(-r * 0.8, r * 0.8);
         a.tx = Math.max(30, Math.min(WORLD_W - 30, a.tx));
         a.ty = Math.max(130, Math.min(WORLD_H - 30, a.ty));
         a.moving = true;
+        // 小鸡会啾啾叫
+        if (chick && Math.random() < 0.25) sfx.chick();
       }
     }
-    // 生产
+    // 生产：只有母鸡会下蛋（小鸡只管到处跑、啄米）
     if (a.type === 'chicken') {
-      a.eggT -= dt;
-      if (a.eggT <= 0) {
-        a.eggT = rand(35, 60);
-        G.groundItems.push({ id: 'egg', x: a.x + rand(-15, 15), y: a.y + rand(5, 15), phase: rand(0, 6) });
-        spawnParticles(a.x, a.y - 15, '🎵', 1);
-        sfx.cluck();
-        note('logEgg');
+      if (!chick) {
+        a.eggT -= dt;
+        if (a.eggT <= 0) {
+          a.eggT = rand(35, 60);
+          G.groundItems.push({ id: 'egg', x: a.x + rand(-15, 15), y: a.y + rand(5, 15), phase: rand(0, 6) });
+          spawnParticles(a.x, a.y - 15, '🎵', 1);
+          sfx.cluck();
+          note('logEgg');
+        }
       }
     } else if (a.type === 'sheep' && a.wool < 1) {
       a.woolT += dt;
@@ -2079,12 +2566,25 @@ function update(dt) {
     if (pt.life <= 0) G.particles.splice(i, 1);
   }
 
+  // --- 森林：蜂巢慢慢酿出新的蜂蜜 ---
+  if (HIVE.honey < HIVE.max) {
+    HIVE.honeyT += dt;
+    if (HIVE.honeyT > HONEY_EVERY) {
+      HIVE.honeyT = 0;
+      HIVE.honey++;
+      spawnParticles(HIVE.x, HIVE.y - 34, '🍯', 2);
+      sfx.sparkle();
+      note('logHoneyReady');
+    }
+  }
+
   // --- 环境音：偶尔听到动物的叫声（更生动） ---
-  if (G.started && !G.modalOpen) {
+  if (G.started && !G.modalOpen && G.animals.length) {
     G.ambientT -= dt;
     if (G.ambientT <= 0) {
       G.ambientT = rand(6, 16);
-      sfx.animalVoice(pick(G.animals).type);
+      const a = pick(G.animals);
+      sfx.animalVoice(a.type, 0, a);
     }
   }
 
@@ -2113,7 +2613,9 @@ function update(dt) {
     pr.textContent = t('prBite', { key: KEY_HINT });
     pr.classList.remove('hidden');
   } else if (G.fishing) {
-    pr.textContent = t('prFishing', { key: KEY_HINT }) + ' · ' + t('ripple' + G.fishing.lv);
+    const rip = G.fishing.rip || {};
+    const ripName = lang === 'en' ? (rip.nameEn || '') : (rip.name || '');
+    pr.textContent = t('prFishing', { key: KEY_HINT }) + (ripName ? ' · ' + ripName : '');
     pr.classList.remove('hidden');
   } else pr.classList.add('hidden');
   // 钓鱼咬钩时，动作按钮闪烁提醒（手机端一眼能看到）
@@ -2140,6 +2642,8 @@ function nextDay() {
     else if (pl.state === 'growing') pl.timer += 20;
     pl.watered = G.weather === 'rain';
   }
+  // 鸡棚：小鸡长大（第 5 天变母鸡）、孵蛋器推进一天
+  dailyChickenUpdate();
   renderHUD();
   if (G.weather === 'rain') sfx.rain(); else sfx.morning();
   saveGame();   // 换天时存一次
@@ -2177,6 +2681,9 @@ function render() {
     drawCloud(ctx, (t * 10 + 1400) % (WORLD_W + 240) - 120, 80, 1.1, .95);
   }
 
+  // 森林地面（在草地格子和天空之后、所有实体之前）
+  drawForestGround(ctx, t);
+
   // 装饰（草/花）
   for (const d of G.decor) {
     if (d.kind === 'grass') drawGrassTuft(ctx, d.x, d.y, t, d.phase);
@@ -2194,7 +2701,7 @@ function render() {
   }
 
   // 池塘
-  for (const pond of PONDS) drawPond(ctx, pond.x, pond.y, pond.w, pond.h, t, pondName(pond));
+  for (const pond of PONDS) drawPond(ctx, pond.x, pond.y, pond.w, pond.h, t, pondLabel(pond));
 
   // 动物棚舍：后半栅栏（画在动物后面）
   drawFenceBack(ctx, PENS.chicken.x, PENS.chicken.y, PENS.chicken.w, PENS.chicken.h);
@@ -2226,6 +2733,23 @@ function render() {
   for (const dc of G.decorations) {
     drawables.push({ y: dc.y + 4, draw: () => drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase) });
   }
+  // 森林里的大树 + 挂在树上的蜂巢
+  for (const ft of FOREST_TREES) {
+    drawables.push({ y: ft.y + 4, draw: () => drawForestTree(ctx, ft.x, ft.y, t, ft.phase, ft.kind) });
+  }
+  drawables.push({
+    y: HIVE.y - 20,
+    draw: () => drawBeehive(ctx, HIVE.x, HIVE.y - 22, t, HIVE.honey > 0),
+  });
+  // 森林里的蘑菇 / 树桩 / 灌木
+  for (const fd of FOREST_DECOR) {
+    drawables.push({ y: fd.y + 2, draw: () => drawForestDecor(ctx, fd.kind, fd.x, fd.y, t, fd.phase) });
+  }
+  // 鸡棚里的孵蛋器
+  drawables.push({
+    y: ZONES.hatchery.y + 6,
+    draw: () => drawHatchery(ctx, ZONES.hatchery.x, ZONES.hatchery.y, t, G.incubating),
+  });
   // 大型水族箱
   drawables.push({ y: ZONES.tank.y + 6, draw: () => drawAquarium(ctx, ZONES.tank.x, ZONES.tank.y, t, G.tank) });
   // 动物园的观赏动物（动画 emoji 图）
@@ -2244,9 +2768,10 @@ function render() {
     drawables.push({
       y: a.y + 14,
       draw: () => {
-        if (a.type === 'chicken') drawChicken(ctx, a.x, a.y, { ...a, t });
-        else if (a.type === 'sheep') drawSheep(ctx, a.x, a.y, { ...a, t });
-        else drawCow(ctx, a.x, a.y, { ...a, t });
+        const o = { ...a, t };
+        if (a.type === 'chicken') { o.scale = isChick(a) ? CHICK_SCALE : HEN_GROW; drawChicken(ctx, a.x, a.y, o); }
+        else if (a.type === 'sheep') drawSheep(ctx, a.x, a.y, o);
+        else drawCow(ctx, a.x, a.y, o);
       },
     });
   }
@@ -2429,31 +2954,102 @@ function setupChooser(idA, idB, cb) {
 }
 setupChooser('choose-boy', 'choose-girl', (i) => { chosenGender = i === 0 ? 'boy' : 'girl'; });
 setupChooser('choose-dog', 'choose-cat', (i) => { chosenPet = i === 0 ? 'dog' : 'cat'; });
-$('choose-duck').addEventListener('click', () => {
-  ['choose-dog', 'choose-cat', 'choose-duck'].forEach(id => $(id).classList.remove('selected'));
-  $('choose-duck').classList.add('selected');
-  chosenPet = 'duck'; sfx.click();
+// 宠物三选一（小鸭 / 小鹅）
+['choose-duck', 'choose-goose'].forEach(function (id) {
+  $(id).addEventListener('click', function () {
+    ['choose-dog', 'choose-cat', 'choose-duck', 'choose-goose'].forEach(x => $(x).classList.remove('selected'));
+    $(id).classList.add('selected');
+    chosenPet = id === 'choose-goose' ? 'goose' : 'duck';
+    sfx.click();
+  });
 });
 
-// 开始新游戏
-$('btn-start').addEventListener('click', () => {
-  resetGame();
-  $('start-screen').classList.add('hidden');
+// 输入名字（最多 8 个字）
+const nameInput = $('name-input');
+if (nameInput) {
+  if (playerName) nameInput.value = playerName;
+  nameInput.addEventListener('input', function () {
+    if (this.value.length > MAX_NAME_LEN) this.value = this.value.slice(0, MAX_NAME_LEN);
+    playerName = normalizeName(this.value);          // 列表里高亮当前这个名字
+    renderProfiles();
+  });
+  nameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); this.blur(); startNewGame(); }
+  });
+}
+
+// 读取输入框里的名字（带校验），返回 null 表示不能开始
+function readNameInput() {
+  const raw = nameInput ? nameInput.value : '';
+  const nm2 = normalizeName(raw);
+  if (!nm2) { sfx.error(); say('enterName', null, 2600); if (nameInput) nameInput.focus(); return null; }
+  if (String(raw).trim().length > MAX_NAME_LEN) { sfx.error(); say('nameTooLong'); return null; }
+  return nm2;
+}
+// 开始/继续某个名字的牧场（isNew=false 时读存档）
+function startFarm(name, isContinue) {
+  const nm2 = name != null ? normalizeName(name) : playerName;
+  playerName = nm2;
+  const p = profileFor(nm2);
+  playerPid = p ? p.pid : -1;
+  if (isContinue) {
+    if (!loadGame(nm2)) { sfx.error(); say('loadFailed'); resetGame(); }
+  } else {
+    if (playerPid < 0) {
+      const pid = freePid();
+      if (pid < 0) { sfx.error(); say('maxProfiles', null, 2600); return; }
+      playerPid = pid;
+      const list = loadIndex();
+      list.push({ pid, name: nm2, savedAt: 0, day: 1, coins: 20 });
+      writeIndex(list);
+    }
+    resetGame();
+  }
+  setLastProfile(nm2);
+  const ss = $('start-screen');
+  if (ss) ss.classList.add('hidden');
   G.started = true;
   sfx.success();
   startMusic();
-  saveGame();
-  say('welcome', null, 3000);
-});
-// 继续上次的存档
+  saveGame(true);
+  if (isContinue) say('welcomeBack', { day: G.day, name: nm2 }, 3000);
+  else say('welcome', { name: nm2 }, 3000);
+}
+// 开始新游戏（这个名字已经有存档就问一下要不要重新开始）
+function startNewGame() {
+  const nm2 = readNameInput();
+  if (!nm2) return;
+  const exist = profileFor(nm2);
+  if (exist) {
+    const ok = (typeof confirm !== 'function') ||
+      confirm(t('nameOccupied') + '\n\n' + t('btnStart') + ' ?');
+    if (!ok) { startFarm(nm2, true); return; }
+    // 确认重开：清掉旧数据，用同一个档位重新开始
+    try { localStorage.removeItem(slotKey(exist.pid)); } catch (e) {}
+    playerName = nm2; playerPid = exist.pid;
+    const list = loadIndex();
+    const rec = list.find(x => x.pid === exist.pid);
+    if (rec) { rec.name = nm2; rec.savedAt = 0; rec.day = 1; rec.coins = 20; }
+    writeIndex(list);
+    resetGame();
+    setLastProfile(nm2);
+    const ss = $('start-screen');
+    if (ss) ss.classList.add('hidden');
+    G.started = true; sfx.success(); startMusic(); saveGame(true);
+    say('welcome', { name: nm2 }, 3000);
+    return;
+  }
+  startFarm(nm2, false);
+}
+$('btn-start').addEventListener('click', () => { sfx.click(); startNewGame(); });
+// 继续上次的存档（用上次玩的名字 / 最近保存的那一档）
 $('btn-continue').addEventListener('click', () => {
-  if (!loadGame()) { say('loadFailed'); resetGame(); }
-  $('start-screen').classList.add('hidden');
-  G.started = true;
-  sfx.success();
-  startMusic();
-  saveGame();
-  say('welcomeBack', { day: G.day }, 3000);
+  sfx.click();
+  const last = getLastProfile();
+  const profs = listProfiles();
+  const target = (last && profileFor(last)) ? last : (profs.length ? profs[0].p.name : null);
+  if (!target) { sfx.error(); say('loadFailed'); return; }
+  startFarm(target, true);
 });
 
 // ---------------- 屏幕适配 & 触摸控件 ----------------
@@ -2477,6 +3073,11 @@ function fitScreen() {
   wrap.style.height = (VIEW_H * s) + 'px';
   const gw = $('game-wrap');
   gw.style.transform = `scale(${s})`;
+  // HUD 的文字大小跟着画面缩放走：
+  // 缩放得很小（手机）时把字放大一点才看得清，但放大到一定程度就顶到右边按钮了，
+  // 所以这里按 1/s 开根号来放，缩放极小时甚至会缩小一点，保证 5 个按钮都不出界
+  const ui = Math.max(0.75, Math.min(1.45, Math.sqrt(1 / s) * 0.72));
+  gw.style.setProperty('--ui-scale', ui.toFixed(3));
 }
 window.addEventListener('resize', fitScreen);
 window.addEventListener('orientationchange', () => setTimeout(fitScreen, 120));
@@ -2543,7 +3144,34 @@ window.addEventListener('touchstart', () => {
   if (!document.body.classList.contains('touch')) {
     document.body.classList.add('touch');
   }
+  audioInit();          // 手机上第一次触碰时把声音引擎打开
 }, { passive: true });
+
+// ---- 手机浏览器：禁止双击放大 ----
+// viewport 里的 user-scalable=no 大部分浏览器认，但有些（尤其国产浏览器 / Safari）
+// 还会响应双击缩放，所以这里再挡一层：300ms 内的第二次点击直接 cancel 掉。
+(function blockDoubleTapZoom() {
+  let lastTap = 0;
+  document.addEventListener('touchend', function (e) {
+    // 名字输入框里点两下要能正常选词，不能拦
+    if (e.target && e.target.tagName === 'INPUT') return;
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      if (e.cancelable) e.preventDefault();
+      lastTap = 0;
+    } else {
+      lastTap = now;
+    }
+  }, { passive: false });
+  // 双指 / 手势缩放也一起挡掉（游戏里用不到）
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+  document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+  document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+  // iOS Safari：捏合缩放
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches && e.touches.length > 1 && e.cancelable) e.preventDefault();
+  }, { passive: false });
+})();
 
 // 启动
 initWorld();
@@ -2560,22 +3188,35 @@ function highlightChar() {
   const g = G.player.gender, pt = G.pet.type;
   const set = (id, on) => { const el = $(id); if (el) el.classList.toggle('selected', !!on); };
   set('pick-boy', g === 'boy'); set('pick-girl', g === 'girl');
-  set('pick-dog', pt === 'dog'); set('pick-cat', pt === 'cat'); set('pick-duck', pt === 'duck');
+  set('pick-dog', pt === 'dog'); set('pick-cat', pt === 'cat');
+  set('pick-duck', pt === 'duck'); set('pick-goose', pt === 'goose');
 }
 $('pick-boy').addEventListener('click', () => { setGender('boy'); highlightChar(); });
 $('pick-girl').addEventListener('click', () => { setGender('girl'); highlightChar(); });
 $('pick-dog').addEventListener('click', () => { setPet('dog'); highlightChar(); });
 $('pick-cat').addEventListener('click', () => { setPet('cat'); highlightChar(); });
 $('pick-duck').addEventListener('click', () => { setPet('duck'); highlightChar(); });
+$('pick-goose').addEventListener('click', () => { setPet('goose'); highlightChar(); });
 
-// 开始界面：有存档就显示「继续上次」
+// 开始界面：有存档就显示「继续上次」，并列出这台电脑上的所有存档
 if (hasSave()) {
   const btn = $('btn-continue');
   if (btn) btn.classList.remove('hidden');
 }
+renderProfiles();
 $('btn-lang').addEventListener('click', () => { sfx.click(); setLang(lang === 'en' ? 'zh' : 'en'); });
 $('btn-lang-big').addEventListener('click', () => { sfx.click(); setLang(lang === 'en' ? 'zh' : 'en'); });
 applyLang();   // 启动时按上次选择的语言显示界面
 renderInventory();
 renderHUD();
+
+// 调试用的小开关（方便在控制台里看状态 / 测试）
+window.__farm = {
+  G, HIVE, ZONES, PENS, FOREST, ITEMS,
+  startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
+  listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
+  addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
+  renderInventory, renderHUD, renderProfiles, applyLang, setLang,
+};
+
 requestAnimationFrame(loop);

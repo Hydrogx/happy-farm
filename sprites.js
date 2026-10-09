@@ -484,7 +484,9 @@ function iconPants(ctx, key) {
 function clothingIconCanvas(cat, key, size = 44) {
   const c = document.createElement('canvas');
   c.width = size; c.height = size;
+  if (typeof c.getContext !== 'function') return c;
   const x = c.getContext('2d');
+  if (!x) return c;
   x.save();
   if (cat === 'hat') {
     // iconHat 内部把帽子画在头中心上方，这里整体下移使「帽子+头」居中
@@ -510,33 +512,59 @@ function clothingIconCanvas(cat, key, size = 44) {
 function drawChicken(ctx, x, y, a) {
   const hop = a.moving ? Math.abs(Math.sin(a.walkPhase)) * 4 : 0;
   const bob = Math.sin(a.t * 3 + a.phase) * 1;
+  // 小鸡 / 母鸡：同一套画法，靠 scale 区分大小（小鸡小小一只还带点绒毛）
+  const s = a.scale || 1;
+  const isChick = s < 0.85;
   ctx.save();
-  ctx.translate(x, y - hop);
+  ctx.translate(x, y - hop * s);
   if (a.dir === 'left') ctx.scale(-1, 1);
-  drawShadow(ctx, 0, hop, 9);
+  if (s !== 1) ctx.scale(s, s);
+  drawShadow(ctx, 0, hop, isChick ? 7 : 9);
   const step = a.moving ? Math.sin(a.walkPhase) * 3 : 0;
-  ctx.strokeStyle = '#e8930c'; ctx.lineWidth = 2;
+  ctx.strokeStyle = isChick ? '#f0b45c' : '#e8930c'; ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(-2, 4); ctx.lineTo(-2 + step, 9);
   ctx.moveTo(2, 4); ctx.lineTo(2 - step, 9);
   ctx.stroke();
-  ctx.fillStyle = '#fff8ee';
-  ellipse(ctx, 0, -2 + bob, 10, 8.5); ctx.fill();
+  // 身体：小鸡是毛茸茸的淡黄，母鸡是奶白色
+  ctx.fillStyle = isChick ? '#ffe9a8' : '#fff8ee';
+  ellipse(ctx, 0, -2 + bob, isChick ? 8.5 : 10, isChick ? 7.6 : 8.5); ctx.fill();
+  // 小鸡的绒毛边
+  if (isChick) {
+    ctx.strokeStyle = '#ffd873'; ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2;
+      const bx = Math.cos(ang) * 8.2, by = -2 + bob + Math.sin(ang) * 7.4;
+      ctx.beginPath();
+      ctx.moveTo(bx, by); ctx.lineTo(bx * 1.24, by * 1.24 + bob * 0.2);
+      ctx.stroke();
+    }
+  }
   const flap = a.moving ? Math.sin(a.walkPhase * 2) * 3 : Math.sin(a.t * 2 + a.phase) * 1.5;
-  ctx.fillStyle = '#f2e6d2';
-  ellipse(ctx, -2, -3 + bob + flap * 0.3, 6, 4.5); ctx.fill();
+  ctx.fillStyle = isChick ? '#ffdd8f' : '#f2e6d2';
+  ellipse(ctx, -2, -3 + bob + flap * 0.3, isChick ? 5 : 6, isChick ? 3.8 : 4.5); ctx.fill();
   const peckD = a.peck > 0 ? Math.sin(a.peck * Math.PI) * 6 : 0;
-  ctx.fillStyle = '#fff8ee';
-  ellipse(ctx, 7, -9 + bob + peckD, 5.5, 5); ctx.fill();
-  ctx.fillStyle = '#ff5a5a';
-  ellipse(ctx, 5.5, -14.5 + bob + peckD, 2, 2.4); ctx.fill();
-  ellipse(ctx, 8.5, -14.5 + bob + peckD, 2, 2.4); ctx.fill();
+  ctx.fillStyle = isChick ? '#ffe9a8' : '#fff8ee';
+  ellipse(ctx, 7, -9 + bob + peckD, isChick ? 4.6 : 5.5, isChick ? 4.3 : 5); ctx.fill();
+  // 小鸡头顶的胎毛
+  if (isChick) {
+    ctx.strokeStyle = '#ffd873'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(6, -13 + bob); ctx.quadraticCurveTo(6.5, -16.5 + bob, 8.5, -15 + bob);
+    ctx.stroke();
+  }
+  // 鸡冠只有长大的母鸡才有
+  if (!isChick) {
+    ctx.fillStyle = '#ff5a5a';
+    ellipse(ctx, 5.5, -14.5 + bob + peckD, 2, 2.4); ctx.fill();
+    ellipse(ctx, 8.5, -14.5 + bob + peckD, 2, 2.4); ctx.fill();
+  }
   ctx.fillStyle = '#333';
-  ellipse(ctx, 8.5, -10 + bob + peckD, 1.1, 1.3); ctx.fill();
+  ellipse(ctx, 8.5, -10 + bob + peckD, isChick ? 1.3 : 1.1, isChick ? 1.5 : 1.3); ctx.fill();
   ctx.fillStyle = '#ffb020';
   ctx.beginPath();
   ctx.moveTo(11.5, -8.5 + bob + peckD);
-  ctx.lineTo(15, -7.5 + bob + peckD);
+  ctx.lineTo(isChick ? 14 : 15, -7.5 + bob + peckD);
   ctx.lineTo(11.5, -6.5 + bob + peckD);
   ctx.closePath(); ctx.fill();
   ctx.restore();
@@ -657,12 +685,66 @@ function drawDuckPet(ctx, p) {
   ctx.restore();
 }
 
+// 小鹅宠物（白白的、脖子长长的，走路一摇一摆还会昂头）
+function drawGoosePet(ctx, p) {
+  const waddle = p.moving ? Math.sin(p.walkPhase) * 0.15 : Math.sin(p.t * 2 + p.phase) * 0.04;
+  const bob = Math.sin(p.t * 2.4 + p.phase) * 1;
+  drawShadow(ctx, 0, 0, 10);
+  ctx.save();
+  ctx.rotate(waddle);
+  const step = p.moving ? Math.sin(p.walkPhase) * 3 : 0;
+  // 橙色蹼足
+  ctx.fillStyle = '#ff9f43';
+  rr(ctx, -8 + step, 7, 9, 4, 2); ctx.fill();
+  rr(ctx, 1 - step, 7, 9, 4, 2); ctx.fill();
+  ctx.strokeStyle = '#f08020'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(-8 + step, 7); ctx.lineTo(-8 + step, 3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(1 - step, 7); ctx.lineTo(1 - step, 3); ctx.stroke();
+  // 身体（比鸭子更圆更大一点）
+  ctx.fillStyle = '#ffffff';
+  ellipse(ctx, -1, 0 + bob * 0.3, 11, 8); ctx.fill();
+  // 翅膀
+  const flap = p.moving ? Math.sin(p.walkPhase * 2) * 2.4 : Math.sin(p.t * 2 + p.phase) * 1;
+  ctx.fillStyle = '#f2f2ef';
+  ellipse(ctx, -3, -1 + flap * 0.3, 6, 4.4); ctx.fill();
+  // 尾巴
+  ctx.strokeStyle = '#f2f2ef'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-10, -2); ctx.lineTo(-14.5, -6); ctx.stroke();
+  // 长脖子
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5.4;
+  ctx.beginPath();
+  ctx.moveTo(6, -3 + bob * 0.3);
+  ctx.quadraticCurveTo(10.5, -9, 11 + flap * 0.3, -16);
+  ctx.stroke();
+  // 头
+  ctx.fillStyle = '#ffffff';
+  ellipse(ctx, 11.5 + flap * 0.3, -18, 5.2, 4.6); ctx.fill();
+  // 橙色长嘴
+  ctx.fillStyle = '#ff9f43';
+  ctx.beginPath();
+  ctx.moveTo(15, -19.6);
+  ctx.lineTo(21.5, -18.2);
+  ctx.lineTo(15, -16.6);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#e8852a';
+  ctx.beginPath();
+  ctx.moveTo(15, -18);
+  ctx.lineTo(21, -18.2);
+  ctx.lineTo(15, -17.4);
+  ctx.closePath(); ctx.fill();
+  // 眼睛
+  ctx.fillStyle = '#333';
+  ellipse(ctx, 12.6, -19.4, 1.3, 1.6); ctx.fill();
+  ctx.restore();
+}
+
 function drawPet(ctx, x, y, p) {
   const hop = p.moving ? Math.abs(Math.sin(p.walkPhase)) * 5 : Math.sin(p.t * 3 + p.phase) * 1.5;
   ctx.save();
   ctx.translate(x, y - hop);
   if (p.dir === 'left') ctx.scale(-1, 1);
   if (p.type === 'duck') { drawDuckPet(ctx, p); ctx.restore(); return; }
+  if (p.type === 'goose') { drawGoosePet(ctx, p); ctx.restore(); return; }
   drawShadow(ctx, 0, hop, 9);
   const body = p.type === 'dog' ? '#e8b36a' : '#b8b8c8';
   const dark = p.type === 'dog' ? '#c78f3f' : '#8a8a9e';
@@ -1468,4 +1550,238 @@ function drawCloud(ctx, x, y, s, alpha) {
   ellipse(ctx, x, y, 26 * s, 15 * s); ctx.fill();
   ellipse(ctx, x - 20 * s, y + 4 * s, 17 * s, 11 * s); ctx.fill();
   ellipse(ctx, x + 20 * s, y + 4 * s, 17 * s, 11 * s); ctx.fill();
+}
+
+/* ------------------------------------------------------------
+ * 森林（农场右上角的树林）：地面 + 大树 + 蜂巢 + 林间小物
+ * ---------------------------------------------------------- */
+function drawForestGround(ctx, t) {
+  // 森林范围（和 game.js 里的 FOREST 保持一致，这里写成常量避免依赖加载顺序）
+  const F = { x: 1150, y: 34, w: 430, h: 436 };
+  if (typeof FOREST !== 'undefined' && FOREST) { F.x = FOREST.x; F.y = FOREST.y; F.w = FOREST.w; F.h = FOREST.h; }
+  const x0 = F.x, y0 = F.y, w = F.w, h = F.h;
+  // 林间草地：颜色更深一点的绿
+  const g = ctx.createLinearGradient(x0, y0, x0, y0 + h);
+  g.addColorStop(0, 'rgba(72,138,74,.55)');
+  g.addColorStop(1, 'rgba(96,160,86,.34)');
+  ctx.fillStyle = g;
+  rr(ctx, x0, y0, w, h, 46); ctx.fill();
+  // 边缘的深色描边，像树荫
+  ctx.strokeStyle = 'rgba(56,110,58,.35)'; ctx.lineWidth = 6;
+  rr(ctx, x0 + 3, y0 + 3, w - 6, h - 6, 44); ctx.stroke();
+  // 地面上的小草点（固定用伪随机，不会闪）
+  ctx.fillStyle = 'rgba(60,124,62,.28)';
+  for (let i = 0; i < 90; i++) {
+    const px = x0 + ((i * 61) % w), py = y0 + ((i * 137) % h);
+    ellipse(ctx, px, py, 2.4, 1.4); ctx.fill();
+  }
+  // 树荫光斑（慢慢晃）
+  ctx.fillStyle = 'rgba(255,255,200,.10)';
+  for (let i = 0; i < 7; i++) {
+    const px = x0 + 40 + ((i * 97) % (w - 80)) + Math.sin(t * 0.4 + i) * 6;
+    const py = y0 + 30 + ((i * 71) % (h - 60));
+    ellipse(ctx, px, py, 22, 8); ctx.fill();
+  }
+  // 树冠在森林上边缘投下的一片深绿
+  ctx.fillStyle = 'rgba(46,102,50,.30)';
+  for (let i = 0; i < 9; i++) {
+    const px = x0 + 30 + i * (w / 8.5), s = 34 + (i % 3) * 8;
+    ellipse(ctx, px, y0 + 12 + Math.sin(t * 0.6 + i) * 3, s, s * 0.52); ctx.fill();
+  }
+}
+
+// 森林里的大树（pine = 松树 / big = 蜂巢所在的那棵阔叶树）
+function drawForestTree(ctx, x, y, t, phase, kind) {
+  const sway = Math.sin(t * 1.1 + phase) * 2.2;
+  if (kind === 'pine') {
+    drawShadow(ctx, x, y + 2, 26);
+    ctx.fillStyle = '#7a5230';
+    rr(ctx, x - 6, y - 24, 12, 26, 3); ctx.fill();
+    const tiers = [[0, -18, 42], [0, -52, 34], [0, -80, 25]];
+    ctx.fillStyle = '#2f7d4f';
+    tiers.forEach(([dx, dy, w], i) => {
+      ctx.beginPath();
+      ctx.moveTo(x + dx + sway * (0.4 + i * 0.2), y + dy - 34);
+      ctx.lineTo(x + dx + w, y + dy);
+      ctx.lineTo(x + dx - w, y + dy);
+      ctx.closePath(); ctx.fill();
+    });
+    ctx.fillStyle = '#3f9e63';
+    tiers.forEach(([dx, dy, w], i) => {
+      ctx.beginPath();
+      ctx.moveTo(x + dx + sway * (0.4 + i * 0.2), y + dy - 34);
+      ctx.lineTo(x + dx + w * 0.5, y + dy - 4);
+      ctx.lineTo(x + dx - w * 0.2, y + dy - 6);
+      ctx.closePath(); ctx.fill();
+    });
+  } else {
+    // 阔叶大树：树干很粗，蜂巢就挂在伸出来的枝丫下面
+    drawShadow(ctx, x, y + 3, 34);
+    ctx.fillStyle = '#7a5230';
+    rr(ctx, x - 11, y - 60, 22, 62, 7); ctx.fill();
+    ctx.fillStyle = '#8d6238';
+    rr(ctx, x - 5, y - 58, 8, 60, 4); ctx.fill();
+    // 伸向左边的大枝丫（蜂巢挂在下面）
+    ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y - 52);
+    ctx.quadraticCurveTo(x - 26, y - 58, x - 34, y - 46);
+    ctx.stroke();
+    // 树冠
+    ctx.fillStyle = '#4aa457';
+    ellipse(ctx, x - 22 + sway, y - 74, 30, 24); ctx.fill();
+    ellipse(ctx, x + 24 + sway, y - 76, 30, 24); ctx.fill();
+    ellipse(ctx, x + sway, y - 96, 38, 28); ctx.fill();
+    ctx.fillStyle = '#5fbf68';
+    ellipse(ctx, x - 10 + sway, y - 92, 18, 13); ctx.fill();
+    ellipse(ctx, x + 16 + sway, y - 84, 14, 10); ctx.fill();
+  }
+}
+
+// 蜂巢（挂在树上，有蜂蜜时亮晶晶，还有小蜜蜂飞来飞去）
+function drawBeehive(ctx, x, y, t, hasHoney) {
+  const sway = Math.sin(t * 0.9) * 2.5;
+  // 吊绳
+  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + sway * 0.3, y - 40);
+  ctx.lineTo(x + sway, y - 14);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(x + sway, y);
+  ctx.rotate(Math.sin(t * 0.9) * 0.05);
+  // 一层层的蜂巢
+  const layers = [[0, -16, 20], [0, -4, 24], [0, 8, 21], [0, 18, 15]];
+  layers.forEach(function (L, i) {
+    ctx.fillStyle = i % 2 ? '#e8a33a' : '#f0b455';
+    ellipse(ctx, L[0], L[1], L[2], 9); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ellipse(ctx, L[0] - L[2] * 0.3, L[1] - 2, L[2] * 0.4, 3); ctx.fill();
+  });
+  // 出入口
+  ctx.fillStyle = '#7a4a12';
+  ellipse(ctx, 0, 12, 4.5, 4); ctx.fill();
+  // 有蜂蜜时：门口滴着蜂蜜 + 闪光
+  if (hasHoney) {
+    ctx.fillStyle = '#ffc93c';
+    ellipse(ctx, 0, 18, 3.4, 4.4); ctx.fill();
+    const tw = 0.5 + Math.sin(t * 4) * 0.5;
+    ctx.fillStyle = 'rgba(255,245,170,' + (0.45 + tw * 0.5) + ')';
+    ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('✨', 13, -12 + Math.sin(t * 3) * 2);
+  }
+  ctx.restore();
+  // 小蜜蜂绕着蜂巢飞
+  for (let i = 0; i < 3; i++) {
+    const a = t * (1.1 + i * 0.25) + i * 2.1;
+    const bx = x + sway + Math.cos(a) * (24 + i * 7);
+    const by = y - 6 + Math.sin(a * 1.7) * (12 + i * 4);
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.fillStyle = '#ffd23e';
+    ellipse(ctx, 0, 0, 3.2, 2.4); ctx.fill();
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillRect(-1.4, -1.2, 1.2, 2.4);
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1;
+    const wf = Math.sin(t * 26 + i) * 2;
+    ctx.beginPath(); ctx.moveTo(0, -1.6); ctx.lineTo(-2.6, -4 - wf); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -1.6); ctx.lineTo(2.6, -4 - wf); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// 林间小物：蘑菇 / 树桩 / 灌木
+function drawForestDecor(ctx, kind, x, y, t, phase) {
+  if (kind === 'mushroom') {
+    drawShadow(ctx, x, y, 8);
+    const bob = Math.sin(t * 2 + phase) * 1;
+    ctx.fillStyle = '#fff2e0'; rr(ctx, x - 3, y - 11, 6, 11, 2); ctx.fill();
+    ctx.fillStyle = '#e05252';
+    ctx.beginPath(); ctx.ellipse(x, y - 11 + bob, 10, 6.5, 0, Math.PI, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ellipse(ctx, x - 4, y - 13 + bob, 2, 1.6); ctx.fill();
+    ellipse(ctx, x + 3.5, y - 14.5 + bob, 1.6, 1.3); ctx.fill();
+  } else if (kind === 'stump') {
+    drawShadow(ctx, x, y, 13);
+    ctx.fillStyle = '#8a5f36'; rr(ctx, x - 11, y - 16, 22, 17, 4); ctx.fill();
+    ctx.fillStyle = '#c9a06a'; ellipse(ctx, x, y - 16, 11, 5); ctx.fill();
+    ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 1.4;
+    ellipse(ctx, x, y - 16, 6, 2.8); ctx.stroke();
+    ctx.fillStyle = '#5fbf68';
+    ellipse(ctx, x + 7, y - 14, 4, 2.4); ctx.fill();
+  } else {   // bush
+    drawShadow(ctx, x, y, 16);
+    const sway = Math.sin(t * 1.4 + phase) * 1.4;
+    ctx.fillStyle = '#3f9e63';
+    ellipse(ctx, x - 8 + sway, y - 10, 11, 9); ctx.fill();
+    ellipse(ctx, x + 8 + sway, y - 10, 11, 9); ctx.fill();
+    ellipse(ctx, x + sway, y - 16, 13, 11); ctx.fill();
+    ctx.fillStyle = '#5fbf68';
+    ellipse(ctx, x - 4 + sway, y - 18, 6, 4.5); ctx.fill();
+    // 小野果
+    ctx.fillStyle = '#ff5a5a';
+    ellipse(ctx, x + 6 + sway, y - 12, 2, 2); ctx.fill();
+    ellipse(ctx, x - 9 + sway, y - 8, 2, 2); ctx.fill();
+  }
+}
+
+/* ------------------------------------------------------------
+ * 鸡棚里的孵蛋器（放鸡蛋进去，3 天孵出小鸡）
+ * ---------------------------------------------------------- */
+function drawHatchery(ctx, x, y, t, eggs) {
+  eggs = eggs || [];
+  drawShadow(ctx, x, y + 2, 32);
+  // 木箱
+  ctx.fillStyle = '#e8c88a';
+  rr(ctx, x - 30, y - 34, 60, 36, 6); ctx.fill();
+  ctx.strokeStyle = '#c9a86a'; ctx.lineWidth = 1.5;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath(); ctx.moveTo(x - 30, y - 34 + i * 9); ctx.lineTo(x + 30, y - 34 + i * 9); ctx.stroke();
+  }
+  // 玻璃罩
+  ctx.fillStyle = 'rgba(200,235,255,.72)';
+  rr(ctx, x - 21, y - 30, 42, 22, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2;
+  rr(ctx, x - 21, y - 30, 42, 22, 5); ctx.stroke();
+  // 里面的鸡蛋（有几个画几个，最多画 6 个）
+  const n = Math.min(eggs.length, 6);
+  for (let i = 0; i < n; i++) {
+    const ex = x - 15 + (i % 3) * 15;
+    const ey = y - 24 + Math.floor(i / 3) * 9;
+    const wob = Math.sin(t * 3 + i * 1.3) * 0.8;
+    ctx.fillStyle = '#fff8ee';
+    ellipse(ctx, ex + wob, ey, 5, 6.2); ctx.fill();
+    ctx.fillStyle = 'rgba(220,200,160,.5)';
+    ellipse(ctx, ex + wob - 1, ey + 2, 2.4, 3); ctx.fill();
+  }
+  if (!n) {
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ellipse(ctx, x, y - 20, 12, 6); ctx.fill();
+  }
+  // 小烟囱（冒热气，像在孵蛋）
+  ctx.fillStyle = '#c9a86a';
+  rr(ctx, x + 22, y - 46, 6, 14, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2;
+  for (let i = 0; i < 2; i++) {
+    const sy = y - 48 - ((t * 14 + i * 15) % 26);
+    ctx.beginPath();
+    ctx.moveTo(x + 25, sy);
+    ctx.quadraticCurveTo(x + 28, sy - 4, x + 25, sy - 8);
+    ctx.stroke();
+  }
+  // 招牌
+  ctx.fillStyle = '#fff3d6';
+  rr(ctx, x - 30, y - 58, 60, 20, 6); ctx.fill();
+  ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
+  rr(ctx, x - 30, y - 58, 60, 20, 6); ctx.stroke();
+  ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('🐣 ' + eggs.length, x, y - 44);
+  // 鸡蛋还没孵好时，头上飘一个小闹钟
+  if (eggs.length) {
+    ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.7 + Math.sin(t * 2) * 0.3;
+    ctx.fillText('⏳', x - 16, y - 62);
+    ctx.globalAlpha = 1;
+  }
 }
