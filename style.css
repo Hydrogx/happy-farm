@@ -606,26 +606,14 @@ body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助�
    设施升级 / 宠物房间 / 开放式衣帽间（新加的界面）
    ============================================================ */
 
-/* ---------- 升级条：商店 / 厨房 / 水族箱 / 衣橱 / 宠物房间 顶部那一行 ---------- */
-.upgrade-strip {
-  width: 100%; display: flex; flex-wrap: wrap; gap: 8px;
-  align-items: center; justify-content: center;
+/* ---------- 升级面板里的「建筑现状 / 现在的容量」 ---------- */
+.upg-status {
+  background: #eef7ff; border: 3px solid #b8dcf5; border-radius: 12px;
+  padding: 7px 12px; font-size: 15px; color: #26618f; line-height: 1.35;
 }
-.upgrade-strip:empty { display: none; }
-.upg-chip {
-  display: flex; align-items: center; gap: 8px;
-  background: #fff6d8; border: 3px solid #ffcf6a; border-radius: 14px;
-  padding: 6px 12px; font-size: 15px; font-weight: bold; color: #8a5a12;
-}
-.upg-chip .upg-lv { color: #c9750a; }
-.upg-chip button {
-  font-family: inherit; font-size: 15px; font-weight: bold; color: #fff;
-  background: #ff9f43; border: none; border-radius: 10px;
-  padding: 5px 12px; cursor: pointer; box-shadow: 0 3px 0 #d97b1e;
-}
-.upg-chip button:active { transform: translateY(2px); box-shadow: 0 1px 0 #d97b1e; }
-.upg-chip button:disabled { background: #ccc; box-shadow: 0 3px 0 #aaa; cursor: not-allowed; }
-.upg-chip.max { background: #eef9e8; border-color: #a8dd8f; color: #3f7a38; }
+.upg-status b { color: #1a4a70; margin-right: 4px; }
+.upg-status.next { background: #f2fbe9; border-color: #b6e29a; color: #3f7a38; }
+.upg-status.next b { color: #2f6329; }
 
 /* ---------- 升级面板 ---------- */
 .upg-card {
@@ -735,3 +723,24 @@ body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助�
 .math-step.done .st-expr { color: #3f7a38; }
 .math-step.active { border-color: #ff9f43; box-shadow: 0 0 0 3px rgba(255,159,67,.22); }
 .math-choices.small button { font-size: 20px; padding: 6px 14px; min-width: 66px; }
+
+/* ---------- 宠物「正在做事」的动画（喂食 / 打扫 / 洗澡） ---------- */
+.pet-avatar { position: relative; }
+.pet-avatar.acting { animation: petBounce .42s ease-in-out infinite; }
+.pet-avatar.acting.eat { animation: petChew .30s ease-in-out infinite; }
+.pet-avatar.acting.bath { animation: petShake .34s ease-in-out infinite; }
+@keyframes petBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes petChew  { 0%,100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.09, .93) rotate(-4deg); } }
+@keyframes petShake { 0%,100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-4px) rotate(-6deg); } 75% { transform: translateX(4px) rotate(6deg); } }
+.pet-fx { position: absolute; inset: 0; pointer-events: none; }
+.pet-fx span {
+  position: absolute; bottom: 4px; font-size: 17px; opacity: 0;
+  animation: petFxFloat 1.15s ease-out infinite;
+}
+@keyframes petFxFloat {
+  0%   { opacity: 0; transform: translateY(4px) scale(.7); }
+  25%  { opacity: 1; transform: translateY(-6px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-26px) scale(1); }
+}
+/* 宠物卡片上写着「花了多少钱」的小字 */
+.pet-cost { font-size: 12px; color: #8a7a52; }

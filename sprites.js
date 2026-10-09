@@ -1873,26 +1873,107 @@ function drawLvBadge(ctx, x, y, lv, t, canUp) {
   ctx.restore();
 }
 
-// 升级告示牌（果园 / 水坑用）：一根木牌 + 等级徽章
-function drawUpgradeSign(ctx, x, y, t, icon, lv, canUp, label) {
-  drawShadow(ctx, x, y + 10, 12);
+// 🔨 升级木板：每栋建筑正下方都有一块（十个设施统一），
+// 走过去按 E 就能看到「现在是什么状况」+「升级以后会怎样」。
+// 钱够的时候板子上会闪一个小锤子，够不够一眼就能看出来。
+function drawUpgradeBoard(ctx, x, y, t, icon, lv, canUp, full) {
+  const W = 64, H = 26;
+  const bob = Math.sin(t * 2) * 1.2;
+  drawShadow(ctx, x, y + 22, 15);
+  // 立柱
   ctx.fillStyle = '#a57c4a';
-  rr(ctx, x - 3, y - 14, 6, 26, 2); ctx.fill();
+  rr(ctx, x - 3, y + 4, 6, 20, 2); ctx.fill();
+  // 木板
   ctx.fillStyle = '#e0b878';
-  rr(ctx, x - 24, y - 34, 48, 24, 5); ctx.fill();
-  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
-  rr(ctx, x - 24, y - 34, 48, 24, 5); ctx.stroke();
-  ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(icon, x, y - 16);
-  drawLvBadge(ctx, x, y - 44 + Math.sin(t * 2) * 1.5, lv, t, canUp);
-  if (label) {
-    ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    const tw = label.length * 11 + 12;
-    ctx.fillStyle = 'rgba(255,255,255,.9)';
-    rr(ctx, x - tw / 2, y + 13, tw, 16, 7); ctx.fill();
-    ctx.fillStyle = '#7a4a12';
-    ctx.fillText(label, x, y + 25);
+  rr(ctx, x - W / 2, y - H / 2 + bob, W, H, 5); ctx.fill();
+  ctx.strokeStyle = canUp && !full ? '#ff9f43' : '#a57c4a';
+  ctx.lineWidth = canUp && !full ? 3 + Math.sin(t * 5) * 0.7 : 2.5;
+  rr(ctx, x - W / 2, y - H / 2 + bob, W, H, 5); ctx.stroke();
+  // 木纹
+  ctx.strokeStyle = 'rgba(165,124,74,.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - W / 2 + 5, y - 4 + bob); ctx.lineTo(x + W / 2 - 5, y - 4 + bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - W / 2 + 5, y + 6 + bob); ctx.lineTo(x + W / 2 - 5, y + 6 + bob); ctx.stroke();
+  // 图标 + 等级
+  ctx.textAlign = 'center';
+  ctx.font = '15px sans-serif';
+  ctx.fillText(icon, x - 14, y + 5 + bob);
+  ctx.fillStyle = '#7a4a12';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('Lv.' + lv, x + 14, y + 5 + bob);
+  // 可以升级就闪小锤子
+  if (canUp && !full) {
+    ctx.font = '13px sans-serif';
+    ctx.fillText('🔨', x + 24, y - 8 + bob + Math.sin(t * 6) * 1.6);
   }
+}
+
+// ---------------- 宠物正在做的事：🍖 吃东西 / 🧹 打扫 / 🛁 洗澡 ----------------
+// 点了「喂食 / 清理 / 洗澡」之后，地图上的宠物会真的动起来：
+//   吃 → 面前的食盆里冒出肉，一口一口啃，头上冒爱心；
+//   打扫 → 一把扫帚左右扫，便便化成星星飞走；
+//   洗澡 → 坐进澡盆，泡泡一颗颗往上飘，泡泡还晃来晃去。
+function drawPetAction(ctx, x, y, t, anim) {
+  if (!anim) return;
+  const k = Math.min(1, anim.t / anim.dur);
+  const fade = k > 0.78 ? Math.max(0, (1 - k) / 0.22) : Math.min(1, k / 0.12 + 0.15);
+  ctx.save();
+  ctx.globalAlpha = fade;
+  if (anim.kind === 'eat') {
+    ctx.fillStyle = '#f0b8c8';
+    ellipse(ctx, x + 16, y + 9, 12, 5.5); ctx.fill();
+    ctx.fillStyle = '#e09ab0';
+    ellipse(ctx, x + 16, y + 8, 9, 3.6); ctx.fill();
+    const chew = Math.abs(Math.sin(k * Math.PI * 7));
+    ctx.textAlign = 'center';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('🍖', x + 16, y + 5 - chew * 4);
+    for (let i = 0; i < 3; i++) {
+      const ph = (k * 3 + i * 0.33) % 1;
+      ctx.globalAlpha = fade * (1 - ph);
+      ctx.font = '13px sans-serif';
+      ctx.fillText('💖', x - 10 + i * 10, y - 22 - ph * 24);
+    }
+    ctx.globalAlpha = fade;
+  } else if (anim.kind === 'clean') {
+    const sw = Math.sin(k * Math.PI * 6) * 15;
+    ctx.strokeStyle = '#b3814a'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x + 10 + sw, y - 2); ctx.lineTo(x + 19 + sw, y + 19); ctx.stroke();
+    ctx.fillStyle = '#f4d35e';
+    rr(ctx, x + 12 + sw, y + 17, 15, 8, 2.5); ctx.fill();
+    ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath(); ctx.moveTo(x + 14 + sw + i * 3.4, y + 20); ctx.lineTo(x + 14 + sw + i * 3.4, y + 25); ctx.stroke();
+    }
+    for (let i = 0; i < 4; i++) {
+      const ph = (k * 2 + i * 0.25) % 1;
+      ctx.globalAlpha = fade * (1 - ph);
+      ctx.textAlign = 'center'; ctx.font = '13px sans-serif';
+      ctx.fillText('✨', x - 20 + i * 13, y - 4 - ph * 22);
+    }
+    ctx.globalAlpha = fade;
+  } else if (anim.kind === 'bath') {
+    // 泡泡先飘，再把宠物「洗一洗」
+    ctx.fillStyle = '#a8d8f0';
+    rr(ctx, x - 20, y - 2, 44, 19, 7); ctx.fill();
+    ctx.fillStyle = '#7cc4e8';
+    rr(ctx, x - 23, y - 7, 50, 9, 4.5); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
+    for (let i = 0; i < 5; i++) {
+      const ph = (k * 1.7 + i * 0.2) % 1;
+      const bx = x - 15 + i * 8.5 + Math.sin(ph * 7 + i) * 3.5;
+      const r = 2 + ph * 3.4;
+      ellipse(ctx, bx, y - 9 - ph * 28, r, r); ctx.fill();
+    }
+    ctx.textAlign = 'center'; ctx.font = '14px sans-serif';
+    ctx.fillText('🫧', x + 20, y - 16 - Math.sin(k * 9) * 3);
+    ctx.fillText('🛁', x - 24, y - 14 + Math.sin(k * 7) * 2);
+  }
+  ctx.globalAlpha = fade;
+  ctx.textAlign = 'center';
+  ctx.font = '17px sans-serif';
+  const ic = anim.kind === 'eat' ? '😋' : anim.kind === 'clean' ? '🧹' : '🛁';
+  ctx.fillText(ic, x, y - 44 + Math.sin(t * 7) * 2.5);
+  ctx.restore();
 }
 
 // 🐾 宠物房间：一间小屋子，里面有食盆、澡盆和垫子；升级后屋子变大、床变多

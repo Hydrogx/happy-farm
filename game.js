@@ -509,14 +509,14 @@ const STR = {
     expandArea: '🔨 扩建预留区',
     upgradeTitle: '🔨 升级设施',
     upgNow: '现在是 {lv} 级',
-    upgNext: '升级后：{cap}',
+    upgNext: '升级后会变成：{cap}',
     upgMax: '已经是最高级啦 🎉',
     upgBtn: '🔨 升级  💰{n}',
     upgNoCoin: '金币不够，升级要 {n} 金币',
     upgradeDone: '{fac} 升到 {lv} 级啦！',
     logUpgrade: '🔨 {fac} 升到 {lv} 级',
     upgradeHint: '升级以后地方变大，能养 / 能买的东西也更多！',
-    prUpgrade: '🔨 升级{fac}',
+    prUpgrade: '🔨 和「{fac}」的木板说话（看现状 / 升级）',
     lvBadge: '⭐{lv} 级',
     pondLocked: '这个水坑还没解锁，升级「水坑」就能来这里钓鱼',
     // —— 商店 / 厨房 / 水族箱 / 衣橱 的升级入口 ——
@@ -537,12 +537,10 @@ const STR = {
     petBrush: '🧹 清理',
     petBath: '🛁 洗澡',
     petAdopt: '🐾 领养一只',
-    petFood: '宠物口粮',
-    petFoodDesc: '给宠物吃',
-    boughtPetFood: '买到 {n} 份宠物口粮 🍖',
-    petNoFood: '没有宠物口粮了，去商店买一些吧',
-    petFed: '{pet}吃得饱饱的 🍖',
-    petCleaned: '便便清理干净啦 🧹',
+    petAdoptSub: '会住进宠物房间',
+    petAlreadyFull: '{pet}已经吃得饱饱的啦',
+    petFed: '{pet}吃得饱饱的 🍖（花了 {n} 金币）',
+    petCleaned: '{pet}的便便清理干净啦 🧹',
     petBathed: '{pet}洗得香香的 🛁',
     petFull: '宠物房间住满啦（最多 {max} 只），升级房间能多养几只',
     petAdoptDone: '{pet}搬进宠物房间啦 🐾',
@@ -553,10 +551,23 @@ const STR = {
     petRoomEmpty: '还没有宠物，去领养一只吧！',
     petStatusOk: '开开心心 💖',
     // —— 衣帽间 ——
+    // —— 升级面板：建筑现状 ——
+    upgStatusHead: '📋 现在的状况：',
+    upgCapHead: '✅ 现在的容量：',
+    stCoop: '母鸡 {h}/{hm} 只 · 小鸡 {c}/{cm} 只 · 孵蛋器 {e}/{em} 个蛋',
+    stSheep: '羊 {n}/{max} 只',
+    stCow: '牛 {n}/{max} 头',
+    stOrchard: '果树 {n}/{max} 棵 · 没种的果树苗可以在商店买',
+    stPond: '已解锁 {n}/{max} 个水坑 · 能钓 {k}/{km} 种鱼',
+    stTank: '水族箱里 {n}/{max} 条 · 图鉴已收集 {caught} 种',
+    stKitchen: '能做 {n}/{max} 道菜 · 现在材料够做 {can} 道',
+    stWardrobe: '开放 {t}/{tm} 档服饰 · 能买到 {avail} 件 · 衣橱里已有 {n} 件',
+    stShop: '开放 {t}/{tm} 档商品 · 现在在卖 {n} 种',
+    stPetroom: '宠物 {n}/{max} 只 · 有 {need} 只等着照顾',
     closetTitle: '👗 我的衣帽间',
     closetMirror: '🪞 试衣镜',
     wtabHair: '🎀 头饰', wtabDress: '👗 裙子', wtabShoes: '👟 鞋子',
-    tabPetCare: '🍖 宠物用品',
+    tabPetCare: '🐾 领养宠物',
     shopSheepDesc: '会产羊毛 · 最多 {max} 只',
     shopCowDesc: '会产牛奶 · 最多 {max} 头',
     tooManySheep: '羊棚里已经有 {max} 只羊啦，先升级羊棚吧',
@@ -816,14 +827,14 @@ const STR = {
     expandArea: '🔨 Expansion space',
     upgradeTitle: '🔨 Upgrade a building',
     upgNow: 'Now level {lv}',
-    upgNext: 'After upgrade: {cap}',
+    upgNext: 'After upgrading: {cap}',
     upgMax: 'Already the top level 🎉',
     upgBtn: '🔨 Upgrade  💰{n}',
     upgNoCoin: 'Not enough coins — you need {n}',
     upgradeDone: '{fac} is now level {lv}!',
     logUpgrade: '🔨 {fac} upgraded to level {lv}',
     upgradeHint: 'Upgrading makes the area bigger and lets you keep / buy more!',
-    prUpgrade: '🔨 Upgrade {fac}',
+    prUpgrade: '🔨 Talk to the {fac} board (status / upgrade)',
     lvBadge: '⭐Lv.{lv}',
     pondLocked: 'This pond is still locked — upgrade “Ponds” to fish here',
     // —— 商店 / 厨房 / 水族箱 / 衣橱 的升级入口 ——
@@ -844,12 +855,10 @@ const STR = {
     petBrush: '🧹 Clean up',
     petBath: '🛁 Bathe',
     petAdopt: '🐾 Adopt a pet',
-    petFood: 'Pet Food',
-    petFoodDesc: 'Feed your pet',
-    boughtPetFood: 'Bought {n} pet food 🍖',
-    petNoFood: 'No pet food left — buy some in the shop',
-    petFed: '{pet} is full 🍖',
-    petCleaned: 'All cleaned up 🧹',
+    petAdoptSub: 'Will move into the pet room',
+    petAlreadyFull: '{pet} is already full',
+    petFed: '{pet} is full 🍖 (cost {n} coins)',
+    petCleaned: 'Cleaned up {pet}\'s mess 🧹',
     petBathed: '{pet} smells lovely 🛁',
     petFull: 'The pet room is full (max {max}) — upgrade it to keep more',
     petAdoptDone: '{pet} moved into the pet room 🐾',
@@ -860,10 +869,23 @@ const STR = {
     petRoomEmpty: 'No pets yet — adopt one!',
     petStatusOk: 'Happy 💖',
     // —— 衣帽间 ——
+    // —— 升级面板：建筑现状 ——
+    upgStatusHead: '📋 Right now: ',
+    upgCapHead: '✅ Current capacity: ',
+    stCoop: '{h}/{hm} hens · {c}/{cm} chicks · {e}/{em} egg slots',
+    stSheep: '{n}/{max} sheep',
+    stCow: '{n}/{max} cows',
+    stOrchard: '{n}/{max} fruit trees · buy saplings in the shop',
+    stPond: '{n}/{max} ponds unlocked · {k}/{km} fish species',
+    stTank: '{n}/{max} fish in the tank · {caught} species collected',
+    stKitchen: '{n}/{max} recipes unlocked · {can} cookable right now',
+    stWardrobe: 'tier {t}/{tm} clothes unlocked · {avail} items for sale · {n} in your closet',
+    stShop: 'tier {t}/{tm} goods unlocked · {n} kinds on sale',
+    stPetroom: '{n}/{max} pets · {need} need attention',
     closetTitle: '👗 My Walk-in Closet',
     closetMirror: '🪞 Mirror',
     wtabHair: '🎀 Hair', wtabDress: '👗 Dresses', wtabShoes: '👟 Shoes',
-    tabPetCare: '🍖 Pet Care',
+    tabPetCare: '🐾 Adopt',
     shopSheepDesc: 'Gives wool · up to {max}',
     shopCowDesc: 'Gives milk · up to {max}',
     tooManySheep: 'The sheep pen already has {max} sheep — upgrade it first',
@@ -1630,7 +1652,6 @@ const G = {
   petHatsOwned: [],
   // 设施等级：十个设施都是从这个初始值开始往上升
   levels: { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 },
-  petFood: 2,             // 宠物口粮（宠物房间喂食用）
   vehicles: [],           // 已经买到的交通工具
   vehicle: null,          // 正在骑的那辆（null = 走路）
   math: null,             // 找零钱小挑战：{c, price, paid, change, choices, t, total}
@@ -1666,12 +1687,10 @@ const ZONES = {
   wardrobe: { x: 930,  y: 370, r: 55 },
   bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 78 },
-  tank:     { x: 790,  y: 560, r: 132 },  // 水族箱（升级后会变大，这里给出 3 级都够用的交互半径）
+  tank:     { x: 740,  y: 522, r: 132 },  // 水族箱（升级后会变大，这里给出 3 级都够用的交互半径）
   rack:     { x: 545, y: 520, r: 86 },    // 停车架（骑上 / 停下交通工具）
   hatchery: { x: 250, y: 730, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡巢升级一起挪）
-  petroom:  { x: 780, y: 300, r: 96 },    // 宠物房间（门口）
-  orchard:  { x: 340, y: 96,  r: 84 },    // 果树园告示牌
-  pondSign: { x: 1180, y: 640, r: 78 },   // 水坑告示牌
+  petroom:  { x: 780, y: 290, r: 92 },    // 宠物房间（门口）
 };
 
 // 动物棚舍区域（每种动物一个独立围栏）
@@ -1741,13 +1760,10 @@ const ORCHARD_SLOTS = [
   { x: 100, y: 140 }, { x: 100, y: 340 }, { x: 240, y: 140 }, { x: 380, y: 140 },
   { x: 520, y: 140 }, { x: 560, y: 230 }, { x: 560, y: 320 },
 ];
-const ORCHARD_SIGN = [
-  { x: 348, y: 96 }, { x: 320, y: 92 }, { x: 300, y: 88 },
-];
 
 // 水坑：解锁等级 + 三个等级的尺寸（越大鱼越多、越值钱）
 const POND_SPEC = [
-  { id: 'small',  unlockLv: 1, x: 1330, y: 470,
+  { id: 'small',  unlockLv: 1, x: 1330, y: 486,
     sizes: [{ w: 112, h: 64 }, { w: 132, h: 76 }, { w: 152, h: 88 }] },
   { id: 'medium', unlockLv: 2, x: 1430, y: 640,
     sizes: [{ w: 130, h: 76 }, { w: 170, h: 100 }, { w: 212, h: 124 }] },
@@ -1756,7 +1772,7 @@ const POND_SPEC = [
 ];
 
 // 水族箱：三个等级的体积（画出来的玻璃箱尺寸）
-const TANK_SIZE = [{ w: 220, h: 112 }, { w: 280, h: 132 }, { w: 340, h: 150 }];
+const TANK_SIZE = [{ w: 200, h: 104 }, { w: 250, h: 122 }, { w: 300, h: 138 }];
 // 商店摊位：升级后摊子变大、货架变多
 const STALL_SCALE = [1, 1.2, 1.45];
 
@@ -1889,14 +1905,22 @@ function canUpgradeFacility(f) { return !isMaxLv(f) && G.coins >= upgradeCost(f)
 // 这个设施离下一级还差多少钱（升级面板上显示用）
 function upgradeShort(f) { return isMaxLv(f) ? 0 : Math.max(0, upgradeCost(f) - G.coins); }
 
-// 地图上的「升级告示牌」位置（画牌子和判断交互都用同一份，避免对不上）
-function upgradeSignSpots() {
+// 每栋建筑**正下方**都有一块「升级木板」（十个设施完全统一）。
+// 画木板和判断交互都用这一份坐标，保证「看到的牌子」就是「能按 E 的牌子」。
+function boardSpots() {
+  const pr = petRoomRect(), orr = orchardRect();
+  const lp = PONDS[2];                       // 三个水坑共用一个升级板（放在大水坑下面）
   return [
-    ['coop',    PENS.chicken.x + PENS.chicken.w / 2, PENS.chicken.y - 26, '🐔'],
-    ['sheep',   PENS.sheep.x + PENS.sheep.w / 2,     PENS.sheep.y - 26,   '🐑'],
-    ['cow',     PENS.cow.x + PENS.cow.w / 2,         PENS.cow.y - 26,     '🐄'],
-    ['orchard', ZONES.orchard.x, ZONES.orchard.y,                         '🍎'],
-    ['pond',    ZONES.pondSign.x, ZONES.pondSign.y,                       '💧'],
+    ['coop',     PENS.chicken.x + PENS.chicken.w - 50, PENS.chicken.y + 102, '🐔'],
+    ['sheep',    PENS.sheep.x + PENS.sheep.w - 55,     PENS.sheep.y + 102,   '🐑'],
+    ['cow',      PENS.cow.x + PENS.cow.w - 55,         PENS.cow.y + 108,     '🐄'],
+    ['orchard',  orr.x + orr.w * 0.75,                 orr.y + orr.h + 16,   '🍎'],
+    ['pond',     lp.x,                                 lp.y + lp.h / 2 + 30, '💧'],
+    ['tank',     ZONES.tank.x,                         ZONES.tank.y + 42,    '🐠'],
+    ['kitchen',  ZONES.kitchen.x,                      ZONES.kitchen.y + 46, '🍳'],
+    ['wardrobe', ZONES.wardrobe.x + 8,                 ZONES.wardrobe.y + 50, '👗'],
+    ['shop',     ZONES.stall.x,                        ZONES.stall.y + 100,  '🛒'],
+    ['petroom',  pr.x + pr.w / 2,                      pr.y + pr.h + 26,     '🐾'],
   ];
 }
 
@@ -1917,7 +1941,6 @@ function shopTierMax() { return FACILITIES.shop.cap[lvOf('shop') - 1]; }
 function pondUnlocked(p) { return lvOf('pond') >= p.unlockLv; }
 function unlockedPonds() { return PONDS.filter(pondUnlocked); }
 function orchardRect() { return ORCHARD_RECTS[lvOf('orchard') - 1]; }
-function orchardSign() { return ORCHARD_SIGN[lvOf('orchard') - 1]; }
 function penRect(type) { return PEN_RECTS[type][lvOf(FACILITY_OF_PEN[type]) - 1]; }
 function penHome(type) { return PEN_HOME[type][lvOf(FACILITY_OF_PEN[type]) - 1]; }
 function petRoomRect() { return PETROOM_RECTS[lvOf('petroom') - 1]; }
@@ -1952,16 +1975,13 @@ function applyLevels() {
     p.unlockLv = spec.unlockLv;
     p.locked = !pondUnlocked(p);
   }
-  // ③ 果树园告示牌
-  const sg = orchardSign();
-  ZONES.orchard.x = sg.x; ZONES.orchard.y = sg.y;
-  // ④ 水族箱 / 宠物房间的交互半径跟着体积走一点
+  // ③ 水族箱 / 宠物房间的交互半径跟着体积走一点
   const ts = tankSize();
   ZONES.tank.r = Math.max(120, ts.w / 2 + 8);
   const pr = petRoomRect();
   ZONES.petroom.x = pr.x + pr.w / 2;
-  ZONES.petroom.y = pr.y + pr.h + 6;
-  ZONES.petroom.r = Math.max(80, pr.w / 2);
+  ZONES.petroom.y = pr.y + pr.h - 8;                 // 门口（木板在更下面一点，互不抢占）
+  ZONES.petroom.r = Math.max(74, pr.w / 2);
   // ⑤ 农场动物（按等级）出生 / 散步的活动范围
   G.animalArea = { sheep: PENS.sheep, cow: PENS.cow, chicken: PENS.chicken };
 }
@@ -2218,8 +2238,10 @@ function spawnParticles(x, y, icon, n = 5) {
     });
   }
 }
+// amount 是正数 = 赚到，负数 = 花掉（显示成 -12💰 而不是 +-12💰）
 function coinBurst(x, y, amount) {
-  G.particles.push({ x, y, icon: `+${amount}💰`, vx: 0, vy: -45, life: 1.4, maxLife: 1.4, size: 18, text: true });
+  G.particles.push({ x, y, icon: (amount >= 0 ? '+' : '') + amount + '💰', vx: 0, vy: -45,
+                     life: 1.4, maxLife: 1.4, size: 18, text: true });
   sfx.coin();
 }
 
@@ -2547,7 +2569,6 @@ function saveGame(silent = true) {
     coins: G.coins, day: G.day, timeMin: G.timeMin, weather: G.weather,
     inventory: G.inventory, owned: G.owned, petHatsOwned: G.petHatsOwned,
     levels: { ...G.levels },
-    petFood: G.petFood,
     player: {
       x: G.player.x, y: G.player.y, dir: G.player.dir,
       gender: G.player.gender, outfit: { ...G.player.outfit },
@@ -2622,7 +2643,6 @@ function loadGame(name) {
       const v = d.levels && Number(d.levels[f]);
       G.levels[f] = Number.isFinite(v) ? Math.max(1, Math.min(MAX_LV, Math.round(v))) : 1;
     }
-    G.petFood = Number.isFinite(d.petFood) ? Math.max(0, Math.round(d.petFood)) : 2;
     applyLevels();          // ★ 先把等级写进地图，后面恢复动物/果树坐标才对得上
     G.petHatsOwned = Array.isArray(d.petHatsOwned) ? d.petHatsOwned : [];
     G.vehicles = Array.isArray(d.vehicles) ? d.vehicles.filter(function (v) { return VEHICLE_MAP[v]; }) : [];
@@ -2769,7 +2789,6 @@ function resetGame() {
   G.vehicles = []; G.vehicle = null;
   // 十个设施全部从 1 级开始
   G.levels = { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 };
-  G.petFood = 2;
   G.player.x = 420; G.player.y = 500; G.player.dir = 'down';
   G.player.gender = chosenGender;
   G.player.outfit = { hat: 'ragged', hair: 'none', shirt: 'ragged', dress: 'none', pants: 'ragged', shoes: 'none' };
@@ -3473,50 +3492,8 @@ let shopTab = 'seeds';
 // ============================================================
 //                    设施升级界面
 // ============================================================
-// 每个可以升级的「面板」（商店 / 厨房 / 水族箱 / 衣橱 / 宠物房间）顶部都有
-// 一条升级条：显示现在的等级、现在的容量，以及一颗「升级」按钮。
-function renderUpgradeStrip(el, f) {
-  if (!el) return;
-  el.innerHTML = '';
-  const lv = lvOf(f);
-  const top = isMaxLv(f);
-  const chip = document.createElement('div');
-  chip.className = 'upg-chip' + (top ? ' max' : '');
-  const ic = document.createElement('span');
-  ic.textContent = FACILITIES[f].icon;
-  chip.appendChild(ic);
-  const nameEl = document.createElement('span');
-  nameEl.textContent = facName(f);
-  chip.appendChild(nameEl);
-  const lvEl = document.createElement('span');
-  lvEl.className = 'upg-lv';
-  lvEl.textContent = t('lvBadge', { lv: lv });
-  chip.appendChild(lvEl);
-  if (top) {
-    const s = document.createElement('span');
-    s.textContent = t('upgMax');
-    chip.appendChild(s);
-  } else {
-    const b = document.createElement('button');
-    b.textContent = t('upgBtn', { n: upgradeCost(f) });
-    b.disabled = G.coins < upgradeCost(f);
-    b.onclick = function () {
-      if (doUpgrade(f)) refreshAllPanels();
-    };
-    chip.appendChild(b);
-  }
-  el.appendChild(chip);
-  const tip = document.createElement('div');
-  tip.className = 'upg-tip';
-  tip.textContent = facCapText(f, lv);
-  el.appendChild(tip);
-}
 // 升级成功之后，所有打开着的面板都要重新画一遍
 function refreshAllPanels() {
-  renderUpgradeStrip($('shop-upgrade'), 'shop');
-  renderUpgradeStrip($('cook-upgrade'), 'kitchen');
-  renderUpgradeStrip($('wd-upgrade'), 'wardrobe');
-  renderUpgradeStrip($('pet-upgrade'), 'petroom');
   if (!$('shop-modal').classList.contains('hidden')) renderShop();
   if (!$('cook-modal').classList.contains('hidden')) renderCook();
   if (!$('tank-modal').classList.contains('hidden')) renderTank();
@@ -3525,6 +3502,62 @@ function refreshAllPanels() {
   if (!$('upgrade-modal').classList.contains('hidden')) renderUpgradeModal(upgradeTarget);
   renderHUD();
 }
+// 这栋建筑现在是什么状况（升级面板里第一眼看的就是它）
+// 每一项都写清「现在有几个 / 最多几个」，一眼就知道该不该升级。
+function facilityStatus(f) {
+  switch (f) {
+    case 'coop':
+      return t('stCoop', { h: countHens(), hm: maxHens(), c: countChicks(), cm: maxChicks(),
+                           e: G.incubating.length, em: maxIncubate() });
+    case 'sheep':   return t('stSheep', { n: countAnimalType('sheep'), max: maxSheep() });
+    case 'cow':     return t('stCow', { n: countAnimalType('cow'), max: maxCows() });
+    case 'orchard': return t('stOrchard', { n: G.trees.length, max: maxOrchard() });
+    case 'pond': {
+      const open = PONDS.filter(function (p) { return !p.locked; }).length;
+      const kinds = PONDS.reduce(function (a, p) { return a + (p.locked ? 0 : p.pool.length); }, 0);
+      return t('stPond', { n: open, max: PONDS.length, k: kinds, km: SEA_ALL.length });
+    }
+    case 'tank':
+      return t('stTank', { n: G.tank.length, max: maxTank(), caught: Object.keys(G.seaCaught).length });
+    case 'kitchen': {
+      let can = 0;
+      for (let i = 0; i < RECIPES.length; i++) if (recipeUnlocked(i) && !Object.keys(RECIPES[i].needs).some(k => SEA_SET[k] || k === 'fish') && hasItems(RECIPES[i].needs)) can++;
+      return t('stKitchen', { n: Math.min(RECIPES.length, maxRecipes()), max: RECIPES.length, can: can });
+    }
+    case 'wardrobe': {
+      let owned = 0;
+      for (const c of OUTFIT_CATS) owned += (G.owned[c] || []).filter(function (k) { return OUTFITS[c][k] && OUTFITS[c][k].price > 0; }).length;
+      const tier = outfitTierMax();
+      return t('stWardrobe', { n: owned, t: tier, tm: MAX_LV, avail: shopClothesOf2(tier) });
+    }
+    case 'shop': {
+      const tier = shopTierMax();
+      return t('stShop', { t: tier, tm: MAX_LV, n: shopGoodsCount(tier) });
+    }
+    case 'petroom': {
+      const need = G.pets.filter(petIsSad).length;
+      return t('stPetroom', { n: G.pets.length, max: maxPets(), need: need });
+    }
+  }
+  return '';
+}
+// 衣橱等级下「能买到的服饰件数」
+function shopClothesOf2(tier) {
+  let n = 0;
+  for (const c of OUTFIT_CATS) n += shopClothesOf(c, tier).length;
+  return n;
+}
+// 商店等级下「在卖的商品种类数」（不含服饰，服饰看衣橱）
+function shopGoodsCount(tier) {
+  let n = 0;
+  CROPS.forEach(function (c, i) { if (shopTierOfIndex(i, CROPS.length) <= tier) n++; });
+  VEHICLES.forEach(function (v, i) { if (shopTierOfIndex(i, VEHICLES.length) <= tier) n++; });
+  ZOO_SHOP.forEach(function (z, i) { if (shopTierOfIndex(i, ZOO_SHOP.length) <= tier) n++; });
+  DECOR_SHOP.forEach(function (d, i) { if (shopTierOfIndex(i, DECOR_SHOP.length) <= tier) n++; });
+  FRUIT_IDS.forEach(function (f, i) { if (shopTierOfIndex(i, FRUIT_IDS.length) <= tier) n++; });
+  return n;
+}
+
 // 「🔨 升级 X」的通用面板（点地图上的告示牌打开）
 let upgradeTarget = 'coop';
 function openUpgrade(f) {
@@ -3546,7 +3579,10 @@ function renderUpgradeModal(f) {
   wrap.innerHTML =
     '<div class="upg-head"><span class="upg-icon">' + FACILITIES[f].icon + '</span>' +
     '<span>' + facName(f) + ' · ' + t('upgNow', { lv: lv }) + '</span></div>' +
-    '<div class="upg-tip">' + facTip(f) + '</div>';
+    '<div class="upg-tip">' + facTip(f) + '</div>' +
+    // ★ 建筑现状：现在养了几只 / 种了几棵 / 能做几道菜…
+    '<div class="upg-status"><b>' + t('upgStatusHead') + '</b>' + facilityStatus(f) + '</div>' +
+    '<div class="upg-status next"><b>' + t('upgCapHead') + '</b>' + facCapText(f, lv) + '</div>';
   // 三个等级的小方块
   const row = document.createElement('div');
   row.className = 'upg-levels';
@@ -3589,14 +3625,13 @@ function renderUpgradeModal(f) {
 // ============================================================
 // 宠物口粮在商店的「🍖 宠物用品」里买；喂食要消耗口粮，
 // 清理便便和洗澡是免费的，但不做的话宠物会不开心。
-const PET_FOOD_PRICE = 15;     // 一份宠物口粮
+const PET_FEED_COST = 12;      // 喂一次宠物直接花金币（不用先去商店买口粮）
 const PET_ADOPT_PRICE = 120;   // 领养一只新宠物
 const PET_TYPES = ['dog', 'cat', 'duck', 'goose'];
 const PET_EMOJI = { dog: '🐶', cat: '🐱', duck: '🦆', goose: '🦢' };
 
 function renderPetRoom() {
   const box = $('pet-list');
-  renderUpgradeStrip($('pet-upgrade'), 'petroom');
   const sub = $('pet-room-sub');
   if (sub) sub.textContent = t('petRoomLv', { lv: lvOf('petroom'), cap: facCapText('petroom', lvOf('petroom')) });
   if (!box) return;
@@ -3611,8 +3646,21 @@ function renderPetRoom() {
     const card = document.createElement('div');
     card.className = 'pet-card' + (petIsSad(p) ? ' sad' : '');
     const av = document.createElement('div');
-    av.className = 'pet-avatar';
+    av.className = 'pet-avatar' + (p.anim ? ' acting ' + p.anim.kind : '');
     av.textContent = PET_EMOJI[p.type] || '🐶';
+    if (p.anim) {
+      const fx = document.createElement('div');
+      fx.className = 'pet-fx';
+      const ic = p.anim.kind === 'eat' ? ['🍖', '💖', '😋'] : p.anim.kind === 'clean' ? ['🧹', '✨', '✨'] : ['🛁', '🫧', '🫧'];
+      ic.forEach(function (e, ei) {
+        const sp = document.createElement('span');
+        sp.textContent = e;
+        sp.style.animationDelay = (ei * 0.22) + 's';
+        sp.style.left = (18 + ei * 26) + '%';
+        fx.appendChild(sp);
+      });
+      av.appendChild(fx);
+    }
     card.appendChild(av);
 
     const body = document.createElement('div');
@@ -3653,8 +3701,8 @@ function renderPetRoom() {
     const btns = document.createElement('div');
     btns.className = 'pet-btns';
     const feed = document.createElement('button');
-    feed.textContent = t('petFeed') + ' (🍖' + G.petFood + ')';
-    feed.disabled = G.petFood <= 0 || p.hunger >= 100;
+    feed.textContent = t('petFeed') + ' 💰' + PET_FEED_COST;
+    feed.disabled = G.coins < PET_FEED_COST || p.hunger >= 100;
     feed.onclick = function () { feedPet(p); };
     const clean = document.createElement('button');
     clean.className = 'blue';
@@ -3691,27 +3739,43 @@ function renderPetRoom() {
   }
   box.appendChild(adopt);
 }
-function feedPet(p) {
-  if (G.petFood <= 0) { sfx.error(); say('petNoFood'); return; }
-  G.petFood--;
-  p.hunger = Math.min(100, p.hunger + 45);
+// 三个动作都会给宠物加一段「正在做事」的动画（1.6~2 秒），
+// 地图上会画出食盆 / 扫帚 / 澡盆，面板里的头像也会跟着弹一下。
+function startPetAnim(p, kind) {
+  p.anim = { kind: kind, t: 0, dur: kind === 'eat' ? 1.9 : 1.7 };
   p.happy = 3;
+  // 动画放完以后把面板再画一遍：卡片上的动作特效跟着收起来
+  const dur = p.anim.dur;
+  setTimeout(function () {
+    const el = $('pet-modal');
+    if (el && !el.classList.contains('hidden')) renderPetRoom();
+  }, dur * 1000 + 80);
+}
+function feedPet(p) {
+  if (p.hunger >= 100) { sfx.error(); say('petAlreadyFull', { pet: petName(p) }); return; }
+  if (G.coins < PET_FEED_COST) { sfx.error(); say('upgNoCoin', { n: PET_FEED_COST }); return; }
+  G.coins -= PET_FEED_COST;
+  p.hunger = Math.min(100, p.hunger + 45);
+  startPetAnim(p, 'eat');
   sfx.pet(); sfx.pickup();
-  spawnParticles(p.x, p.y - 18, '💖', 4);
-  say('petFed', { pet: petName(p) }, 2000);
-  saveGame(true); renderPetRoom();
+  spawnParticles(p.x, p.y - 14, '🍖', 4);
+  coinBurst(p.x, p.y - 34, -PET_FEED_COST);
+  say('petFed', { pet: petName(p), n: PET_FEED_COST }, 2200);
+  saveGame(true); renderPetRoom(); renderHUD();
 }
 function cleanPet(p) {
-  p.poop = 0; p.poopT = rand(70, 130); p.happy = 3;
+  p.poop = 0; p.poopT = rand(70, 130);
+  startPetAnim(p, 'clean');
   sfx.water(); sfx.sparkle();
-  spawnParticles(p.x, p.y + 4, '✨', 5);
-  say('petCleaned', null, 2000);
+  spawnParticles(p.x, p.y + 4, '✨', 6);
+  say('petCleaned', { pet: petName(p) }, 2000);
   saveGame(true); renderPetRoom();
 }
 function bathePet(p) {
-  p.clean = 100; p.happy = 3;
+  p.clean = 100;
+  startPetAnim(p, 'bath');
   sfx.water(); sfx.sparkle();
-  spawnParticles(p.x, p.y - 10, '🫧', 6);
+  spawnParticles(p.x, p.y - 10, '🫧', 7);
   say('petBathed', { pet: petName(p) }, 2200);
   saveGame(true); renderPetRoom();
 }
@@ -3724,7 +3788,7 @@ function adoptPet(type) {
   G.pets.push(p);
   sfx.buy(); sfx.petVoice(type, 260);
   spawnParticles(p.x, p.y - 20, '💖', 6);
-  say('petAdoptDone', { pet: petName(p) }, 2600, false, { icon: PET_EMOJI[type] || '🐾', sub: t('petFoodDesc') });
+  say('petAdoptDone', { pet: petName(p) }, 2600, false, { icon: PET_EMOJI[type] || '🐾', sub: t('petAdoptSub') });
   saveGame(true); renderPetRoom(); renderHUD();
 }
 
@@ -3754,7 +3818,6 @@ function tierLocked(tier) { return tier > shopTierMax(); }
 function renderShop() {
   const box = $('shop-items');
   box.innerHTML = '';
-  renderUpgradeStrip($('shop-upgrade'), 'shop');
   const lockedCard = (icon, name, tier) => {
     const d = document.createElement('div');
     d.className = 'shop-item locked';
@@ -3867,11 +3930,6 @@ function renderShop() {
     phead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
     phead.textContent = t('petRoomLv', { lv: lvOf('petroom'), cap: facCapText('petroom', lvOf('petroom')) });
     box.appendChild(phead);
-    mkCard(iconBox('emoji', '🍖'), t('petFood'), PET_FOOD_PRICE * 5, () => {
-      G.coins -= PET_FOOD_PRICE * 5; G.petFood += 5; sfx.buy();
-      say('boughtPetFood', { n: 5 }, 2200, false, { icon: '🍖', sub: t('petFoodDesc') });
-      renderShop(); renderHUD();
-    }, false, t('petFoodDesc') + ' · ' + G.petFood);
     PET_TYPES.forEach(function (ty) {
       const full = G.pets.length >= maxPets();
       mkCard(iconBox('emoji', PET_EMOJI[ty] || '🐾'),
@@ -4042,7 +4100,6 @@ function renderClosetAvatar() {
 }
 function renderWardrobe() {
   if (typeof highlightChar === 'function') highlightChar();
-  renderUpgradeStrip($('wd-upgrade'), 'wardrobe');
   const hint = $('closet-hint');
   if (hint) hint.textContent = t('closetHint');
   renderClosetAvatar();
@@ -4138,7 +4195,6 @@ function recipeUnlocked(i) { return i < maxRecipes(); }
 function renderCook() {
   const box = $('cook-items');
   box.innerHTML = '';
-  renderUpgradeStrip($('cook-upgrade'), 'kitchen');
   const rhead = document.createElement('div');
   rhead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
   rhead.textContent = t('cookTierNote', { lv: lvOf('kitchen') })
@@ -4202,7 +4258,6 @@ function takeFromTank(i) {
 function renderTank() {
   const cnt = $('tank-count'), list = $('tank-list'), bag = $('tank-bag');
   if (!cnt || !list || !bag) return;
-  renderUpgradeStrip($('tank-upgrade'), 'tank');
   cnt.textContent = t('tankCount', { n: G.tank.length, max: maxTank() })
     + ' · ' + t('tankTierNote', { lv: lvOf('tank') });
   const bagTitle = $('tank-bag-title');
@@ -4418,10 +4473,10 @@ function nearestInteract() {
     const d = dist(p.x, p.y, z.x, z.y);
     if (d < z.r && d < bestD) { bestD = d; best = { kind, label }; }
   }
-  // 6.2 设施升级告示牌（鸡巢 / 羊棚 / 牛棚 / 果树园 / 水坑）
-  for (const [f, sx, sy] of upgradeSignSpots()) {
+  // 6.2 十块「升级木板」：站在木板前面按 E 就能看现状 + 升级
+  for (const [f, sx, sy] of boardSpots()) {
     const d = dist(p.x, p.y, sx, sy);
-    if (d < bestD + 26 && d < 96) {
+    if (d < bestD + 24 && d < 64) {
       bestD = Math.min(bestD, d);
       best = { kind: 'upgrade', fac: f, label: t('prUpgrade', { fac: facName(f) }) };
     }
@@ -4655,12 +4710,20 @@ function customerPool() {
   for (const tr of G.trees) if (tr.fruits > 0) add(tr.type);          // 树上还有果子
   for (const pl of G.plots) if (pl.crop) add(pl.crop);                 // 田里种着的
   for (const id in inv) if (ITEMS[id] && ITEMS[id].seed) add(ITEMS[id].seed);
-  // ③ 材料已经够做的菜（需要鱼的菜不算）
-  for (const r of RECIPES) {
+  // ③ 材料已经够做、而且**厨房已经解锁**的菜（需要鱼的菜不算）
+  //    厨房等级不够时，就算材料凑齐了也不能做，客人自然也不该点它
+  for (let i = 0; i < RECIPES.length; i++) {
+    if (!recipeUnlocked(i)) continue;
+    const r = RECIPES[i];
     const needsSea = Object.keys(r.needs).some(k => SEA_SET[k] || k === 'fish');
     if (!needsSea && hasItems(r.needs)) add(r.id);
   }
-  if (!pool.length) add('egg');   // 兜底，保证客人总有东西能买
+  if (!pool.length) {                 // 兜底：保证客人总有东西能买
+    if (G.animals.some(a => a.type === 'chicken')) add('egg');
+    else if (G.animals.length) add('milk');
+    else if (G.trees.length) add(G.trees[0].type);
+    else add('egg');
+  }
   return pool;
 }
 
@@ -4820,6 +4883,12 @@ function update(dt) {
     } else pet.moving = false;
     if (pet.happy > 0) pet.happy -= dt;
     if (pet.mood > 0) pet.mood -= dt;
+    // 「正在吃东西 / 打扫 / 洗澡」的动画计时；吃饭时停下来专心吃
+    if (pet.anim) {
+      pet.anim.t += dt;
+      if (pet.anim.kind === 'eat') pet.moving = false;
+      if (pet.anim.t >= pet.anim.dur) pet.anim = null;
+    }
     // 三个需要照顾的指标会慢慢变差：饱腹度下降、清洁度下降、隔一阵子拉一次便便
     pet.hunger = Math.max(0, pet.hunger - dt * 0.5);
     pet.clean = Math.max(0, pet.clean - dt * 0.35);
@@ -4990,7 +5059,7 @@ function update(dt) {
     const c = G.customers[i];
     c.t += dt;
     // 客人站在摊位正前方（下方），与商店触发区保持距离
-    const targetX = c.state === 'come' ? ZONES.stall.x + 5 : WORLD_W + 40;
+    const targetX = c.state === 'come' ? ZONES.stall.x - 110 : WORLD_W + 40;   // 站在摊位左前方（右边留给升级木板）
     const targetY = c.state === 'come' ? ZONES.stall.y + 125 : c.y;
     if (c.state === 'come' || c.state === 'leave') {
       const d = dist(c.x, c.y, targetX, targetY);
@@ -5249,11 +5318,11 @@ function render() {
     y: petRoomRect().y + petRoomRect().h + 6,
     draw: () => drawPetRoom(ctx, ZONES.petroom.x, 0, t, lvOf('petroom'), G.pets, petRoomRect()),
   });
-  // 设施升级告示牌：鸡巢 / 羊棚 / 牛棚 / 果树园 / 水坑
-  for (const [f, sx, sy, ic] of upgradeSignSpots()) {
+  // 十块「升级木板」：每栋建筑正下方一块，走过去按 E 就是升级对话
+  for (const [f, sx, sy, ic] of boardSpots()) {
     drawables.push({
-      y: sy + 14,
-      draw: () => drawUpgradeSign(ctx, sx, sy, t, ic, lvOf(f), canUpgradeFacility(f), facName(f)),
+      y: sy + 22,
+      draw: () => drawUpgradeBoard(ctx, sx, sy, t, ic, lvOf(f), canUpgradeFacility(f), isMaxLv(f)),
     });
   }
   for (const tr of G.trees) drawables.push({
@@ -5394,6 +5463,7 @@ function render() {
       y: p.y + 10,
       draw: () => {
         drawPet(ctx, p.x, p.y, { ...p, t, scale: PET_SCALE });
+        drawPetAction(ctx, p.x, p.y, t, p.anim);
         // 需要照顾的宠物头顶冒小图标：🍖 饿了 / 💩 要清理 / 🛁 要洗澡
         const ic = petNeedIcon(p);
         if (ic) {
@@ -5851,9 +5921,9 @@ window.__farm = {
   maxSheep, maxCows, maxOtherAnimals, maxOrchard, maxTank, maxRecipes, maxPets,
   FACILITIES, FACILITY_ORDER, doUpgrade, applyLevels, lvOf, isMaxLv, upgradeCost,
   addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
-  newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, upgradeSignSpots, facName, facCapText, update, TANK_SIZE, STALL_SCALE,
+  newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
   buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, buildMathSteps, mathExpressionText,
-  renderUpgradeStrip, shopClothesOf, OUTFIT_CATS,
+  shopClothesOf, OUTFIT_CATS, RECIPES,
   renderShop, renderWardrobe, renderTank, renderBook, renderSell, customerPool, spawnCustomer,
   startFishing, reelIn, adoptPet, feedPet, cleanPet, bathePet, maxPets, outfitTierMax, shopTierMax,
   drawEmojiAnimated, rawAnimState, detectRawAnim,
