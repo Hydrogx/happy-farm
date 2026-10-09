@@ -1862,11 +1862,12 @@ function drawForestTree(ctx, x, y, t, phase, kind) {
     rr(ctx, x - 11, y - 60, 22, 62, 7); ctx.fill();
     ctx.fillStyle = '#8d6238';
     rr(ctx, x - 5, y - 58, 8, 60, 4); ctx.fill();
-    // 伸向左边的大枝丫（蜂巢挂在下面）
+    // 伸向左边的大枝丫：梢头正好在蜂巢吊绳的正上方
+    // （蜂巢在世界坐标 x=390, y=524；这棵树在 x=390, y=600）
     ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 9; ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(x - 6, y - 52);
-    ctx.quadraticCurveTo(x - 26, y - 58, x - 34, y - 46);
+    ctx.moveTo(x - 6, y - 56);
+    ctx.quadraticCurveTo(x - 14, y - 62, x - 16, y - 62);
     ctx.stroke();
     // 树冠
     ctx.fillStyle = '#4aa457';
@@ -1882,11 +1883,11 @@ function drawForestTree(ctx, x, y, t, phase, kind) {
 // 蜂巢（挂在树上，有蜂蜜时亮晶晶，还有小蜜蜂飞来飞去）
 function drawBeehive(ctx, x, y, t, hasHoney) {
   const sway = Math.sin(t * 0.9) * 2.5;
-  // 吊绳
-  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2;
+  // 吊绳：从枝丫梢头（大约 y-62 处）垂下来
+  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2.4;
   ctx.beginPath();
-  ctx.moveTo(x + sway * 0.3, y - 40);
-  ctx.lineTo(x + sway, y - 14);
+  ctx.moveTo(x - 16 * 0.1 - sway * 0.2, y - 62);
+  ctx.quadraticCurveTo(x + sway * 0.5, y - 44, x + sway, y - 18);
   ctx.stroke();
   ctx.save();
   ctx.translate(x + sway, y);

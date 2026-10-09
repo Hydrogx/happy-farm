@@ -3434,14 +3434,22 @@ function render() {
   for (const dc of G.decorations) {
     drawables.push({ y: dc.y + 4, draw: () => drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase) });
   }
-  // 森林里的大树 + 挂在树上的蜂巢
+  // 森林里的大树；蜂巢挂在那棵大树伸出的枝丫下 ——
+  // 必须和树放在同一个 drawable 里按 y 排序，否则蜂巢会先画、被树挡住
   for (const ft of FOREST_TREES) {
-    drawables.push({ y: ft.y + 4, draw: () => drawForestTree(ctx, ft.x, ft.y, t, ft.phase, ft.kind) });
+    const treeY = ft.y + 4;
+    if (ft.kind === 'big') {
+      drawables.push({
+        y: treeY,
+        draw: () => {
+          drawForestTree(ctx, ft.x, ft.y, t, ft.phase, ft.kind);
+          drawBeehive(ctx, HIVE.x, HIVE.y, t, HIVE.honey > 0);
+        },
+      });
+    } else {
+      drawables.push({ y: treeY, draw: () => drawForestTree(ctx, ft.x, ft.y, t, ft.phase, ft.kind) });
+    }
   }
-  drawables.push({
-    y: HIVE.y - 20,
-    draw: () => drawBeehive(ctx, HIVE.x, HIVE.y - 22, t, HIVE.honey > 0),
-  });
   // 森林里的蘑菇（采走了就先不画，长回来再出现）
   for (const m of MUSHROOMS) {
     if (m.picked) continue;
