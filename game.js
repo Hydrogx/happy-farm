@@ -707,6 +707,11 @@ function weatherText() { const w = STR[lang].weather || STR.zh.weather; return w
 // 有动画的用 512.gif（浏览器自动播放），没有动画版的退回 512.png（再用 canvas 叠加动作）
 const EMOJI_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest/';
 const emojiCache = {};     // cp -> { img, ok, kind }
+// Noto 的动图有两个地址，和官网 <picture> 里的写法一致：
+//   .webp —— 动画版（优先，官网就是先给 webp）
+//   .gif  —— 动图（第二选择）
+//   .png  —— 静态图（兜底：有些 emoji 官方只有静态图）
+function emojiWebpUrl(cp) { return EMOJI_BASE + cp + '/512.webp'; }
 function emojiAnimUrl(cp) { return EMOJI_BASE + cp + '/512.gif'; }
 function emojiPngUrl(cp) { return EMOJI_BASE + cp + '/512.png'; }
 
@@ -719,17 +724,24 @@ function emojiDrawable(im) {
   if (!im.naturalWidth || !im.naturalHeight) return false;      // 404 的 HTML 页面
   try {
     const c = document.createElement('canvas');
-    c.width = 32; c.height = 32;
+    c.width = 48; c.height = 48;
     const x = c.getContext('2d');
     if (!x) return true;                                        // 环境不支持检测，就先当它能用
-    x.clearRect(0, 0, 32, 32);
-    x.drawImage(im, 0, 0, 32, 32);
-    const d = x.getImageData(0, 0, 32, 32).data;
-    for (let i = 3; i < d.length; i += 4) if (d[i] > 20) return true;
-    return false;                                               // 全透明：画出来是空白
+    x.clearRect(0, 0, 48, 48);
+    x.drawImage(im, 0, 0, 48, 48);
+    return canvasHasPixels(x, 48, 48, 20);                      // 画出来有东西才算能用
   } catch (e) {
     return false;                                               // 图坏了 / 跨域不让读
   }
+}
+// 判断一块画布上有没有「看得见的像素」（通用的空图检测）
+function canvasHasPixels(x, w, h, thresh) {
+  try {
+    const d = x.getImageData(0, 0, w, h).data;
+    const th = thresh || 20;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > th) return true;
+  } catch (e) { return true; }
+  return false;
 }
 
 // ---------------- 动画 emoji：自己解 GIF 的每一帧 ----------------
@@ -741,6 +753,19 @@ const EMOJI_ANIM_MAX = 28;      // 最多同时缓存多少套动画（超出就
 const EMOJI_ANIM_PX = 128;      // 每一帧缩到 128px，省内存（游戏里最大也就画 ~70px）
 const EMOJI_ANIM_FRAMES = 18;   // 每套动画最多取 18 帧（±× 128px ≈ 1.2MB/套，够顺滑了）
 const emojiAnims = {};          // cp -> { frames:[canvas], delay:[ms], total }
+const ANIM_PARALLEL = 4;        // 同时最多解 4 套动画（一次几十个请求容易有个别加载失败）
+let animRunning = 0;
+const animWaiters = [];
+function animSlot(fn) {
+  if (animRunning < ANIM_PARALLEL) { animRunning++; fn(); return; }
+  animWaiters.push(fn);
+}
+function animSlotDone() {
+  animRunning = Math.max(0, animRunning - 1);
+  const next = animWaiters.shift();
+  if (next) { animRunning++; next(); }
+}
+const ANIM_DEBUG = [];          // 解码过程的诊断信息（排查用）
 let emojiAnimQueue = [];
 function emojiFrameReady(cp) {
   const a = emojiAnims[cp];
@@ -766,20 +791,38 @@ function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
   return true;
 }
 // 把 GIF 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
-function decodeEmojiAnim(cp, url) {
-  if (emojiAnims[cp]) return;                                  // 已经解过 / 正在解
-  if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') return;
-  emojiAnims[cp] = { frames: [], delay: [], total: 0 };        // 占位，避免重复解码
-  const fail = () => { delete emojiAnims[cp]; };
-  fetch(url).then(r => r.arrayBuffer()).then(buf => {
+function decodeEmojiAnim(cp, url, cb) {
+  if (emojiAnims[cp]) {                                        // 已经解过 / 正在解
+    const a = emojiAnims[cp];
+    if (a.frames && a.frames.length > 1) { if (cb) cb(true); return; }
+    if (a.pending && cb) a.cbs.push(cb);
+    return;
+  }
+  if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') { if (cb) cb(false); return; }
+  const cbList = cb ? [cb] : [];                                // 必须在下面赋值之前定义
+  emojiAnims[cp] = { frames: [], delay: [], total: 0, pending: true, cbs: cbList };
+  const finishCb = (ok) => {
+    const list = cbList.slice();
+    cbList.length = 0;
+    const a = emojiAnims[cp];
+    if (a) { a.cbs = []; a.pending = false; }
+    list.forEach(f => { try { f(ok); } catch (e) {} });
+  };
+  // 注意顺序：先把回调叫醒，再删掉占位记录（反过来的话回调就永远收不到消息了）
+  const fail = (why) => { ANIM_DEBUG.push(cp + ':fail(' + (why || '?') + ')'); finishCb(false); delete emojiAnims[cp]; };
+  animSlot(() => fetch(url).then(r => r.arrayBuffer()).then(buf => {
     let dec;
-    try { dec = new ImageDecoder({ data: buf, type: 'image/gif' }); }
-    catch (e) { fail(); return; }
+    try { dec = new ImageDecoder({ data: buf, type: (rec_mime(url)) }); }
+    catch (e) { fail('ctor:' + e.message); return; }
     // 必须等 tracks.ready，否则 frameCount 还是 0
     return dec.tracks.ready.then(() => {
       const track = dec.tracks.selectedTrack || dec.tracks[0];
       const count = (track && track.frameCount) || 0;
-      if (count < 2) { fail(); return; }                       // 单帧：不需要做动画
+      ANIM_DEBUG.push(cp + ':frames=' + count);
+      if (count < 2) { fail('single'); return; }                // 单帧：不需要做动画
+      // 有些素材第 0 帧是全透明的（例如海豚的 webp），所以要抽几帧一起判断
+      const probeIdx = [0, Math.floor(count / 3), Math.floor(count * 2 / 3), count - 1];
+      let anyPixels = false;
       const total = Math.min(count, EMOJI_ANIM_FRAMES);        // 限制帧数，控制内存
       const shots = [];
       const off = document.createElement('canvas');
@@ -795,19 +838,24 @@ function decodeEmojiAnim(cp, url) {
           const cv = document.createElement('canvas');
           cv.width = cv.height = EMOJI_ANIM_PX;
           cv.getContext('2d').drawImage(off, 0, 0);
+          if (probeIdx.indexOf(idx) >= 0 && canvasHasPixels(octx, EMOJI_ANIM_PX, EMOJI_ANIM_PX, 16)) {
+            anyPixels = true;                                   // 至少有一帧是有内容的
+          }
           // duration 单位是微秒，转成毫秒（太短就给个下限，别闪得太快）
           shots.push({ cv: cv, dur: Math.max(40, (vf.duration || 0) / 1000) });
           if (vf.close) vf.close();
           step();
-        }).catch(() => finish(shots));
+        }).catch((e) => { ANIM_DEBUG.push(cp + ':decode err ' + e.message); finish(shots); });
       };
       const finish = (list) => {
-        if (!list || list.length < 2) { fail(); return; }
+        if (!list || list.length < 2) { fail('few:' + (list ? list.length : 0)); return; }
+        if (!anyPixels) { fail('blank'); return; }               // 每帧都是空的：这种素材做不了动画
         const a = emojiAnims[cp];
         a.frames = list.map(x => x.cv);
         a.delay = list.map(x => x.dur);
         a.total = a.delay.reduce((x, y) => x + y, 0) || 1200;
         emojiAnimQueue.push(cp);
+        finishCb(true);
         // 超出上限就把最早解的那几套丢掉，避免越积越多占内存
         while (emojiAnimQueue.length > EMOJI_ANIM_MAX) {
           const old = emojiAnimQueue.shift();
@@ -816,11 +864,13 @@ function decodeEmojiAnim(cp, url) {
       };
       step();
     });
-  }).catch(fail);
+  }).catch((e) => fail('fetch:' + e.message)).then(animSlotDone));
 }
+// 根据扩展名给出 mime（webp / gif）
+function rec_mime(url) { return /[.]webp(\?|$)/.test(url) ? 'image/webp' : 'image/gif'; }
 
-// 加载 emoji 图：先加载静态 PNG 保证「立刻能用」，再尝试动画 GIF，
-// 只有「GIF 确实能画出东西」才留下它，同时后台把 GIF 拆成帧做真动画。
+// 加载 emoji 图：先加载静态 PNG 保证「立刻能用」，再依次尝试 webp / gif 动图，
+// 只有确认「能画出东西」才换成动图，同时后台把动图拆成帧做真动画。
 function loadEmoji(cp) {
   if (!cp) return null;
   let rec = emojiCache[cp];
@@ -832,33 +882,48 @@ function loadEmoji(cp) {
     try { im.crossOrigin = 'anonymous'; } catch (e) {}
     return im;
   };
-  // ① 先用 PNG 顶上（PNG 一定有）
+  rec.pngUrl = emojiPngUrl(cp);
+  rec.webpUrl = emojiWebpUrl(cp);
+  rec.gifUrl = emojiAnimUrl(cp);
+  // ① 先用 PNG 顶上（PNG 一定有，保证任何时刻都有图）
   const png = make();
   png.onload = () => {
     rec.pngOk = true;
     if (!rec.ok) { rec.img = png; rec.ok = true; rec.kind = 'png'; }
   };
   png.onerror = () => { rec.pngOk = false; };
-  rec.pngUrl = emojiPngUrl(cp);
-  rec.gifUrl = emojiAnimUrl(cp);
   rec.pngImg = png;
   png.src = rec.pngUrl;
-  // ② 再试动画 GIF
-  const gif = make();
-  gif.onload = () => {
-    if (!emojiDrawable(gif)) { rec.gifBad = true; return; }      // 空白 / 坏的 → 继续用 PNG
-    rec.img = gif; rec.ok = true; rec.kind = 'gif'; rec.gifOk = true;
-    decodeEmojiAnim(cp, rec.gifUrl);                             // 后台拆帧 → 真动画
+  // ② 依次尝试动图：webp 优先，然后 gif。
+  //    注意：这里**不能**只测第 0 帧 —— 海豚、鲨鱼的动图首帧是全透明的，
+  //    只看首帧会把它们误判成坏图。改成让解析器解码多帧后再校验。
+  const tried = { webp: false, gif: false };
+  const pickAnim = (ok) => {
+    if (ok) return;
+    if (!tried.webp) { tried.webp = true; tryAnim(rec.webpUrl, 'webp', () => pickAnim()); return; }
+    if (!tried.gif) { tried.gif = true; tryAnim(rec.gifUrl, 'gif', () => pickAnim()); return; }
   };
-  gif.onerror = () => { rec.gifBad = true; };
-  gif.src = rec.gifUrl;
+  const tryAnim = (url, kind, next) => {
+    rec.animUrl = url;                           // DOM 立刻用动图地址（浏览器自己播）
+    decodeEmojiAnim(cp, url, function (ok) {
+      if (!ok) rec.animUrl = rec.pngUrl;         // 动图不可用就退回静态图
+      if (ok) {
+        rec.img = emojiAnims[cp].frames[0];      // 用解出来的第一帧当静态底图
+        rec.ok = true; rec.kind = kind; rec.animUrl = url;
+        if (kind === 'webp') rec.webpOk = true; else rec.gifOk = true;
+        // DOM 里还是要原始动图地址（<img> 由浏览器自己播）
+        rec.domUrl = url;
+      } else if (next) next();
+    });
+  };
+  pickAnim(false);
   return rec;
 }
 // DOM 里显示某个 emoji 图时该用哪个地址：
 // 确认过 GIF 能用就用 GIF（浏览器自己会播动画）；GIF 不能用就用 PNG
 function emojiSrcFor(rec) {
   if (!rec) return '';
-  if (rec.gifOk) return rec.gifUrl;
+  if (rec.animUrl) return rec.animUrl;      // webp / gif 动图
   return rec.pngUrl || '';
 }
 // DOM 里用 <img> 显示 emoji（列表用）。
@@ -4072,8 +4137,9 @@ window.__farm = {
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
-  emojiCache, emojiAnimUrl, emojiPngUrl, emojiSrcFor, emojiDrawable,
-  emojiAnims, emojiFrameIndex, drawEmojiFrame, decodeEmojiAnim,
+  emojiCache, emojiAnimUrl, emojiPngUrl, emojiWebpUrl, emojiSrcFor, emojiDrawable,
+  emojiAnims, emojiFrameIndex, drawEmojiFrame, decodeEmojiAnim, ANIM_DEBUG,
+  canvasHasPixels, animSlot, ANIM_PARALLEL,
 };
 
 requestAnimationFrame(loop);
