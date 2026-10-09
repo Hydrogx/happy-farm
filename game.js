@@ -28,11 +28,11 @@ const ITEMS = {
   peach: { name: '桃子', icon: '🍑', price: 20, cp: '1f351' },
   strawberry: { name: '草莓', icon: '🍓', price: 25, cp: '1f353' },
   fish:       { name: '小鱼',     icon: '🐟', price: 22, cp: '1f41f' },
-  shrimp:     { name: '小虾',     icon: '🦐', price: 14, cp: '1f990' },
-  shell:      { name: '贝壳',     icon: '🐚', price: 8,  cp: '1f41a' },
-  goldfish:   { name: '金鱼',     icon: '🐠', price: 24, cp: '1f420' },
+  shrimp:     { name: '小龙虾',   icon: '🦞', price: 14, cp: '1f99e' },
+  shell:      { name: '小海星',   icon: '⭐', price: 8,  cp: '2b50' },
+  goldfish:   { name: '热带鱼',   icon: '🐠', price: 24, cp: '1f41f' },
   crab:       { name: '螃蟹',     icon: '🦀', price: 28, cp: '1f980' },
-  squid:      { name: '鱿鱼',     icon: '🦑', price: 32, cp: '1f991' },
+  squid:      { name: '小水母',   icon: '🪼', price: 32, cp: '1fabc' },
   puffer:     { name: '河豚',     icon: '🐡', price: 48, cp: '1f421' },
   octopus:    { name: '章鱼',     icon: '🐙', price: 56, cp: '1f419' },
   lobster:    { name: '龙虾',     icon: '🦞', price: 68, cp: '1f99e' },
@@ -796,6 +796,23 @@ function animSlotDone() {
   if (next) { animRunning++; next(); }
 }
 const ANIM_DEBUG = [];          // 解码过程的诊断信息（排查用）
+// 官方没有动画素材的 emoji（查过官网 881 个清单 + 实测 webp/gif 都是 404）
+// 这些在画面里用「呼吸缩放」让它活起来，看起来就不呆了
+const NO_ANIM_CP = {
+  '1f418': 1,  // 大象
+  '1f95a': 1,  // 鸡蛋
+  '1f95b': 1,  // 牛奶
+  '1f36f': 1,  // 蜂蜜
+  '1f9f6': 1,  // 毛线
+  '1f33e': 1,  // 动物饲料
+  '2b50': 1,   // 小海星
+  '1f999': 1,  // 羊驼（官网没动画 → 用呼吸效果）
+};
+function needsBreath(cp) { return !!NO_ANIM_CP[cp] && !emojiFrameReady(cp); }
+// 呼吸缩放系数（1.5 秒一个来回，幅度 ±6%）
+function breathScale(t, phase) {
+  return 1 + Math.sin((t || 0) * 4.2 + (phase || 0)) * 0.06;
+}
 let emojiAnimQueue = [];
 function emojiFrameReady(cp) {
   const a = emojiAnims[cp];
@@ -968,6 +985,8 @@ function emojiImgHTML(cp, emoji, cls) {
   const src = emojiSrcFor(rec);
   if (!src) return emoji;
   const fallback = rec.pngUrl || emojiPngUrl(cp);
+  // 官方没有动画素材的（蜂蜜/毛线/鸡蛋/牛奶/饲料…）加个呼吸动效，看着就不呆了
+  if (needsBreath(cp)) cls += ' breathe';
   // 不用 loading="lazy"：这些图很小，而且物品栏/列表一旦被判定「暂时不可见」
   // 懒加载就会让图标空着不显示
   return '<img class="' + cls + '" src="' + src + '" alt="' + emoji + '" draggable="false"' +
@@ -984,7 +1003,8 @@ const ZOO_SHOP = [
   { type: 'panda',    cp: '1f43c', name: '熊猫', icon: '🐼',   nameEn: 'Panda',     price: 1200, size: 64, v: 'mid',    p: 1.1 },
   { type: 'peacock',  cp: '1f99a', name: '孔雀', icon: '🦚',   nameEn: 'Peacock',   price: 1300, size: 64, v: 'trill',  p: 1.2 },
   { type: 'kangaroo', cp: '1f998', name: '袋鼠', icon: '🦘',   nameEn: 'Kangaroo',  price: 1000, size: 64, v: 'mid',    p: 1.3 },
-  { type: 'monkey',   cp: '1f435', name: '猴子', icon: '🐵',   nameEn: 'Monkey',    price: 850,  size: 58, v: 'high',   p: 1.4 },
+  { type: 'monkey',   cp: '1f412', name: '小猴', icon: '🐒',   nameEn: 'Monkey',    price: 850,  size: 58, v: 'high',   p: 1.4 },
+  { type: 'alpaca',   cp: '1f999', name: '羊驼', icon: '🦙',   nameEn: 'Alpaca',    price: 1300, size: 64, v: 'squeak', p: 1 },
   { type: 'flamingo', cp: '1f9a9', name: '火烈鸟', icon: '🦩', nameEn: 'Flamingo',  price: 950,  size: 62, v: 'trill',  p: 1.5 },
   { type: 'sloth',    cp: '1f9a5', name: '树懒', icon: '🦥',   nameEn: 'Sloth',     price: 900,  size: 56, v: 'squeak', p: 0.8 },
   { type: 'fox',      cp: '1f98a', name: '狐狸', icon: '🦊',   nameEn: 'Fox',       price: 700,  size: 56, v: 'high',   p: 1.2 },
@@ -1010,7 +1030,7 @@ const MAX_ZOO = 30;
 // 走路时按这个来镜像，保证它朝着前进方向走，不会倒着走。
 // left = 图里的头在左边（往左走时不用翻转）｜right = 头在右边｜front = 正面（不用翻转）
 const ZOO_FACING = {
-  bear: 'front', bee: 'front', butterfly: 'front', elephant: 'left', flamingo: 'left', fox: 'front',
+  alpaca: 'left', bear: 'front', bee: 'front', butterfly: 'front', elephant: 'left', flamingo: 'left', fox: 'front',
   frog: 'front', giraffe: 'left', hedgehog: 'left', kangaroo: 'left', koala: 'front',
   lion: 'front', lizard: 'left', monkey: 'front', panda: 'front', peacock: 'front',
   penguin: 'left', rabbit: 'left', raccoon: 'front', sloth: 'front', snail: 'left',
@@ -3797,7 +3817,11 @@ function render() {
   }
 
   // 地面物品（休息动画）
-  for (const it of G.groundItems) drawGroundItem(ctx, it.x, it.y, ITEMS[it.id].icon, t, it.phase);
+  for (const it of G.groundItems) {
+    const cp = ITEMS[it.id] && ITEMS[it.id].cp;
+    const rec = cp ? loadEmoji(cp) : null;
+    drawGroundItem(ctx, it.x, it.y, ITEMS[it.id].icon, t, it.phase, rec && rec.ok ? rec : null, cp);
+  }
 
   // 钓鱼：水波纹 + 从手里鱼竿伸出的鱼线 + 浮漂
   if (G.fishing) {

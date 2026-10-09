@@ -360,6 +360,12 @@ body.touch .log-line { font-size: 15px; }
 .emoji-img { width: 40px; height: 40px; object-fit: contain; display: block; pointer-events: none; }
 .emoji-img.big { width: 54px; height: 54px; }
 .inv-slot .emoji-img { width: var(--inv-emoji); height: var(--inv-emoji); }
+/* 官方没做动画的物品（蜂蜜/毛线/鸡蛋/牛奶/饲料…）：用 CSS 呼吸让它看着是活的 */
+.emoji-img.breathe { animation: emoji-breathe 1.5s ease-in-out infinite; transform-origin: 50% 60%; }
+@keyframes emoji-breathe {
+  0%, 100% { transform: scale(0.95) translateY(1px); }
+  50%      { transform: scale(1.07) translateY(-1px); }
+}
 .char-row { align-items: center; }
 .char-label { font-size: 17px; font-weight: bold; color: #b08a3a; margin-right: 4px; }
 

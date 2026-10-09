@@ -1419,9 +1419,10 @@ function drawAquarium(ctx, x, y, t, fish) {
     ctx.translate(fx, fy);
     if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
     if (rec && rec.ok) {
-      // 优先用自己解码的动画帧（GIF 直接画上画布不会动）
+      // 优先用自己解码的动画帧；没有动画的用呼吸效果
       if (!drawEmojiFrame(ctx, it.cp, 0, 0, size, t)) {
-        ctx.drawImage(rec.img, -size / 2, -size / 2, size, size);
+        const bs = needsBreath(it.cp) ? breathScale(t, i) : 1;
+        ctx.drawImage(rec.img, -size * bs / 2, -size * bs / 2, size * bs, size * bs);
       }
     } else {
       ctx.font = Math.round(size * 0.85) + 'px sans-serif'; ctx.textAlign = 'center';
@@ -1480,10 +1481,19 @@ function drawZoo(ctx, x, y, o) {
   const lean = moving ? (fly ? Math.sin(wp * 2) * 0.05 : 0.055) : 0;
   ctx.rotate(-lean);
   if (o.rec && o.rec.ok && o.rec.img) {
-    ctx.scale(sc, sc);
-    // 优先用「自己解码的动画帧」——直接把 GIF 画上画布是不会动的（永远第一帧）
-    if (!drawEmojiFrame(ctx, o.rec.cp, 0, -s / 2, s, o.t)) {
-      ctx.drawImage(o.rec.img, -s / 2, -s, s, s);      // 退路：静态图
+    const swapped = !drawEmojiFrame(ctx, o.rec.cp, 0, -s / 2, s, o.t);   // 动画帧优先
+    if (swapped) {
+      // 没有动画素材的（大象等）：用呼吸缩放 + 轻微左右摇摆，看起来也是「活的」
+      const bs = breathScale(o.t, o.phase);
+      const sway2 = Math.sin(o.t * 2.2 + o.phase) * 0.045;
+      ctx.save();
+      ctx.translate(0, -s / 2);
+      ctx.rotate(sway2);
+      ctx.scale(sc * bs, sc * bs);
+      ctx.drawImage(o.rec.img, -s / 2, -s / 2, s, s);
+      ctx.restore();
+    } else {
+      ctx.scale(sc, sc);
     }
   } else {
     ctx.font = Math.round(s * 0.8) + 'px sans-serif';
@@ -1728,7 +1738,22 @@ function drawDecor(ctx, id, x, y, t, phase = 0) {
 /* ------------------------------------------------------------
  * 地面物品（带原地休息动画：上下浮动 + 闪光）
  * ---------------------------------------------------------- */
-function drawGroundItem(ctx, x, y, icon, t, phase) {
+function drawGroundItem(ctx, x, y, icon, t, phase, rec, cp) {
+  // 有 emoji 图就直接画图（动画帧 / 呼吸缩放），没有就退回文字 emoji
+  if (rec && rec.img) {
+    const size = 26;
+    const bs = (typeof needsBreath === 'function' && needsBreath(cp)) ? breathScale(t, phase) : 1;
+    const bob = Math.sin(t * 2.2 + phase) * 2;
+    ctx.save();
+    ctx.translate(x, y - 12 + bob);
+    if (!drawEmojiFrame(ctx, cp, 0, 0, size, t)) {
+      ctx.drawImage(rec.img, -size * bs / 2, -size * bs / 2, size * bs, size * bs);
+    }
+    ctx.restore();
+    drawShadow(ctx, x, y + 2, 10);
+    return;
+  }
+
   const bobY = Math.sin(t * 2.5 + phase) * 3;
   drawShadow(ctx, x, y + 4, 8);
   ctx.font = '22px sans-serif';
