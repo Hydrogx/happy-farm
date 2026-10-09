@@ -707,6 +707,36 @@ function weatherText() { const w = STR[lang].weather || STR.zh.weather; return w
 // 有动画的用 512.gif（浏览器自动播放），没有动画版的退回 512.png（再用 canvas 叠加动作）
 const EMOJI_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest/';
 const emojiCache = {};     // cp -> { img, ok, kind }
+// 官网（googlefonts.github.io/noto-emoji-animation）只给一部分 emoji 做了动画，
+// 它自己的清单在 data/api.json 里。拉一次存起来，就知道某个 emoji 到底有没有动画，
+// 没有的话直接走静态图，不用白白发两个会 404 的请求。
+const NOTO_API = 'https://googlefonts.github.io/noto-emoji-animation/data/api.json';
+const NOTO_LIST_KEY = 'farm-noto-anim-list';
+let notoAnimSet = null;          // Set：有动画的 codepoint（去掉了 fe0f）
+let notoAnimState = 'idle';      // idle | loading | ready | failed
+function notoNorm(cp) { return String(cp || '').toLowerCase().replace(/[_-]?fe0f/g, '').replace(/[-_]/g, ''); }
+function notoHasAnim(cp) {
+  if (!notoAnimSet) return null;            // 还不知道，就让调用方按老办法试
+  return notoAnimSet.has(notoNorm(cp));
+}
+(function loadNotoList() {
+  try {
+    const cached = localStorage.getItem(NOTO_LIST_KEY);
+    if (cached) {
+      const arr = JSON.parse(cached);
+      if (arr && arr.length) { notoAnimSet = new Set(arr); notoAnimState = 'ready'; return; }
+    }
+  } catch (e) {}
+  if (typeof fetch === 'undefined') { notoAnimState = 'failed'; return; }
+  notoAnimState = 'loading';
+  fetch(NOTO_API).then(r => r.json()).then(d => {
+    const arr = (d.icons || []).map(ic => notoNorm(ic.codepoint));
+    notoAnimSet = new Set(arr);
+    notoAnimState = 'ready';
+    try { localStorage.setItem(NOTO_LIST_KEY, JSON.stringify(arr)); } catch (e) {}
+  }).catch(() => { notoAnimState = 'failed'; });
+})();
+
 // Noto 的动图有两个地址，和官网 <picture> 里的写法一致：
 //   .webp —— 动画版（优先，官网就是先给 webp）
 //   .gif  —— 动图（第二选择）
@@ -900,6 +930,8 @@ function loadEmoji(cp) {
   const tried = { webp: false, gif: false };
   const pickAnim = (ok) => {
     if (ok) return;
+    // 官网清单说这个 emoji 没有动画 → 直接静态图，省掉两个 404 请求
+    if (notoHasAnim(cp) === false) { rec.animUrl = rec.pngUrl; return; }
     if (!tried.webp) { tried.webp = true; tryAnim(rec.webpUrl, 'webp', () => pickAnim()); return; }
     if (!tried.gif) { tried.gif = true; tryAnim(rec.gifUrl, 'gif', () => pickAnim()); return; }
   };
@@ -4139,7 +4171,8 @@ window.__farm = {
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
   emojiCache, emojiAnimUrl, emojiPngUrl, emojiWebpUrl, emojiSrcFor, emojiDrawable,
   emojiAnims, emojiFrameIndex, drawEmojiFrame, decodeEmojiAnim, ANIM_DEBUG,
-  canvasHasPixels, animSlot, ANIM_PARALLEL,
+  notoAnimState, notoAnimSet, notoHasAnim,
+  canvasHasPixels, animSlot, ANIM_PARALLEL, notoHasAnim, notoAnimSet, notoNorm,
 };
 
 requestAnimationFrame(loop);
