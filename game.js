@@ -18,6 +18,7 @@ const ITEMS = {
   wool: { name: '羊毛', icon: '🧶', price: 25, cp: '1f9f6' },
   honey: { name: '蜂蜜', icon: '🍯', price: 60, cp: '1f36f' },
   feed: { name: '动物饲料', icon: '🌾', price: 8, cp: '1f33e' },
+  mushroom: { name: '蘑菇', icon: '🍄', price: 20, cp: '1f344' },
   carrot: { name: '胡萝卜', icon: '🥕', price: 15, cp: '1f955' },
   tomato: { name: '番茄', icon: '🍅', price: 20, cp: '1f345' },
   corn: { name: '玉米', icon: '🌽', price: 25, cp: '1f33d' },
@@ -47,19 +48,33 @@ const ITEMS = {
   pudding: { name: '蛋奶布丁', icon: '🍮', price: 65, cp: '1f36e' },
   fruit_cake: { name: '草莓蛋糕', icon: '🍰', price: 90, cp: '1f370' },
   honey_toast: { name: '蜂蜜吐司', icon: '🍞', price: 95, cp: '1f35e' },
-  honey_cake: { name: '蜂蜜蛋糕', icon: '🧁', price: 140, cp: '1f9c1' },
+  honey_cake: { name: '蜂蜜蛋糕', icon: '🧁', price: 175, cp: '1f9c1' },
+  mushroom_soup: { name: '蘑菇浓汤', icon: '🍲', price: 85, cp: '1f372' },
+  mushroom_omelet: { name: '蘑菇蛋卷', icon: '🥘', price: 58, cp: '1f958' },
+  veggie_soup: { name: '蔬菜浓汤', icon: '🥣', price: 70, cp: '1f963' },
+  fruit_pie: { name: '水果派', icon: '🥧', price: 130, cp: '1f967' },
+  seafood_platter: { name: '海鲜小炒', icon: '🍤', price: 120, cp: '1f364' },
   seed_carrot:{ name: '胡萝卜种子', icon: '🌱', price: 5,  seed: 'carrot' },
   seed_tomato:{ name: '番茄种子',  icon: '🫘', price: 8,  seed: 'tomato' },
   seed_corn: { name: '玉米种子', icon: '🌾', price: 12, cp: '1f331', seed: 'corn' },
 };
 const RECIPES = [
-  { id: 'fried_egg',  needs: { egg: 1 } },
-  { id: 'salad',      needs: { fruit: 2 } },               // 任意 2 个水果
-  { id: 'fish_grill', needs: { fish: 1 } },
-  { id: 'pudding',    needs: { egg: 1, milk: 1 } },
-  { id: 'fruit_cake', needs: { strawberry: 2, egg: 1, milk: 1 } },
-  { id: 'honey_toast', needs: { honey: 1, corn: 1 } },     // 森林蜂蜜
-  { id: 'honey_cake',  needs: { honey: 2, egg: 2, milk: 1 } },
+  // —— 基础（材料很容易凑齐）——
+  { id: 'fried_egg',       needs: { egg: 1 } },
+  { id: 'salad',           needs: { fruit: 2 } },                       // 任意 2 个水果
+  { id: 'fish_grill',      needs: { fish: 1 } },
+  { id: 'pudding',         needs: { egg: 1, milk: 1 } },
+  // —— 森林蘑菇 ——
+  { id: 'mushroom_omelet', needs: { mushroom: 1, egg: 1 } },
+  { id: 'mushroom_soup',   needs: { mushroom: 2, milk: 1 } },
+  // —— 蜂蜜 ——
+  { id: 'honey_toast',     needs: { honey: 1, corn: 1 } },
+  { id: 'honey_cake',      needs: { honey: 2, egg: 2, milk: 1 } },
+  // —— 菜地里种的 ——
+  { id: 'veggie_soup',     needs: { carrot: 1, tomato: 1, corn: 1 } },
+  { id: 'fruit_cake',      needs: { strawberry: 2, egg: 1, milk: 1 } },
+  { id: 'fruit_pie',       needs: { fruit: 3, honey: 1 } },             // 任意 3 个水果 + 蜂蜜
+  { id: 'seafood_platter', needs: { shrimp: 1, squid: 1, crab: 1 } },   // 钓上来的小海鲜
 ];
 const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry'];
 // ---------------- 钓鱼：5 种大小的水波纹，每种 3 种渔获 ----------------
@@ -97,11 +112,22 @@ const FOREST_TREES = [           // 森林里的大树（蜂巢就挂在那棵�
   { x: 140, y: 462, kind: 'pine', phase: 3.4 },
   { x: 300, y: 588, kind: 'pine', phase: 4.2 },
 ];
-const FOREST_DECOR = [];         // 小蘑菇/树桩/灌木（纯装饰）
-[['mushroom', 70, 500], ['mushroom', 250, 520], ['mushroom', 360, 640], ['mushroom', 180, 632],
- ['stump', 330, 470], ['stump', 60, 636], ['bush', 240, 610], ['bush', 100, 452],
+const FOREST_DECOR = [];         // 树桩 / 灌木（纯装饰）
+[['stump', 330, 470], ['stump', 60, 636], ['bush', 240, 610], ['bush', 100, 452],
  ['bush', 400, 520]]
   .forEach(function (d) { FOREST_DECOR.push({ kind: d[0], x: d[1], y: d[2], phase: rand(0, 6) }); });
+
+// 森林里的蘑菇：走过去按 E 就能采；采完过一会儿（或睡一觉）会自己长回来
+const MUSHROOMS = [];
+const MUSHROOM_REGROW = 40;      // 采完多少秒长回来
+const MUSHROOM_POS = [[70, 500], [250, 520], [360, 640], [180, 632], [90, 578], [330, 612], [205, 452]];
+function freshMushroom() {
+  MUSHROOMS.length = 0;
+  MUSHROOM_POS.forEach(function (p) {
+    MUSHROOMS.push({ x: p[0], y: p[1], phase: rand(0, 6), picked: false, timer: 0 });
+  });
+}
+freshMushroom();
 function inForest(x, y) {
   return x > FOREST.x && x < FOREST.x + FOREST.w && y > FOREST.y && y < FOREST.y + FOREST.h;
 }
@@ -113,8 +139,15 @@ function pondDist(p, x, y) {
   return (d - 1) * Math.min(p.w, p.h) / 2;
 }
 
-const SELLABLE = ['egg','milk','wool','honey','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,
-  'fried_egg','salad','fish_grill','pudding','fruit_cake','honey_toast','honey_cake'];
+// 玩家真正能拿到手的材料（菜谱只应该用这些）：
+// 动物产出 3 种 + 饲料 + 森林蘑菇/蜂蜜 + 3 种作物 + 5 种水果 + 15 种渔获
+const OBTAINABLE = {};
+['egg', 'milk', 'wool', 'feed', 'mushroom', 'honey',
+ 'carrot', 'tomato', 'corn', ...FRUIT_IDS, ...SEA_ALL].forEach(function (k) { OBTAINABLE[k] = 1; });
+
+const SELLABLE = ['egg','milk','wool','honey','mushroom','feed','carrot','tomato','corn',...FRUIT_IDS,...SEA_ALL,
+  'fried_egg','salad','fish_grill','pudding','fruit_cake','honey_toast','honey_cake',
+  'mushroom_soup','mushroom_omelet','veggie_soup','fruit_pie','seafood_platter'];
 const PET_HATS = {
   bow:    { name: '宠物蝴蝶结', icon: '🎀', price: 30 },
   straw:  { name: '宠物草帽',   icon: '👒', price: 30 },
@@ -342,6 +375,9 @@ const STR = {
     hatchNone: '🥚 孵蛋器空着，把鸡蛋放进去吧',
     // —— 森林 / 蜂巢 ——
     prHive: '🍯 拿蜂蜜',
+    prPickMushroom: '采蘑菇',
+    logPickMushroom: '🍄 在森林里采到一朵蘑菇',
+    mushroomCardSub: '可以卖钱，也能做菜',
     prHiveEmpty: '🍯 蜂蜜还没酿好…',
     logHoney: '🍯 从蜂巢拿到了蜂蜜',
     logHoneyReady: '🍯 蜂巢又有蜂蜜啦',
@@ -533,6 +569,9 @@ const STR = {
     hatchNone: '🥚 The incubator is empty — put an egg in',
     // —— forest / beehive ——
     prHive: '🍯 Take honey',
+    prPickMushroom: 'Pick the mushroom',
+    logPickMushroom: '🍄 Picked a mushroom in the forest',
+    mushroomCardSub: 'Sell it or cook with it',
     prHiveEmpty: '🍯 The honey is not ready yet…',
     logHoney: '🍯 Got honey from the beehive',
     logHoneyReady: '🍯 The beehive has honey again',
@@ -554,7 +593,9 @@ const STR = {
 // 英文名表（中文名直接用原表）
 const EN_NAMES = {
   item: { egg: 'Egg', milk: 'Milk', wool: 'Wool', honey: 'Honey', feed: 'Animal Feed',
-    honey_toast: 'Honey Toast', honey_cake: 'Honey Cake',
+    mushroom: 'Mushroom', honey_toast: 'Honey Toast', honey_cake: 'Honey Cake',
+    mushroom_soup: 'Mushroom Soup', mushroom_omelet: 'Mushroom Omelet',
+    veggie_soup: 'Veggie Soup', fruit_pie: 'Fruit Pie', seafood_platter: 'Seafood Platter',
     carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
     apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
     fish: 'Small Fish', bigfish: 'Big Fish', fried_egg: 'Fried Egg', salad: 'Fruit Salad',
@@ -1412,6 +1453,7 @@ function saveGame(silent = false, opts) {
     animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady,
                                    stage: a.stage, growT: a.growT, tired: a.tired })),
     troughs: TROUGHS.map(tr => ({ id: tr.id, feed: tr.feed, unfed: tr.unfed })),
+    mushrooms: MUSHROOMS.map(m => (m.picked ? 1 : 0)),
     incubating: G.incubating.map(e => ({ left: e.left })),
     plots: G.plots.map(p => ({ state: p.state, crop: p.crop, timer: p.timer, watered: p.watered })),
     trees: G.trees.map(t => ({ type: t.type, fruits: t.fruits, timer: t.timer })),
@@ -1498,6 +1540,9 @@ function loadGame(name) {
       });
       if (!G.animals.length) G.animals = [newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810)];
     }
+    // 森林蘑菇（哪些被采走了）
+    freshMushroom();
+    if (Array.isArray(d.mushrooms)) d.mushrooms.forEach(function (v, i) { if (MUSHROOMS[i]) MUSHROOMS[i].picked = v === 1; });
     // 食槽（饲料）
     if (Array.isArray(d.troughs)) {
       for (const rec of d.troughs) {
@@ -1591,6 +1636,7 @@ function resetGame() {
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = []; G.incubating = [];
   TROUGHS.forEach(tr => { tr.feed = 8; tr.unfed = 0; });
+  freshMushroom();
   G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
   HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
@@ -2363,6 +2409,15 @@ function nearestInteract() {
         : { kind: 'trough', tr, label: t('prTroughEmpty', { animal: nm('animal', tr.type), n: hunger }) };
     }
   }
+  // 5.6 森林里的蘑菇（长出来才能采）
+  for (const m of MUSHROOMS) {
+    if (m.picked) continue;
+    const d = dist(p.x, p.y, m.x, m.y);
+    if (d < bestD + 10) {
+      bestD = Math.min(bestD, d);
+      best = { kind: 'mushroom', m, label: `🍄 ${t('prPickMushroom')}` };
+    }
+  }
   // 6. 设施
   const zoneChecks = [
     ['kitchen', 'cook', t('prCook')],
@@ -2493,6 +2548,18 @@ function doInteract() {
       say('harvested', { crop: nm('crop', target.pl.crop) }, 2200, false, { icon: target.pl.crop, sub: t('gotCardSub') });
       target.pl.state = 'tilled'; target.pl.crop = null; target.pl.watered = false;
       break;
+    case 'mushroom': {
+      // 采走这朵蘑菇，过一会儿（或睡一觉）会自己长回来
+      target.m.picked = true;
+      target.m.timer = 0;
+      addItem('mushroom');
+      sfx.pickup();
+      spawnParticles(target.m.x, target.m.y - 10, '🍄', 4);
+      bigToast('mushroom', t('gotCard', { item: nm('item', 'mushroom') }), t('mushroomCardSub'), 2000);
+      note('logPickMushroom');
+      saveGame(true);
+      break;
+    }
     case 'tree': {
       target.tr.fruits--;
       const fx = target.tr.x + rand(-30, 30), fy = target.tr.y + rand(-5, 15);
@@ -2570,7 +2637,7 @@ function reelIn() {
 // ---------------- 客人系统 ----------------
 // 客人只会买「农场能产出」的东西：已采摘的、还能摘/挤/剪的、材料够做的菜
 // 鱼类和海洋生物不在此列（准备太久、太随机）
-const FARM_GOODS = ['egg', 'milk', 'wool', 'honey', 'carrot', 'tomato', 'corn', ...FRUIT_IDS];
+const FARM_GOODS = ['egg', 'milk', 'wool', 'honey', 'mushroom', 'carrot', 'tomato', 'corn', ...FRUIT_IDS];
 const SEA_SET = {};
 SEA_ALL.forEach(id => { SEA_SET[id] = true; });
 
@@ -2816,6 +2883,17 @@ function update(dt) {
     }
   }
 
+  // --- 森林蘑菇长回来 ---
+  for (const m of MUSHROOMS) {
+    if (!m.picked) continue;
+    m.timer += dt;
+    if (m.timer > MUSHROOM_REGROW) {
+      m.picked = false;
+      m.timer = 0;
+      spawnParticles(m.x, m.y - 10, '✨', 3);
+    }
+  }
+
   // --- 果树结果 ---
   for (const tr of G.trees) {
     if (tr.fruits < 3) {
@@ -2976,6 +3054,7 @@ function nextDay() {
     pl.watered = G.weather === 'rain';
   }
   // 农场日常：结算饲料（连续 3 天没喂就饿跑）→ 小鸡长大 → 孵蛋器推进一天
+  MUSHROOMS.forEach(function (m) { m.picked = false; m.timer = 0; });   // 森林蘑菇睡一晚也长回来
   dailyFarmUpdate();
   renderHUD();
   if (G.weather === 'rain') sfx.rain(); else sfx.morning();
@@ -3080,7 +3159,12 @@ function render() {
     y: HIVE.y - 20,
     draw: () => drawBeehive(ctx, HIVE.x, HIVE.y - 22, t, HIVE.honey > 0),
   });
-  // 森林里的蘑菇 / 树桩 / 灌木
+  // 森林里的蘑菇（采走了就先不画，长回来再出现）
+  for (const m of MUSHROOMS) {
+    if (m.picked) continue;
+    drawables.push({ y: m.y + 2, draw: () => drawForestDecor(ctx, 'mushroom', m.x, m.y, t, m.phase) });
+  }
+  // 树桩 / 灌木
   for (const fd of FOREST_DECOR) {
     drawables.push({ y: fd.y + 2, draw: () => drawForestDecor(ctx, fd.kind, fd.x, fd.y, t, fd.phase) });
   }
@@ -3577,7 +3661,9 @@ renderHUD();
 // 调试用的小开关（方便在控制台里看状态 / 测试）
 window.__farm = {
   G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo,
-  SEA_ALL, SEA_SET, PONDS, emojiDrawable,
+  SEA_ALL, SEA_SET, PONDS, emojiDrawable, RECIPES, OBTAINABLE, MUSHROOMS, MUSHROOM_REGROW,
+  FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
+  renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
