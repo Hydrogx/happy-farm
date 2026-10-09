@@ -9,6 +9,7 @@ const VIEW_W = canvas.width, VIEW_H = canvas.height;
 const WORLD_W = 1600, WORLD_H = 1000;
 const DAY_START = 8 * 60, DAY_END = 20 * 60;   // 游戏内分钟
 const DAY_LENGTH = 240;                        // 现实秒 / 天
+const CAMERA_ZOOM = 1.2;                       // 画面整体放大一点（人物/动物/文字在手机上更清楚）
 
 // ---------------- 物品数据 ----------------
 const ITEMS = {
@@ -16,6 +17,7 @@ const ITEMS = {
   milk: { name: '牛奶', icon: '🥛', price: 18, cp: '1f95b' },
   wool: { name: '羊毛', icon: '🧶', price: 25, cp: '1f9f6' },
   honey: { name: '蜂蜜', icon: '🍯', price: 60, cp: '1f36f' },
+  feed: { name: '动物饲料', icon: '🌾', price: 8, cp: '1f33e' },
   carrot: { name: '胡萝卜', icon: '🥕', price: 15, cp: '1f955' },
   tomato: { name: '番茄', icon: '🍅', price: 20, cp: '1f345' },
   corn: { name: '玉米', icon: '🌽', price: 25, cp: '1f33d' },
@@ -294,6 +296,29 @@ const STR = {
     saveOkName: '💾 {name} 的牧场已保存',
     saveFailed: '存档失败，浏览器空间可能满了',
     dayUnit: '天',
+    // —— 大图卡片 ——
+    gotCard: '拿到 {item}！',
+    gotCardSub: '放进背包里啦',
+    boughtCardSub: '已经放进背包',
+    cookCardSub: '香喷喷，可以卖个好价钱',
+    boughtAnimalSub: '它会自己散步',
+    feedCardSub: '每天都要喂动物哦',
+    petSwitchSub: '它会一直跟着你',
+    // —— 饲料 / 放牧 ——
+    prTrough: '🌾 放饲料（{animal}，槽里还有 {n}/{max} 份）',
+    prTroughEmpty: '🌾 放饲料（{animal} 饿啦！连续 {n} 天没喂会跑出围栏）',
+    prHungryAnimal: '🌾 {animal} 饿跑了（去食槽放饲料）',
+    noFeed: '背包里没有饲料，去商店买或收获玉米吧 🌾',
+    feedFull: '食槽已经满满的啦',
+    logFeed: '往食槽里放了饲料（还剩 {n}/{max} 份）',
+    logFeedCorn: '用玉米拌了饲料放进槽里（还剩 {n}/{max} 份）',
+    logFeedBack: '🌾 动物们吃饱啦，又有精神产出了',
+    logStarveOut: '😢 {animal} 连续 3 天没吃东西，饿得跑出围栏了！',
+    logStillHungry: '😢 {animal} 已经饿了 {n} 天，快放饲料！',
+    animalHungry: '{animal} 饿坏了，先去食槽放饲料吧 🌾',
+    boughtFeed: '买到 {n} 份动物饲料！',
+    feedShopDesc: '每只动物每天 {n} 份 · 连续 3 天不喂会饿跑',
+    feedCount: '食槽：{n}/{max} 份',
     saveSummary: '第 {day} 天 · 💰{coins} · {time}',
     // —— 鸡棚：孵蛋 / 小鸡长大 ——
     prHatch: '🐣 孵蛋器（鸡蛋 {n}/{max}）',
@@ -303,10 +328,12 @@ const STR = {
     logChickGrew: '🐤 小鸡长大了，变成母鸡！',
     logHensFull: '🐔 已经有 {max} 只母鸡了，小鸡就先这样吧',
     logChicksFull: '🐤 小鸡已经满 {max} 只啦',
-    logHens: '🐔 母鸡 {h}/{hm} 只 · 🐤 小鸡 {c}/{cm} 只',
+    logHens: '🐔 母鸡 {h}/{hm} 只 · 🐤 小鸡 {c}/{cm} 只 · 🌾 饲料 {f} 份',
     noEggForHatch: '背包里没有鸡蛋，先去捡一个吧 🥚',
     hatchFull: '孵蛋器满了（最多 {max} 个），等小鸡孵出来吧',
     hatchWait: '🥚 孵蛋器里有 {n} 个鸡蛋，再过 {d} 天小鸡就出来啦',
+    hatchDays: '🥚 孵蛋器：{n} 个蛋 · 还要 {d} 天',
+    growDays: '🐤 还要 {d} 天长成母鸡',
     hatchNone: '🥚 孵蛋器空着，把鸡蛋放进去吧',
     // —— 森林 / 蜂巢 ——
     prHive: '🍯 拿蜂蜜',
@@ -458,6 +485,29 @@ const STR = {
     saveOkName: '💾 {name}\'s farm is saved',
     saveFailed: 'Could not save — browser storage may be full',
     dayUnit: 'd',
+    // —— big cards ——
+    gotCard: 'Got {item}!',
+    gotCardSub: 'It is in your bag',
+    boughtCardSub: 'Added to your bag',
+    cookCardSub: 'Yummy — sells for more',
+    boughtAnimalSub: 'It will wander around',
+    feedCardSub: 'Feed your animals every day',
+    petSwitchSub: 'It will follow you everywhere',
+    // —— feed / grazing ——
+    prTrough: '🌾 Put in feed ({animal}, {n}/{max} left)',
+    prTroughEmpty: '🌾 Put in feed ({animal} is hungry! {n} days without food)',
+    prHungryAnimal: '🌾 {animal} ran off hungry (put feed in the trough)',
+    noFeed: 'No feed in your bag — buy some or harvest corn 🌾',
+    feedFull: 'The trough is already full',
+    logFeed: 'Put feed in the trough ({n}/{max} left)',
+    logFeedCorn: 'Mixed corn into feed ({n}/{max} left)',
+    logFeedBack: '🌾 The animals are fed and happy again',
+    logStarveOut: '😢 {animal} went 3 days without food and ran out of the pen!',
+    logStillHungry: '😢 {animal} has been hungry for {n} days — feed it soon!',
+    animalHungry: '{animal} is starving — put feed in the trough 🌾',
+    boughtFeed: 'Bought {n} portions of feed!',
+    feedShopDesc: '{n} per animal per day · 3 days unfed and they run off',
+    feedCount: 'Trough: {n}/{max}',
     saveSummary: 'Day {day} · 💰{coins} · {time}',
     // —— chicken coop: incubator / chicks ——
     prHatch: '🐣 Incubator (eggs {n}/{max})',
@@ -467,10 +517,12 @@ const STR = {
     logChickGrew: '🐤 The chick grew into a hen!',
     logHensFull: '🐔 You already have {max} hens — the chicks stay small',
     logChicksFull: '🐤 You already have {max} chicks',
-    logHens: '🐔 Hens {h}/{hm} · 🐤 Chicks {c}/{cm}',
+    logHens: '🐔 Hens {h}/{hm} · 🐤 Chicks {c}/{cm} · 🌾 Feed {f}',
     noEggForHatch: 'No egg in your bag — go pick one up 🥚',
     hatchFull: 'The incubator is full (max {max}) — wait for a chick',
     hatchWait: '🥚 {n} egg(s) incubating — {d} day(s) until they hatch',
+    hatchDays: '🥚 Incubator: {n} eggs · {d} days to go',
+    growDays: '🐤 {d} more days to become a hen',
     hatchNone: '🥚 The incubator is empty — put an egg in',
     // —— forest / beehive ——
     prHive: '🍯 Take honey',
@@ -494,7 +546,7 @@ const STR = {
 
 // 英文名表（中文名直接用原表）
 const EN_NAMES = {
-  item: { egg: 'Egg', milk: 'Milk', wool: 'Wool', honey: 'Honey',
+  item: { egg: 'Egg', milk: 'Milk', wool: 'Wool', honey: 'Honey', feed: 'Animal Feed',
     honey_toast: 'Honey Toast', honey_cake: 'Honey Cake',
     carrot: 'Carrot', tomato: 'Tomato', corn: 'Corn',
     apple: 'Apple', orange: 'Orange', pear: 'Pear', peach: 'Peach', strawberry: 'Strawberry',
@@ -606,11 +658,65 @@ const MAX_ZOO = 30;
 // ---------------- 鸡棚规则（母鸡 / 孵蛋 / 小鸡） ----------------
 const MAX_HENS = 5;              // 最多 5 只母鸡
 const MAX_CHICKS = 10;           // 最多 10 只小鸡
-const HATCH_DAYS = 3;            // 鸡蛋放进孵蛋器，3 天后孵出小鸡
-const CHICK_GROW_DAYS = 5;       // 小鸡出生 5 天后长成母鸡
-const MAX_INCUBATE = 6;          // 孵蛋器最多同时放 6 个蛋
+const HATCH_DAYS = 15;           // 鸡蛋放进孵蛋器，15 天（游戏内天数）后孵出小鸡
+const CHICK_GROW_DAYS = 30;      // 小鸡出生 30 天后长成母鸡
+const MAX_INCUBATE = 12;         // 孵蛋器最多同时放 12 个蛋（要等 15 天，一次多放几个才够玩）
 const HEN_GROW = 1.15;           // 母鸡整体放大一点
 const CHICK_SCALE = 0.62;        // 小鸡小小一只
+
+// ---------------- 放牧规则（饲料） ----------------
+// 每种农场动物每天都要吃一份饲料；连续 3 天没放饲料，动物就会饿得跑出围栏、也不再产出
+const FEED_PER_DAY = 1;          // 每只动物每天 1 份
+const FEED_MAX = 15;             // 每个食槽最多存 15 份（够 5 只动物吃 3 天）
+const UNFED_LIMIT = 3;           // 连续 3 天没饲料 → 饿跑
+const FEED_BUY_PRICE = 8;        // 商店里一份饲料的价格
+const PET_SCALE = 1.3;           // 人物整体再放大一点
+const ANIMAL_SCALE = 1.3;        // 动物整体再放大一点
+// 食槽（放在各自棚舍里，走到旁边按 E 放饲料）
+const TROUGHS = [
+  { id: 'chicken', type: 'chicken', x: 268, y: 760, r: 72, feed: 8, unfed: 0 },
+  { id: 'sheep',   type: 'sheep',   x: 556, y: 852, r: 72, feed: 8, unfed: 0 },
+  { id: 'cow',     type: 'cow',     x: 876, y: 846, r: 74, feed: 8, unfed: 0 },
+];
+const TROUGH_OF = {};
+TROUGHS.forEach(function (tr) { TROUGH_OF[tr.type] = tr; });
+// 这一种动物今天吃饱了吗
+function troughOf(type) { return TROUGH_OF[type] || null; }
+function isFed(type) { const tr = troughOf(type); return !tr || tr.feed > 0; }
+function isHungry(type) { const tr = troughOf(type); return !!tr && tr.feed <= 0; }
+// 这种动物是不是已经饿跑了（连续 3 天没喂）
+function isStarving(type) { const tr = troughOf(type); return !!tr && tr.unfed >= UNFED_LIMIT; }
+// 某种动物现在有几只
+function countAnimalType(type) { return G.animals.filter(a => a.type === type).length; }
+// 放饲料：一次把食槽加满（用背包里的饲料 / 玉米）
+function fillTrough(tr) {
+  const need = FEED_MAX - tr.feed;
+  if (need <= 0) { sfx.error(); say('feedFull'); return false; }
+  const have = G.inventory.feed || 0;
+  if (have > 0) {
+    const use = Math.min(have, need);
+    removeItem('feed', use);
+    tr.feed += use;
+    if (tr.feed > 0) tr.unfed = 0;
+    sfx.plant(); spawnParticles(tr.x, tr.y - 14, '🌾', 5);
+    say('logFeed', { n: tr.feed, max: FEED_MAX });
+    saveGame(true);
+    return true;
+  }
+  if ((G.inventory.corn || 0) > 0) {
+    // 没有现成饲料就用玉米自己拌（一份玉米 = 一份饲料）
+    const use = Math.min(G.inventory.corn, need);
+    removeItem('corn', use);
+    tr.feed += use;
+    tr.unfed = 0;
+    sfx.plant(); spawnParticles(tr.x, tr.y - 14, '🌾', 5);
+    say('logFeedCorn', { n: tr.feed, max: FEED_MAX });
+    saveGame(true);
+    return true;
+  }
+  sfx.error(); say('noFeed');
+  return false;
+}
 function isHen(a) { return a.type === 'chicken' && a.stage !== 'chick'; }
 function isChick(a) { return a.type === 'chicken' && a.stage === 'chick'; }
 function countHens() { return G.animals.filter(isHen).length; }
@@ -636,7 +742,7 @@ const G = {
   day: 1,
   timeMin: DAY_START,
   weather: 'sunny',           // sunny | cloudy | rain
-  inventory: { seed_carrot: 2 },
+  inventory: { seed_carrot: 2, feed: 3 },
   player: {
     x: 420, y: 500, dir: 'down', gender: 'boy',
     moving: false, walkPhase: 0, actionT: 0,
@@ -989,6 +1095,7 @@ function newAnimal(type, x, y, stage) {
     wool: 1, woolT: 0, milkReady: true, milkT: 0, eggT: rand(15, 40),
     stage: type === 'chicken' ? (stage === 'chick' ? 'chick' : 'hen') : undefined,
     growT: 0,                                  // 小鸡还差几天长大
+    tired: isHungry(type),                     // 饿跑了：不产出、会跑出围栏
     home: { ...PENS[type].home },
   };
 }
@@ -1009,6 +1116,42 @@ function spawnChick() {
   spawnParticles(c.x, c.y - 16, '🐣', 5);
   return c;
 }
+// 天亮了：结算饲料 → 动物长大 → 孵蛋器推进一天
+function dailyFarmUpdate() {
+  dailyFeedUpdate();
+  dailyChickenUpdate();
+}
+// 每天结算一次饲料：吃了就掉一份，没吃就记一天「饿」；连续 3 天没吃就饿跑
+function dailyFeedUpdate() {
+  for (const tr of TROUGHS) {
+    const n = countAnimalType(tr.type);
+    if (!n) { tr.feed = Math.min(tr.feed, FEED_MAX); continue; }   // 没有这种动物就不消耗
+    const need = n * FEED_PER_DAY;
+    if (tr.feed >= need) {
+      tr.feed -= need;
+      tr.unfed = 0;
+      // 只要今天吃饱了，之前饿跑的动物就自己回窝（每次结算都清一次，避免漏掉）
+      let cameBack = false;
+      for (const a of G.animals) {
+        if (a.type === tr.type && a.tired) {
+          a.tired = false;
+          cameBack = true;
+          spawnParticles(a.x, a.y - 18, '💖', 4);
+        }
+      }
+      if (cameBack) { note('logFeedBack'); sfx.sparkle(); }
+    } else {
+      // 今天没吃上：记一天。前 2 天只是没产出，撑到第 3 天才饿得跑出围栏
+      tr.feed = 0;
+      tr.unfed++;
+      if (tr.unfed >= UNFED_LIMIT) {
+        for (const a of G.animals) if (a.type === tr.type) a.tired = true;
+        if (tr.unfed === UNFED_LIMIT) note('logStarveOut', { animal: nm('animal', tr.type) });
+        else note('logStillHungry', { animal: nm('animal', tr.type), n: tr.unfed });
+      }
+    }
+  }
+}
 // 天亮了：小鸡长大 / 孵蛋器推进一天
 function dailyChickenUpdate() {
   // ① 小鸡长大（母鸡满 5 只就保持原样）
@@ -1027,7 +1170,7 @@ function dailyChickenUpdate() {
       }
     }
   }
-  // ② 孵蛋器：3 天后孵出小鸡
+  // ② 孵蛋器：15 天后孵出小鸡
   for (let i = G.incubating.length - 1; i >= 0; i--) {
     const e = G.incubating[i];
     e.left--;
@@ -1189,7 +1332,8 @@ function saveGame(silent = false, opts) {
     },
     pet: { type: G.pet.type, hat: G.pet.hat },
     animals: G.animals.map(a => ({ type: a.type, x: a.x, y: a.y, wool: a.wool, milkReady: a.milkReady,
-                                   stage: a.stage, growT: a.growT })),
+                                   stage: a.stage, growT: a.growT, tired: a.tired })),
+    troughs: TROUGHS.map(tr => ({ id: tr.id, feed: tr.feed, unfed: tr.unfed })),
     incubating: G.incubating.map(e => ({ left: e.left })),
     plots: G.plots.map(p => ({ state: p.state, crop: p.crop, timer: p.timer, watered: p.watered })),
     trees: G.trees.map(t => ({ type: t.type, fruits: t.fruits, timer: t.timer })),
@@ -1271,9 +1415,19 @@ function loadGame(name) {
         if (typeof a.wool === 'number') na.wool = a.wool;
         na.milkReady = a.milkReady !== false;
         if (na.stage === 'chick') na.growT = Number.isFinite(a.growT) ? Math.max(0, Math.min(CHICK_GROW_DAYS, a.growT)) : 0;
+        na.tired = a.tired === true;
         return na;
       });
       if (!G.animals.length) G.animals = [newAnimal('chicken', 270, 780), newAnimal('chicken', 320, 810)];
+    }
+    // 食槽（饲料）
+    if (Array.isArray(d.troughs)) {
+      for (const rec of d.troughs) {
+        const tr = TROUGHS.find(v => v.id === rec.id);
+        if (!tr) continue;
+        tr.feed = Number.isFinite(rec.feed) ? Math.max(0, Math.min(FEED_MAX, Math.round(rec.feed))) : tr.feed;
+        tr.unfed = Number.isFinite(rec.unfed) ? Math.max(0, Math.round(rec.unfed)) : 0;
+      }
     }
     // 孵蛋器
     G.incubating = Array.isArray(d.incubating)
@@ -1358,6 +1512,7 @@ function resetGame() {
   G.pet.x = 380; G.pet.y = 530;
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = []; G.incubating = [];
+  TROUGHS.forEach(tr => { tr.feed = 8; tr.unfed = 0; });
   G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
   HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
@@ -1392,6 +1547,15 @@ function zooRandomSpot(home) {
   return { x: home.x, y: home.y };
 }
 
+// 宠物的名字（狗 / 猫 / 鸭 / 鹅）
+function petName() {
+  const ty = G.pet.type;
+  if (ty === 'dog') return t('dog');
+  if (ty === 'cat') return t('cat');
+  if (ty === 'goose') return t('petGoose');
+  return t('petDuck');
+}
+
 // ---------------- 角色 / 宠物切换（游戏内） ----------------
 function setGender(g) {
   G.player.gender = (g === 'girl') ? 'girl' : 'boy';
@@ -1404,7 +1568,7 @@ function setPet(type) {
   G.pet.happy = 3;
   sfx.petVoice(G.pet.type);
   spawnParticles(G.pet.x, G.pet.y - 20, '💖', 5);
-  say('petSwitched', { pet: t(G.pet.type === 'duck' ? 'petDuck' : G.pet.type === 'goose' ? 'petGoose' : G.pet.type) });
+  say('petSwitched', { pet: petName() }, 2200, false, { icon: '🐾', sub: t('petSwitchSub') });
   saveGame(true); renderWardrobe();
 }
 
@@ -1575,18 +1739,40 @@ function renderLog() {
     box.appendChild(d);
   });
 }
-// 只弹提示
+// 只弹提示（普通气泡）
 function toast(msg, ms = 1800) {
   const el = $('toast');
+  if (!el) return;
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(toast._t);
   toast._t = setTimeout(() => el.classList.add('hidden'), ms);
 }
+// 大图卡片提示：拿到 / 买到东西时显示在画面中间，图标很大，一眼就能看清
+function bigToast(icon, title, sub, ms = 2200) {
+  const box = $('big-toast');
+  if (!box) { toast(title, ms); return; }
+  const ic = $('big-toast-icon'), ti = $('big-toast-title'), su = $('big-toast-sub');
+  if (ic) {
+    // 直接传物品 id 就用它的图标（emoji 或动画图）
+    if (icon && ITEMS[icon] && ITEMS[icon].icon) ic.textContent = ITEMS[icon].icon;
+    else ic.textContent = icon || '✨';
+  }
+  if (ti) ti.textContent = title || '';
+  if (su) { su.textContent = sub || ''; su.classList.toggle('hidden', !sub); }
+  box.classList.remove('hidden');
+  const card = box.firstElementChild;      // 让出现动画重播一次
+  if (card) { card.style.animation = 'none'; void card.offsetWidth; card.style.animation = ''; }
+  clearTimeout(bigToast._t);
+  bigToast._t = setTimeout(() => box.classList.add('hidden'), ms);
+}
 // 翻译 + 弹提示 + 记日志
-function say(key, params, ms = 1800, noLog = false) {
+// opts: { icon: 物品id 或 emoji, sub: 小字说明, big: 用大图卡片, ms: 时长, noLog: 不记日志 }
+function say(key, params, ms = 1800, noLog = false, opts) {
   const s = t(key, params);
-  toast(s, ms);
+  const o = opts || {};
+  if (o.big || o.icon) bigToast(o.icon || '✨', s, o.sub, Math.max(ms, 2000));
+  else toast(s, ms);
   if (!noLog) addLog(s);
   return s;
 }
@@ -1607,8 +1793,20 @@ function renderHUD() {
 }
 function renderInventory() {
   const bar = $('inventory');
+  if (!bar) return;
   bar.innerHTML = '';
-  for (const [id, n] of Object.entries(G.inventory)) {
+  const ids = Object.keys(G.inventory).filter(id => ITEMS[id]);
+  // 东西多的时候把格子自动缩小，保证物品栏只占一行、不会压住日志和提示
+  const maxW = (VIEW_W - 96) * 0.94;          // 左右各留一点，别顶到边上
+  const gap = 6;
+  let slot = ids.length ? Math.floor((maxW - gap * (ids.length - 1)) / ids.length) : 62;
+  slot = Math.max(30, Math.min(62, slot));
+  bar.style.setProperty('--inv-slot', slot + 'px');
+  bar.style.setProperty('--inv-emoji', Math.round(slot * 0.66) + 'px');
+  bar.style.setProperty('--inv-font', Math.round(slot * 0.44) + 'px');
+  bar.style.setProperty('--inv-cnt', Math.max(10, Math.round(slot * 0.26)) + 'px');
+  for (const id of ids) {
+    const n = G.inventory[id];
     const d = document.createElement('div');
     d.className = 'inv-slot';
     d.title = nm('item', id);
@@ -1681,9 +1879,17 @@ function renderShop() {
   if (shopTab === 'seeds') {
     for (const id of ['seed_carrot', 'seed_tomato', 'seed_corn']) {
       mkCard(iconBox('item', id), nm('item', id), ITEMS[id].price, () => {
-        G.coins -= ITEMS[id].price; addItem(id); sfx.buy(); say('bought', { item: nm('item', id) }); renderShop(); renderHUD();
+        G.coins -= ITEMS[id].price; addItem(id); sfx.buy();
+        say('bought', { item: nm('item', id) }, 2200, false, { icon: id, sub: t('boughtCardSub') });
+        renderShop(); renderHUD();
       });
     }
+    // 动物饲料：一次买 5 份，够喂几天
+    mkCard(iconBox('item', 'feed'), nm('item', 'feed'), ITEMS.feed.price * 5, () => {
+      G.coins -= ITEMS.feed.price * 5; addItem('feed', 5); sfx.buy();
+      say('boughtFeed', { n: 5 }, 2200, false, { icon: 'feed', sub: t('feedCardSub') });
+      renderShop(); renderHUD();
+    }, false, t('feedShopDesc', { n: FEED_PER_DAY, max: FEED_MAX }));
   } else if (shopTab === 'clothes') {
     for (const cat of ['hat', 'shirt', 'pants']) {
       for (const [key, o] of Object.entries(OUTFITS[cat])) {
@@ -1691,7 +1897,8 @@ function renderShop() {
         const owned = G.owned[cat].includes(key);
         mkCard(iconBox(cat, key), o.name, o.price, () => {
           G.coins -= o.price; G.owned[cat].push(key); sfx.buy();
-          say('boughtClothes', { name: nm(cat, key) }); renderShop(); renderHUD();
+          say('boughtClothes', { name: nm(cat, key) }, 2400, false, { icon: '👕', sub: t('boughtCardSub') });
+          renderShop(); renderHUD();
         }, owned);
       }
     }
@@ -1700,8 +1907,10 @@ function renderShop() {
     // 母鸡最多 5 只、小鸡最多 10 只（孵蛋器孵出来的也算），其它动物最多 24 只
     const head = document.createElement('div');
     head.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
+    const chTrough = troughOf('chicken');
     head.textContent = t('animalCount', { n: cappedAnimalCount(), max: MAX_ANIMALS })
-      + ' · ' + t('logHens', { h: countHens(), hm: MAX_HENS, c: countChicks(), cm: MAX_CHICKS });
+      + ' · ' + t('logHens', { h: countHens(), hm: MAX_HENS, c: countChicks(), cm: MAX_CHICKS,
+                               f: chTrough ? chTrough.feed : 0 });
     box.appendChild(head);
     for (const a of ANIMAL_SHOP) {
       const isHenBuy = a.type === 'chicken';
@@ -1719,7 +1928,8 @@ function renderShop() {
         sfx.buy();
         sfx.animalVoice(a.type, 260);
         spawnParticles(na.x, na.y - 20, '💖', 5);
-        say('boughtAnimal', { animal: isHenBuy ? t('animalHen') : nm('animal', a.type) }, 2400);
+        say('boughtAnimal', { animal: isHenBuy ? t('animalHen') : nm('animal', a.type) }, 2500, false,
+            { icon: a.icon, sub: t('boughtAnimalSub') });
         renderShop(); renderHUD();
       }, false, sub);
     }
@@ -1737,7 +1947,7 @@ function renderShop() {
         G.zoo.push(newZoo(z.type, spot.x, spot.y));
         sfx.buy(); sfx.zooVoice(z.v, z.p, 300);
         spawnParticles(spot.x, spot.y - 20, '💖', 5);
-        say('boughtZoo', { animal: nm('zoo', z.type) }, 2600);
+        say('boughtZoo', { animal: nm('zoo', z.type) }, 2600, false, { icon: z.icon, sub: t('zooNote') });
         renderShop(); renderHUD();
       }, false, t('zooNote'));
     }
@@ -1753,7 +1963,8 @@ function renderShop() {
         sfx.buy(); renderHUD();
         closeModal('shop-modal');
         G.placing = { id: d.id };
-        say('boughtDecor', { key: KEY_HINT, extra: isTouch ? '' : t('cancelHint') }, 3200);
+        say('boughtDecor', { key: KEY_HINT, extra: isTouch ? '' : t('cancelHint') }, 3200, false,
+            { big: true, icon: d.icon, sub: t('boughtCardSub') });
       }, false, t('placeFree'));
     }
   } else {
@@ -1763,7 +1974,7 @@ function renderShop() {
         G.coins -= o.price; G.petHatsOwned.push(key);
         G.pet.hat = key; G.pet.happy = 3; sfx.buy();
         spawnParticles(G.pet.x, G.pet.y - 20, '💖', 4);
-        say('wearPetHat', { pet: t(G.pet.type === 'dog' ? 'dog' : 'cat') });
+        say('wearPetHat', { pet: petName() }, 2400, false, { icon: o.icon, sub: t('boughtCardSub') });
         renderShop(); renderHUD();
       }, owned);
     }
@@ -1858,7 +2069,7 @@ function renderCook() {
       addItem(r.id);
       sfx.cook();
       spawnParticles(G.player.x, G.player.y - 30, '✨', 6);
-      say('cookDone', { dish: nm('item', r.id) });
+      say('cookDone', { dish: nm('item', r.id) }, 2400, false, { icon: r.id, sub: t('cookCardSub') });
       renderCook();
     };
     d.appendChild(b);
@@ -2016,11 +2227,12 @@ function nearestInteract() {
       best = { kind: 'customer', c, label: `${ITEMS[c.want].icon} ${t('prCustomer', { item: nm('item', c.want), name: custName(c) })}` };
     }
   }
-  // 3. 动物
+  // 3. 动物（饿跑了的动物只会告诉你它饿了）
   for (const a of G.animals) {
     const d = dist(p.x, p.y, a.x, a.y);
     if (d < bestD) {
-      if (a.type === 'sheep' && a.wool > 0.5) { bestD = d; best = { kind: 'shear', a, label: t('prShear') }; }
+      if (a.tired) { bestD = d; best = { kind: 'hungry', a, label: t('prHungryAnimal', { animal: nm('animal', a.type) }) }; }
+      else if (a.type === 'sheep' && a.wool > 0.5) { bestD = d; best = { kind: 'shear', a, label: t('prShear') }; }
       else if (a.type === 'cow' && a.milkReady) { bestD = d; best = { kind: 'milk', a, label: t('prMilk') }; }
       else if (a.type === 'chicken') {
         bestD = d;
@@ -2056,6 +2268,17 @@ function nearestInteract() {
       best = { kind: 'tree', tr, label: `${ITEMS[tr.type].icon} ${t('prTree', { fruit: nm('item', tr.type) })}` };
     }
   }
+  // 5.5 食槽：走到旁边就能放饲料（比别的交互优先）
+  for (const tr of TROUGHS) {
+    if (!countAnimalType(tr.type)) continue;
+    const d = dist(p.x, p.y, tr.x, tr.y);
+    if (d < tr.r && d < bestD + 6) {
+      bestD = Math.min(bestD, d);
+      best = tr.feed > 0
+        ? { kind: 'trough', tr, label: t('prTrough', { animal: nm('animal', tr.type), n: tr.feed, max: FEED_MAX }) }
+        : { kind: 'trough', tr, label: t('prTroughEmpty', { animal: nm('animal', tr.type) }) };
+    }
+  }
   // 6. 设施
   const zoneChecks = [
     ['kitchen', 'cook', t('prCook')],
@@ -2063,7 +2286,9 @@ function nearestInteract() {
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
     ['tank', 'tank', t('prTank')],
-    ['hatchery', 'hatch', t('prHatch', { n: G.incubating.length, max: MAX_INCUBATE })],
+    ['hatchery', 'hatch', G.incubating.length
+        ? t('hatchDays', { n: G.incubating.length, d: hatchDaysLeft() })
+        : t('prHatch', { n: G.incubating.length, max: MAX_INCUBATE })],
   ];
   for (const [zk, kind, label] of zoneChecks) {
     const z = ZONES[zk];
@@ -2100,21 +2325,22 @@ function doInteract() {
   if (G.placing) { placeDecoration(); return; }
   // 钓鱼中再按 = 收杆
   if (G.fishing) { reelIn(); return; }
-  const t = nearestInteract();
-  if (!t) return;
+  const target = nearestInteract();
+  if (!target) return;
   const p = G.player;
   p.actionT = 0.6;
 
-  switch (t.kind) {
+  switch (target.kind) {
     case 'item': {
-      G.groundItems.splice(G.groundItems.indexOf(t.it), 1);
-      addItem(t.it.id); sfx.pickup();
-      note('logPickup', { item: nm('item', t.it.id) });
-      spawnParticles(t.it.x, t.it.y - 10, '✨', 3);
+      G.groundItems.splice(G.groundItems.indexOf(target.it), 1);
+      addItem(target.it.id); sfx.pickup();
+      note('logPickup', { item: nm('item', target.it.id) });
+      bigToast(target.it.id, t('gotCard', { item: nm('item', target.it.id) }), t('gotCardSub'), 2000);
+      spawnParticles(target.it.x, target.it.y - 10, '✨', 3);
       break;
     }
     case 'customer': {
-      const c = t.c;
+      const c = target.c;
       if (removeItem(c.want)) {
         const gain = Math.round(ITEMS[c.want].price * 1.5);
         G.coins += gain; renderHUD();
@@ -2130,32 +2356,39 @@ function doInteract() {
       break;
     }
     case 'shear':
-      t.a.wool = 0; t.a.woolT = 0;
+      target.a.wool = 0; target.a.woolT = 0;
       addItem('wool'); sfx.shear(); sfx.animalVoice('sheep', 230);
       note('logShear');
-      spawnParticles(t.a.x, t.a.y - 20, '✨', 5);
-      say('gotWool');
+      spawnParticles(target.a.x, target.a.y - 20, '✨', 5);
+      bigToast('wool', t('gotCard', { item: nm('item', 'wool') }), t('gotCardSub'), 2000);
       break;
     case 'milk':
-      t.a.milkReady = false; t.a.milkT = 0;
+      target.a.milkReady = false; target.a.milkT = 0;
       addItem('milk'); sfx.milk(); sfx.animalVoice('cow', 270);
       note('logMilk');
-      spawnParticles(t.a.x, t.a.y - 20, '🥛', 4);
-      say('gotMilk');
+      spawnParticles(target.a.x, target.a.y - 20, '🥛', 4);
+      bigToast('milk', t('gotCard', { item: nm('item', 'milk') }), t('gotCardSub'), 2000);
+      break;
+    case 'hungry':
+      sfx.error();
+      say('animalHungry', { animal: nm('animal', target.a.type) }, 2400);
+      break;
+    case 'trough':
+      fillTrough(target.tr);
       break;
     case 'petChicken': case 'petSheep': case 'petCow':
-      spawnParticles(t.a.x, t.a.y - 20, '💖', 3);
-      sfx.pet(); sfx.animalVoice(t.a.type, 130, t.a);   // 摸一摸，动物会回应你
+      spawnParticles(target.a.x, target.a.y - 20, '💖', 3);
+      sfx.pet(); sfx.animalVoice(target.a.type, 130, target.a);   // 摸一摸，动物会回应你
       break;
     case 'till':
-      t.pl.state = 'tilled'; sfx.till();
+      target.pl.state = 'tilled'; sfx.till();
       note('logTill');
-      spawnParticles(t.pl.x, t.pl.y, '🟫', 3);
+      spawnParticles(target.pl.x, target.pl.y, '🟫', 3);
       break;
     case 'plant': {
       const seed = Object.keys(G.inventory).find(id => ITEMS[id].seed);
       if (seed && removeItem(seed)) {
-        t.pl.state = 'seed'; t.pl.crop = ITEMS[seed].seed; t.pl.stage = 0; t.pl.timer = 0;
+        target.pl.state = 'seed'; target.pl.crop = ITEMS[seed].seed; target.pl.stage = 0; target.pl.timer = 0;
         sfx.plant();
         note('logPlant', { seed: nm('item', seed) });
       }
@@ -2165,22 +2398,22 @@ function doInteract() {
       sfx.error(); say('noSeed');
       break;
     case 'water':
-      t.pl.watered = true; sfx.water();
+      target.pl.watered = true; sfx.water();
       note('logWater');
-      spawnParticles(t.pl.x, t.pl.y - 6, '💧', 4);
+      spawnParticles(target.pl.x, target.pl.y - 6, '💧', 4);
       break;
     case 'harvest':
-      addItem(t.pl.crop, 2);
-      spawnParticles(t.pl.x, t.pl.y - 10, '✨', 6);
+      addItem(target.pl.crop, 2);
+      spawnParticles(target.pl.x, target.pl.y - 10, '✨', 6);
       sfx.harvest();
-      say('harvested', { crop: nm('crop', t.pl.crop) });
-      t.pl.state = 'tilled'; t.pl.crop = null; t.pl.watered = false;
+      say('harvested', { crop: nm('crop', target.pl.crop) }, 2200, false, { icon: target.pl.crop, sub: t('gotCardSub') });
+      target.pl.state = 'tilled'; target.pl.crop = null; target.pl.watered = false;
       break;
     case 'tree': {
-      t.tr.fruits--;
-      const fx = t.tr.x + rand(-30, 30), fy = t.tr.y + rand(-5, 15);
-      G.groundItems.push({ id: t.tr.type, x: fx, y: fy, phase: rand(0, 6) });
-      spawnParticles(t.tr.x, t.tr.y - 40, '🍃', 4);
+      target.tr.fruits--;
+      const fx = target.tr.x + rand(-30, 30), fy = target.tr.y + rand(-5, 15);
+      G.groundItems.push({ id: target.tr.type, x: fx, y: fy, phase: rand(0, 6) });
+      spawnParticles(target.tr.x, target.tr.y - 40, '🍃', 4);
       sfx.shake();
       break;
     }
@@ -2202,14 +2435,14 @@ function doInteract() {
       HIVE.honeyT = 0;
       sfx.pickup(); sfx.buzz(120);
       spawnParticles(HIVE.x, HIVE.y - 40, '🍯', 5);
-      say('honeyGot', null, 2200);
+      bigToast('honey', t('honeyGot'), t('gotCardSub'), 2400);
       note('logHoney');
       saveGame(true);
       break;
     case 'honeyWait':
       sfx.error(); say('honeyNotReady');
       break;
-    case 'fish': startFishing(t.pond); break;
+    case 'fish': startFishing(target.pond); break;
   }
 }
 
@@ -2241,7 +2474,7 @@ function reelIn() {
     sfx.catchf();
     spawnParticles(f.bx, f.by, '💦', 8);
     spawnParticles(f.bx, f.by - 12, ITEMS[id].icon, 1);
-    say('caught', { fish: nm('item', id), pond: pondLabel(pond) }, 2600);
+    say('caught', { fish: nm('item', id), pond: pondLabel(pond) }, 2600, false, { icon: id, sub: t('gotCardSub') });
     G.pet.happy = 2;
     saveGame(true);
   } else {
@@ -2412,8 +2645,10 @@ function update(dt) {
       a.waitT -= dt;
       if (a.type === 'chicken' && Math.random() < dt * (chick ? 0.85 : 0.5)) a.peck = 0.5;
       if (a.waitT <= 0) {
-        // 小鸡就在鸡棚附近走走，母鸡可以走远一点
-        const r = a.type === 'chicken' ? (chick ? a.home.r * 0.55 : a.home.r) : a.home.r;
+        // 小鸡就在鸡棚附近走走，母鸡可以走远一点；
+        // 饿跑的动物（连续 3 天没饲料）会跑出围栏到处乱走
+        const base = a.type === 'chicken' ? (chick ? a.home.r * 0.55 : a.home.r) : a.home.r;
+        const r = a.tired ? base * 2.2 : base;
         a.tx = a.home.x + rand(-r, r);
         a.ty = a.home.y + rand(-r * 0.8, r * 0.8);
         a.tx = Math.max(30, Math.min(WORLD_W - 30, a.tx));
@@ -2423,9 +2658,12 @@ function update(dt) {
         if (chick && Math.random() < 0.25) sfx.chick();
       }
     }
+    // 饿跑了就先不产出（要往食槽里放饲料）
+    const starving = !!a.tired;
+
     // 生产：只有母鸡会下蛋（小鸡只管到处跑、啄米）
     if (a.type === 'chicken') {
-      if (!chick) {
+      if (!chick && !starving) {
         a.eggT -= dt;
         if (a.eggT <= 0) {
           a.eggT = rand(35, 60);
@@ -2435,10 +2673,10 @@ function update(dt) {
           note('logEgg');
         }
       }
-    } else if (a.type === 'sheep' && a.wool < 1) {
+    } else if (a.type === 'sheep' && a.wool < 1 && !starving) {
       a.woolT += dt;
       if (a.woolT > 80) { a.wool = 1; spawnParticles(a.x, a.y - 20, '✨', 4); sfx.sparkle(); note('logWoolBack'); }
-    } else if (a.type === 'cow' && !a.milkReady) {
+    } else if (a.type === 'cow' && !a.milkReady && !starving) {
       a.milkT += dt;
       if (a.milkT > 60) { a.milkReady = true; spawnParticles(a.x, a.y - 20, '🥛', 2); sfx.sparkle(); note('logMilkBack'); }
     }
@@ -2594,9 +2832,10 @@ function update(dt) {
     if (G.saveT >= SAVE_EVERY) saveGame(true);   // 自动存档不刷日志
   }
 
-  // --- 相机 ---
-  G.cam.x = Math.max(0, Math.min(WORLD_W - VIEW_W, p.x - VIEW_W / 2));
-  G.cam.y = Math.max(0, Math.min(WORLD_H - VIEW_H, p.y - VIEW_H / 2));
+  // --- 相机（画面放大了，可视范围要相应缩小） ---
+  const camW = VIEW_W / CAMERA_ZOOM, camH = VIEW_H / CAMERA_ZOOM;
+  G.cam.x = Math.max(0, Math.min(WORLD_W - camW, p.x - camW / 2));
+  G.cam.y = Math.max(0, Math.min(WORLD_H - camH, p.y - camH / 2));
 
   // --- 交互提示 ---
   const pr = $('prompt');
@@ -2642,8 +2881,8 @@ function nextDay() {
     else if (pl.state === 'growing') pl.timer += 20;
     pl.watered = G.weather === 'rain';
   }
-  // 鸡棚：小鸡长大（第 5 天变母鸡）、孵蛋器推进一天
-  dailyChickenUpdate();
+  // 农场日常：结算饲料（连续 3 天没喂就饿跑）→ 小鸡长大 → 孵蛋器推进一天
+  dailyFarmUpdate();
   renderHUD();
   if (G.weather === 'rain') sfx.rain(); else sfx.morning();
   saveGame();   // 换天时存一次
@@ -2656,11 +2895,12 @@ function render() {
   const t = G.t;
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   ctx.save();
+  ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
   ctx.translate(-G.cam.x, -G.cam.y);
 
   // 草地底色
   ctx.fillStyle = G.weather === 'rain' ? '#6fae66' : '#8fd48a';
-  ctx.fillRect(G.cam.x, G.cam.y, VIEW_W, VIEW_H);
+  ctx.fillRect(G.cam.x, G.cam.y, VIEW_W / CAMERA_ZOOM, VIEW_H / CAMERA_ZOOM);
   // 深浅草地格子（卡通感）
   ctx.fillStyle = 'rgba(255,255,255,.06)';
   for (let gy = 0; gy < WORLD_H; gy += 80)
@@ -2710,6 +2950,11 @@ function render() {
 
   // y 排序渲染的实体集合
   const drawables = [];
+  // 食槽（每天的饲料放这里）
+  for (const tr of TROUGHS) {
+    if (!countAnimalType(tr.type)) continue;
+    drawables.push({ y: tr.y + 6, draw: () => drawTrough(ctx, tr.x, tr.y, t, tr.feed, FEED_MAX, tr.feed <= 0) });
+  }
   // 棚舍小窝（鸡棚/羊棚/牛棚）
   drawables.push({ y: PENS.chicken.y + 28, draw: () => drawCoopHouse(ctx, PENS.chicken.x + 52, PENS.chicken.y + 28, t) });
   drawables.push({ y: PENS.sheep.y + 30, draw: () => drawSheepShed(ctx, PENS.sheep.x + 75, PENS.sheep.y + 30, t) });
@@ -2769,9 +3014,23 @@ function render() {
       y: a.y + 14,
       draw: () => {
         const o = { ...a, t };
-        if (a.type === 'chicken') { o.scale = isChick(a) ? CHICK_SCALE : HEN_GROW; drawChicken(ctx, a.x, a.y, o); }
+        // 人物和动物都比以前大一点（手机上更好看清）
+        const grow = (a.type === 'chicken' ? (isChick(a) ? CHICK_SCALE : HEN_GROW) : 1) * ANIMAL_SCALE;
+        o.scale = grow;
+        if (a.type === 'chicken') drawChicken(ctx, a.x, a.y, o);
         else if (a.type === 'sheep') drawSheep(ctx, a.x, a.y, o);
         else drawCow(ctx, a.x, a.y, o);
+        // 饿跑了的动物头顶冒一个「饿」的提示
+        if (a.tired) {
+          const by = a.y - 46 * grow + Math.sin(t * 3 + a.phase) * 2;
+          ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillStyle = '#fff';
+          rr(ctx, a.x - 26, by - 15, 52, 19, 8); ctx.fill();
+          ctx.strokeStyle = '#ff7a7a'; ctx.lineWidth = 2;
+          rr(ctx, a.x - 26, by - 15, 52, 19, 8); ctx.stroke();
+          ctx.fillStyle = '#d13b3b';
+          ctx.fillText('🌾❗', a.x, by);
+        }
       },
     });
   }
@@ -2815,13 +3074,14 @@ function render() {
     if (c.pet) drawables.push({ y: c.pet.y + 10, draw: () => drawPet(ctx, c.pet.x, c.pet.y, { ...c.pet, t }) });
   }
   // 宠物 & 玩家
-  drawables.push({ y: G.pet.y + 10, draw: () => drawPet(ctx, G.pet.x, G.pet.y, { ...G.pet, t }) });
+  drawables.push({ y: G.pet.y + 10, draw: () => drawPet(ctx, G.pet.x, G.pet.y, { ...G.pet, t, scale: PET_SCALE }) });
   drawables.push({
     y: p_y() + 20,
     draw: () => drawPlayer(ctx, G.player.x, G.player.y, {
       gender: G.player.gender, dir: G.player.dir,
       walkPhase: G.player.walkPhase, moving: G.player.moving,
       outfit: G.player.outfit, actionT: G.player.actionT, rod: !!G.fishing, t,
+      scale: PET_SCALE,          // 人物整体放大一点
     }),
   });
   drawables.sort((a, b) => a.y - b.y);
@@ -2899,9 +3159,10 @@ function render() {
     ctx.strokeStyle = 'rgba(180,220,255,.55)';
     ctx.lineWidth = 1.5;
     const off = (t * 500) % 40;
+    const visW = VIEW_W / CAMERA_ZOOM, visH = VIEW_H / CAMERA_ZOOM;
     for (let i = 0; i < 130; i++) {
-      const rx = ((i * 137 + G.cam.x) % (VIEW_W + 60)) + G.cam.x - 30;
-      const ry = ((i * 89) % VIEW_H) + off * ((i % 3) + 1) / 3 % VIEW_H + G.cam.y;
+      const rx = ((i * 137 + G.cam.x) % (visW + 60)) + G.cam.x - 30;
+      const ry = ((i * 89) % visH) + off * ((i % 3) + 1) / 3 % visH + G.cam.y;
       ctx.beginPath();
       ctx.moveTo(rx, ry);
       ctx.lineTo(rx - 4, ry + 12);
@@ -3076,7 +3337,8 @@ function fitScreen() {
   // HUD 的文字大小跟着画面缩放走：
   // 缩放得很小（手机）时把字放大一点才看得清，但放大到一定程度就顶到右边按钮了，
   // 所以这里按 1/s 开根号来放，缩放极小时甚至会缩小一点，保证 5 个按钮都不出界
-  const ui = Math.max(0.75, Math.min(1.45, Math.sqrt(1 / s) * 0.72));
+  // 基础字号变大了，这里的补偿系数相应调小（总宽度基本不变）
+  const ui = Math.max(0.7, Math.min(1.35, Math.sqrt(1 / s) * 0.62));
   gw.style.setProperty('--ui-scale', ui.toFixed(3));
 }
 window.addEventListener('resize', fitScreen);
@@ -3212,7 +3474,7 @@ renderHUD();
 
 // 调试用的小开关（方便在控制台里看状态 / 测试）
 window.__farm = {
-  G, HIVE, ZONES, PENS, FOREST, ITEMS,
+  G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,

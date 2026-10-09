@@ -196,6 +196,8 @@ function drawPlayer(ctx, x, y, o) {
   ctx.save();
   ctx.translate(x, yy);
   if (o.dir === 'left' || o.dir === 'right') ctx.scale(dirX, 1);
+  const sc = o.scale || 1;
+  if (sc !== 1) ctx.scale(sc, sc);
 
   drawShadow(ctx, 0, bob, 15);
 
@@ -514,7 +516,7 @@ function drawChicken(ctx, x, y, a) {
   const bob = Math.sin(a.t * 3 + a.phase) * 1;
   // 小鸡 / 母鸡：同一套画法，靠 scale 区分大小（小鸡小小一只还带点绒毛）
   const s = a.scale || 1;
-  const isChick = s < 0.85;
+  const isChick = s < 0.9;      // 小鸡永远比母鸡小
   ctx.save();
   ctx.translate(x, y - hop * s);
   if (a.dir === 'left') ctx.scale(-1, 1);
@@ -575,6 +577,8 @@ function drawSheep(ctx, x, y, a) {
   ctx.save();
   ctx.translate(x, y - bob);
   if (a.dir === 'left') ctx.scale(-1, 1);
+  const sc = a.scale || 1;
+  if (sc !== 1) ctx.scale(sc, sc);
   drawShadow(ctx, 0, bob, 14);
   const step = a.moving ? Math.sin(a.walkPhase) * 4 : 0;
   ctx.strokeStyle = '#4a4a4a'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
@@ -609,6 +613,8 @@ function drawCow(ctx, x, y, a) {
   ctx.save();
   ctx.translate(x, y - bob);
   if (a.dir === 'left') ctx.scale(-1, 1);
+  const sc = a.scale || 1;
+  if (sc !== 1) ctx.scale(sc, sc);
   drawShadow(ctx, 0, bob, 19);
   const step = a.moving ? Math.sin(a.walkPhase) * 4 : 0;
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.lineCap = 'round';
@@ -743,6 +749,8 @@ function drawPet(ctx, x, y, p) {
   ctx.save();
   ctx.translate(x, y - hop);
   if (p.dir === 'left') ctx.scale(-1, 1);
+  const sc = p.scale || 1;
+  if (sc !== 1) ctx.scale(sc, sc);
   if (p.type === 'duck') { drawDuckPet(ctx, p); ctx.restore(); return; }
   if (p.type === 'goose') { drawGoosePet(ctx, p); ctx.restore(); return; }
   drawShadow(ctx, 0, hop, 9);
@@ -1726,7 +1734,52 @@ function drawForestDecor(ctx, kind, x, y, t, phase) {
 }
 
 /* ------------------------------------------------------------
- * 鸡棚里的孵蛋器（放鸡蛋进去，3 天孵出小鸡）
+ * 食槽（每天放饲料，动物才有产出；连续 3 天没放会饿跑）
+ * ---------------------------------------------------------- */
+function drawTrough(ctx, x, y, t, feed, max, hungry) {
+  max = max || 15;
+  feed = feed || 0;
+  const full = feed / max;
+  drawShadow(ctx, x, y + 1, 26);
+  // 木槽
+  ctx.fillStyle = '#b8905e';
+  rr(ctx, x - 25, y - 16, 50, 17, 4); ctx.fill();
+  ctx.fillStyle = '#a57c4a';
+  rr(ctx, x - 25, y - 4, 50, 5, 2); ctx.fill();
+  rr(ctx, x - 28, y - 20, 6, 22, 2); ctx.fill();
+  rr(ctx, x + 22, y - 20, 6, 22, 2); ctx.fill();
+  // 槽里的饲料（按剩余量决定高度）
+  if (feed > 0) {
+    const h = 3 + full * 9;
+    ctx.fillStyle = '#f4d35e';
+    rr(ctx, x - 20, y - 6 - h, 40, h, 3); ctx.fill();
+    // 谷粒
+    ctx.fillStyle = '#e0b53c';
+    for (let i = 0; i < 7; i++) {
+      const gx = x - 16 + ((i * 11) % 34);
+      const gy = y - 8 - ((i * 7) % Math.max(2, h - 2));
+      ellipse(ctx, gx, gy, 1.6, 1.1); ctx.fill();
+    }
+  }
+  // 剩余份数小牌子
+  ctx.fillStyle = '#fff8e6';
+  rr(ctx, x - 15, y - 40, 30, 17, 5); ctx.fill();
+  ctx.strokeStyle = hungry ? '#e05252' : '#d9a62e'; ctx.lineWidth = 2;
+  rr(ctx, x - 15, y - 40, 30, 17, 5); ctx.stroke();
+  ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = hungry ? '#c0392b' : '#7a4a12';
+  ctx.fillText('🌾' + feed, x, y - 27);
+  // 没饲料了：冒感叹号提醒
+  if (hungry) {
+    const b = Math.sin(t * 5) * 3;
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#ff3a3a';
+    ctx.fillText('❗', x + 22, y - 40 + b);
+  }
+}
+
+/* ------------------------------------------------------------
+ * 鸡棚里的孵蛋器（放鸡蛋进去，15 天长出小鸡）
  * ---------------------------------------------------------- */
 function drawHatchery(ctx, x, y, t, eggs) {
   eggs = eggs || [];

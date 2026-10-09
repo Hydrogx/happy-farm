@@ -53,8 +53,8 @@ canvas {
   background: rgba(255, 252, 240, .92);
   border: 3px solid #ffb84d;
   border-radius: 14px;
-  padding: 4px 11px;
-  font-size: calc(17px * var(--ui-scale));
+  padding: 5px 13px;
+  font-size: calc(22px * var(--ui-scale));
   font-weight: bold; color: #7a4a12;
   box-shadow: 0 3px 0 #e09a2f;
   white-space: nowrap;
@@ -72,7 +72,7 @@ canvas {
 /* 存档按钮：平时半透明，保存时闪一下 */
 #save-box { opacity: .62; transition: opacity .25s, transform .25s, box-shadow .25s; }
 #save-box.flash { opacity: 1; transform: scale(1.2); box-shadow: 0 3px 0 #e09a2f, 0 0 0 4px rgba(255,200,90,.55); }
-.save-info { font-size: 14px; color: #7a6a4a; background: rgba(255,255,255,.7); border-radius: 10px; padding: 4px 14px; }
+.save-info { font-size: 17px; color: #7a6a4a; background: rgba(255,255,255,.7); border-radius: 10px; padding: 4px 14px; }
 
 /* 画面被缩得比较小的时候：HUD 留白收紧、边框变细，给文字让地方 */
 @media (max-width: 900px) {
@@ -92,7 +92,7 @@ canvas {
 /* 手机竖屏：基础字号调小 + 时间省略（标题栏上还有天数），保证两栏不重叠 */
 @media (max-width: 560px) {
   #hud { left: 6px; right: 6px; gap: 4px; }
-  .hud-box { padding: 2px 5px; border-radius: 9px; font-size: calc(13px * var(--ui-scale)); }
+  .hud-box { padding: 2px 5px; border-radius: 9px; font-size: calc(15px * var(--ui-scale)); }
   #hud .hud-left .hud-box:nth-child(3) { display: none; }
   #hud .hud-left .hud-box:nth-child(2) { display: none; }   /* 天数：开始界面和日志里都有 */
 }
@@ -101,30 +101,35 @@ canvas {
 #inventory {
   position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 6px; pointer-events: none;
-  max-width: 94%; flex-wrap: wrap; justify-content: center;
+  max-width: 94%; flex-wrap: nowrap; justify-content: center;
+  /* --inv-slot / --inv-emoji 由 renderInventory() 按物品数量设置：
+     东西多的时候格子自动缩小，永远只占一行、不会压住日志框和提示 */
+  --inv-slot: 62px; --inv-emoji: 40px; --inv-font: 26px; --inv-cnt: 15px;
 }
 .inv-slot {
-  width: 52px; height: 52px;
+  width: var(--inv-slot); height: var(--inv-slot);
   background: rgba(255, 252, 240, .92);
   border: 3px solid #ffb84d; border-radius: 12px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  font-size: 22px; position: relative;
+  font-size: var(--inv-font); position: relative;
   box-shadow: 0 3px 0 #e09a2f;
+  flex: 0 0 auto;
 }
 .inv-slot .cnt {
-  position: absolute; right: 2px; bottom: 0;
-  font-size: 12px; font-weight: bold; color: #7a4a12;
+  position: absolute; right: 1px; bottom: 0;
+  font-size: var(--inv-cnt); font-weight: bold; color: #7a4a12;
   background: #ffe9b8; border-radius: 8px; padding: 0 4px;
 }
 
 /* ---------- 交互提示 ---------- */
 #prompt {
   position: absolute; left: 50%; transform: translateX(-50%);
-  bottom: 76px;
+  bottom: 92px;
   background: #fffbe8; border: 3px solid #7ac74f;
-  border-radius: 999px; padding: 6px 18px;
-  font-size: 17px; font-weight: bold; color: #3f7a1e;
+  border-radius: 999px; padding: 7px 20px;
+  font-size: 21px; font-weight: bold; color: #3f7a1e;
+  max-width: 94%; text-align: center;
   box-shadow: 0 3px 0 #5da335;
   animation: bounce .8s infinite alternate ease-in-out;
   pointer-events: none; white-space: nowrap;
@@ -133,12 +138,41 @@ canvas {
 
 /* ---------- 提示气泡 ---------- */
 #toast {
-  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
-  background: #ff6b8a; color: #fff; font-weight: bold; font-size: 18px;
-  border-radius: 999px; padding: 8px 22px;
+  position: absolute; top: 62px; left: 50%; transform: translateX(-50%);
+  background: #ff6b8a; color: #fff; font-weight: bold; font-size: 20px;
+  border-radius: 999px; padding: 9px 24px;
   border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,.2);
   animation: pop .3s ease-out; pointer-events: none; z-index: 40;
+  max-width: 92%; text-align: center;
 }
+
+/* ---------- 大图卡片提示（拿到 / 买到东西） ---------- */
+#big-toast {
+  position: absolute; inset: 0; z-index: 70; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.big-toast-card {
+  display: flex; align-items: center; gap: 16px;
+  background: linear-gradient(180deg, #fffdf4, #fff4d8);
+  border: 5px solid #ffb84d; border-radius: 24px;
+  padding: 14px 30px 14px 22px;
+  box-shadow: 0 12px 34px rgba(120,80,20,.35), 0 0 0 6px rgba(255,255,255,.45);
+  animation: bigcard .34s cubic-bezier(.2,1.5,.5,1);
+  max-width: 88%;
+}
+@keyframes bigcard {
+  from { transform: scale(.55) translateY(20px); opacity: 0; }
+  60%  { transform: scale(1.06); opacity: 1; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.big-toast-icon {
+  font-size: 68px; line-height: 1; width: 84px; height: 84px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff8e0; border: 4px solid #ffd88a; border-radius: 20px;
+  flex: 0 0 auto;
+}
+.big-toast-title { font-size: 30px; font-weight: bold; color: #d35400; line-height: 1.2; }
+.big-toast-sub { font-size: 18px; color: #a8906a; margin-top: 4px; font-weight: bold; }
 @keyframes pop { from { transform: translateX(-50%) scale(.5); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 
 /* ---------- 开始界面 / 全屏面板 ---------- */
@@ -155,41 +189,41 @@ canvas {
 .panel-full > *:first-child { margin-top: auto; }
 .panel-full > *:last-child { margin-bottom: auto; }
 .title {
-  font-size: 36px; line-height: 1.05; color: #ff7b54;
+  font-size: 42px; line-height: 1.05; color: #ff7b54;
   text-shadow: 3px 3px 0 #fff, 6px 6px 0 rgba(255,150,80,.3);
   animation: wiggle 2s infinite ease-in-out;
 }
 @keyframes wiggle { 0%,100% { transform: rotate(-2deg) scale(1); } 50% { transform: rotate(2deg) scale(1.04); } }
-.subtitle { font-size: 15px; color: #5a7a3a; font-weight: bold; line-height: 1.2; }
+.subtitle { font-size: 19px; color: #5a7a3a; font-weight: bold; line-height: 1.2; }
 
 .choose-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .choose-card {
   background: #fffdf4; border: 3px solid #ddd; border-radius: 16px;
-  padding: 5px 14px; cursor: pointer; font-size: 15px; font-weight: bold; color: #666;
+  padding: 7px 18px; cursor: pointer; font-size: 19px; font-weight: bold; color: #666;
   line-height: 1.2; transition: transform .15s, border-color .15s;
 }
 .choose-card:hover { transform: scale(1.06); }
 .choose-card.selected { border-color: #ff9f43; color: #d35400; background: #fff3d6; transform: scale(1.08); box-shadow: 0 6px 16px rgba(255,159,67,.4); }
-.big-emoji { font-size: 36px; line-height: 1.1; }
+.big-emoji { font-size: 44px; line-height: 1.1; }
 
 .big-btn {
   margin-top: 6px;
   background: linear-gradient(180deg, #7ddb6a, #4fb83a);
-  color: #fff; font-size: 21px; font-weight: bold;
-  border: none; border-radius: 999px; padding: 9px 34px;
+  color: #fff; font-size: 26px; font-weight: bold;
+  border: none; border-radius: 999px; padding: 11px 40px;
   cursor: pointer; font-family: inherit;
   box-shadow: 0 6px 0 #35852a, 0 8px 16px rgba(0,0,0,.2);
   transition: transform .12s;
 }
 .big-btn:hover { transform: scale(1.06); }
 .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #35852a; }
-.help-hint { font-size: 14px; color: #7a6a4a; background: rgba(255,255,255,.6); border-radius: 12px; padding: 4px 14px; }
+.help-hint { font-size: 17px; color: #7a6a4a; background: rgba(255,255,255,.6); border-radius: 12px; padding: 4px 14px; }
 
 /* ---------- 开始界面：取名字 ---------- */
 .name-row { display: flex; align-items: center; gap: 10px; }
-.name-label { font-size: 17px; font-weight: bold; color: #5a7a3a; }
+.name-label { font-size: 21px; font-weight: bold; color: #5a7a3a; }
 #name-input {
-  font-family: inherit; font-size: 19px; font-weight: bold; color: #7a4a12;
+  font-family: inherit; font-size: 23px; font-weight: bold; color: #7a4a12;
   background: #fffdf4; border: 3px solid #ffb84d; border-radius: 999px;
   padding: 7px 18px; width: 220px; text-align: center; outline: none;
   box-shadow: 0 3px 0 #e09a2f;
@@ -207,7 +241,7 @@ canvas {
   /* 高度由内容决定，绝不被上面板子的 flex 压扁（否则文字会被裁掉） */
   flex: 0 0 auto;
 }
-.save-panel-head { font-size: 11px; font-weight: bold; color: #b08a3a; margin-bottom: 3px; flex: 0 0 auto; white-space: nowrap; }
+.save-panel-head { font-size: 14px; font-weight: bold; color: #b08a3a; margin-bottom: 3px; flex: 0 0 auto; white-space: nowrap; }
 .save-list {
   display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
 }
@@ -221,8 +255,8 @@ canvas {
   display: flex; flex-direction: column; cursor: pointer;
   background: none; border: none; font-family: inherit; padding: 0; text-align: left;
 }
-.save-chip-name { font-size: 14px; font-weight: bold; color: #7a4a12; line-height: 1.2; }
-.save-chip-info { font-size: 10px; color: #a8906a; line-height: 1.25; }
+.save-chip-name { font-size: 18px; font-weight: bold; color: #7a4a12; line-height: 1.2; }
+.save-chip-info { font-size: 13px; color: #a8906a; line-height: 1.25; }
 .save-chip-del {
   width: 22px; height: 22px; border-radius: 50%; cursor: pointer; flex: 0 0 auto;
   background: #ffe0e0; border: 2px solid #ff9a9a; color: #d44; font-size: 12px;
@@ -240,39 +274,39 @@ canvas {
 }
 .modal-card {
   background: #fffdf4; border: 5px solid #ffb84d; border-radius: 22px;
-  padding: 18px 26px; max-width: 620px; width: 88%;
+  padding: 20px 28px; max-width: 760px; width: 92%;
   max-height: 86%; overflow-y: auto;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,.3);
   animation: pop .25s ease-out;
 }
-.modal-card h2 { color: #e2701d; }
-.help-list { text-align: left; font-size: 16px; color: #5a4a2a; line-height: 1.9; list-style: none; }
+.modal-card h2 { color: #e2701d; font-size: 30px; }
+.help-list { text-align: left; font-size: 20px; color: #5a4a2a; line-height: 1.75; list-style: none; }
 
 .tab-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .tab-btn {
   background: #f2ead6; border: 3px solid #d8c9a3; border-radius: 12px;
-  padding: 6px 16px; font-size: 16px; font-weight: bold; color: #8a7a52;
+  padding: 8px 18px; font-size: 20px; font-weight: bold; color: #8a7a52;
   cursor: pointer; font-family: inherit;
 }
 .tab-btn.selected { background: #ffe3a3; border-color: #ff9f43; color: #d35400; }
 
 .shop-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   gap: 10px; width: 100%;
 }
 .shop-item {
   background: #fff8e6; border: 3px solid #ffd88a; border-radius: 14px;
-  padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  font-size: 14px; color: #6a5a3a; font-weight: bold;
+  padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  font-size: 18px; color: #6a5a3a; font-weight: bold;
 }
-.shop-item .icon { font-size: 34px; line-height: 1; height: 44px; display: flex; align-items: center; justify-content: center; }
-.shop-item .icon canvas { width: 44px; height: 44px; display: block; }
-.shop-item .sub { font-size: 11px; color: #a8906a; font-weight: normal; }
+.shop-item .icon { font-size: 44px; line-height: 1; height: 58px; display: flex; align-items: center; justify-content: center; }
+.shop-item .icon canvas { width: 56px; height: 56px; display: block; }
+.shop-item .sub { font-size: 14px; color: #a8906a; font-weight: normal; }
 .shop-item button {
   background: linear-gradient(180deg, #ffb347, #ff8c1a);
   border: none; border-radius: 999px; color: #fff; font-weight: bold;
-  padding: 4px 14px; cursor: pointer; font-family: inherit; font-size: 14px;
+  padding: 6px 16px; cursor: pointer; font-family: inherit; font-size: 18px;
   box-shadow: 0 3px 0 #d96f00;
 }
 .shop-item button:active { transform: translateY(2px); box-shadow: none; }
@@ -281,8 +315,8 @@ canvas {
 
 /* ---------- 牧场日志 ---------- */
 #log-box {
-  position: absolute; left: 12px; bottom: 12px; z-index: 25;
-  width: 306px; max-height: 132px;
+  position: absolute; left: 12px; top: calc(62px * var(--ui-scale) + 14px); z-index: 25;
+  width: 330px; max-height: 150px;
   background: rgba(255, 252, 240, .82);
   border: 3px solid #ffd88a; border-radius: 14px;
   padding: 5px 10px 7px; pointer-events: none;
@@ -290,17 +324,17 @@ canvas {
 }
 #log-box.hidden-log { display: none; }
 .log-head {
-  font-size: 12px; font-weight: bold; color: #b08a3a;
+  font-size: 15px; font-weight: bold; color: #b08a3a;
   border-bottom: 1px dashed #ffd88a; padding-bottom: 2px; margin-bottom: 3px;
 }
 .log-line {
-  font-size: 13px; color: #6a5a3a; line-height: 1.45;
+  font-size: 16px; color: #6a5a3a; line-height: 1.45;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   opacity: .62;
 }
 .log-line.newest { opacity: 1; font-weight: bold; color: #4a7a2a; }
-body.touch #log-box { bottom: 152px; width: 250px; max-height: 104px; }
-body.touch .log-line { font-size: 12px; }
+body.touch #log-box { top: calc(62px * var(--ui-scale) + 14px); width: 280px; max-height: 128px; }
+body.touch .log-line { font-size: 15px; }
 
 /* 语言切换按钮 */
 #btn-lang {
@@ -317,11 +351,11 @@ body.touch .log-line { font-size: 12px; }
 .lang-big:active { transform: translateY(2px); box-shadow: none; }
 
 /* ---------- 动画 emoji 图片 ---------- */
-.emoji-img { width: 34px; height: 34px; object-fit: contain; display: block; pointer-events: none; }
-.emoji-img.big { width: 46px; height: 46px; }
-.inv-slot .emoji-img { width: 34px; height: 34px; }
+.emoji-img { width: 40px; height: 40px; object-fit: contain; display: block; pointer-events: none; }
+.emoji-img.big { width: 54px; height: 54px; }
+.inv-slot .emoji-img { width: var(--inv-emoji); height: var(--inv-emoji); }
 .char-row { align-items: center; }
-.char-label { font-size: 13px; font-weight: bold; color: #b08a3a; margin-right: 4px; }
+.char-label { font-size: 17px; font-weight: bold; color: #b08a3a; margin-right: 4px; }
 
 /* ---------- 图鉴 / 帮助按钮 ---------- */
 #btn-book {
@@ -401,7 +435,7 @@ body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助�
   #touch-btns { right: 12px; bottom: 12px; gap: 10px; }
   .touch-btn { width: 78px; height: 78px; font-size: 34px; }
   .touch-btn.small { width: 50px; height: 50px; font-size: 21px; }
-  body.touch #inventory { bottom: 132px; }
+  body.touch #inventory { bottom: 150px; max-width: 78%; }
 }
 
 /* 竖屏提示 */
@@ -421,12 +455,23 @@ body.touch #btn-help { display: none; }   /* 触摸版用触摸 UI 里的帮助�
 
 /* ---------- 手机上的开始界面（画面被整体缩放，这里只保证不被裁掉） ---------- */
 @media (max-width: 720px) {
-  .title { font-size: 30px; }
-  .save-panel { max-height: 96px; }
-  .big-emoji { font-size: 32px; }
-  .choose-card { padding: 6px 14px; font-size: 15px; border-width: 3px; }
-  .big-btn { font-size: 19px; padding: 9px 26px; }
-  .name-label { font-size: 15px; }
-  #name-input { width: 170px; font-size: 17px; padding: 5px 14px; }
-  .save-list { max-height: 84px; }
+  .title { font-size: 32px; }
+  .save-panel { max-height: 104px; }
+  .big-emoji { font-size: 34px; }
+  .choose-card { padding: 5px 12px; font-size: 16px; border-width: 3px; }
+  .big-btn { font-size: 21px; padding: 8px 24px; }
+  .name-label { font-size: 17px; }
+  #name-input { width: 168px; font-size: 19px; padding: 5px 14px; }
+  .save-list { max-height: 88px; }
+  .help-hint { font-size: 14px; }
+  .subtitle { font-size: 16px; }
+  .modal-card h2 { font-size: 24px; }
+  .help-list { font-size: 17px; }
+  .tab-btn { font-size: 16px; padding: 6px 12px; }
+  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .shop-item { font-size: 15px; padding: 8px 6px; }
+  .shop-item button { font-size: 15px; }
+  .big-toast-icon { font-size: 54px; width: 68px; height: 68px; }
+  .big-toast-title { font-size: 23px; }
+  .big-toast-sub { font-size: 15px; }
 }
