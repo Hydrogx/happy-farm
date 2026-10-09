@@ -1666,7 +1666,7 @@ const ZONES = {
   wardrobe: { x: 930,  y: 370, r: 55 },
   bin:      { x: 1020, y: 490, r: 55 },
   stall:    { x: 1295, y: 300, r: 78 },
-  tank:     { x: 700,  y: 520, r: 132 },  // 水族箱（升级后会变大，这里给出 3 级都够用的交互半径）
+  tank:     { x: 790,  y: 560, r: 132 },  // 水族箱（升级后会变大，这里给出 3 级都够用的交互半径）
   rack:     { x: 545, y: 520, r: 86 },    // 停车架（骑上 / 停下交通工具）
   hatchery: { x: 250, y: 730, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡巢升级一起挪）
   petroom:  { x: 780, y: 300, r: 96 },    // 宠物房间（门口）
@@ -1702,9 +1702,9 @@ const PEN_RECTS = {
     { x: 100, y: 670, w: 340, h: 215 },
   ],
   sheep: [
-    { x: 500, y: 730, w: 210, h: 145 },
-    { x: 490, y: 715, w: 280, h: 180 },
-    { x: 480, y: 700, w: 350, h: 215 },
+    { x: 500, y: 750, w: 210, h: 145 },
+    { x: 490, y: 755, w: 290, h: 180 },
+    { x: 480, y: 755, w: 370, h: 210 },
   ],
   cow: [
     { x: 880, y: 720, w: 220, h: 150 },
@@ -1717,7 +1717,7 @@ const PEN_HOME = {
     { x: 220, y: 800, r: 70 }, { x: 245, y: 810, r: 82 }, { x: 270, y: 820, r: 95 },
   ],
   sheep: [
-    { x: 605, y: 830, r: 72 }, { x: 630, y: 840, r: 84 }, { x: 655, y: 850, r: 97 },
+    { x: 605, y: 835, r: 72 }, { x: 630, y: 850, r: 86 }, { x: 655, y: 860, r: 98 },
   ],
   cow: [
     { x: 990, y: 825, r: 75 }, { x: 1005, y: 835, r: 87 }, { x: 1005, y: 845, r: 99 },
@@ -1756,7 +1756,7 @@ const POND_SPEC = [
 ];
 
 // 水族箱：三个等级的体积（画出来的玻璃箱尺寸）
-const TANK_SIZE = [{ w: 240, h: 118 }, { w: 300, h: 140 }, { w: 360, h: 164 }];
+const TANK_SIZE = [{ w: 220, h: 112 }, { w: 280, h: 132 }, { w: 340, h: 150 }];
 // 商店摊位：升级后摊子变大、货架变多
 const STALL_SCALE = [1, 1.2, 1.45];
 
@@ -2251,10 +2251,10 @@ function initWorld() {
     { x: 1150, y: 750, w: 350, h: 200 },  // 大水坑
     { x: 1190, y: 180, w: 250, h: 190 },  // 摊位
     { x: 80,  y: 650, w: 380, h: 245 },   // 鸡巢（3 级最大范围）
-    { x: 460, y: 680, w: 390, h: 245 },   // 羊棚
+    { x: 450, y: 690, w: 420, h: 285 },   // 羊棚
     { x: 840, y: 670, w: 330, h: 245 },   // 牛棚
     { x: ORCHARD_RECTS[2].x, y: ORCHARD_RECTS[2].y, w: ORCHARD_RECTS[2].w, h: ORCHARD_RECTS[2].h }, // 果树园
-    { x: 620, y: 360, w: 340, h: 200 },   // 水族箱（水族箱在 700,520，玻璃箱往上延伸）
+    { x: 600, y: 370, w: 400, h: 210 },   // 水族箱（水族箱在 790,560，玻璃箱往上延伸）
     { x: 640, y: 130, w: 300, h: 200 },   // 宠物房间（3 级最大范围）
     { x: FOREST.x, y: FOREST.y, w: FOREST.w, h: FOREST.h },   // 森林
   ];
@@ -5851,7 +5851,7 @@ window.__farm = {
   maxSheep, maxCows, maxOtherAnimals, maxOrchard, maxTank, maxRecipes, maxPets,
   FACILITIES, FACILITY_ORDER, doUpgrade, applyLevels, lvOf, isMaxLv, upgradeCost,
   addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
-  newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, upgradeSignSpots, facName, facCapText, update,
+  newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, upgradeSignSpots, facName, facCapText, update, TANK_SIZE, STALL_SCALE,
   buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, buildMathSteps, mathExpressionText,
   renderUpgradeStrip, shopClothesOf, OUTFIT_CATS,
   renderShop, renderWardrobe, renderTank, renderBook, renderSell, customerPool, spawnCustomer,
