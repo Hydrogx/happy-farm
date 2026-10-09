@@ -1225,24 +1225,41 @@ function drawAquarium(ctx, x, y, t, fish) {
 /* ------------------------------------------------------------
  * 动物园观赏动物（用 Noto Emoji Animation 的动画图）
  * ---------------------------------------------------------- */
+// 某只观赏动物朝 dir 走的时候，需不需要水平镜像？
+// 返回 1 = 保持原图，-1 = 左右镜像。
+// 依据 ZOO_FACING：这张 emoji 图里的头本来是朝哪边的（front = 正面画风，永远不用镜像）。
+function zooFlip(type, dir) {
+  const facing = (typeof ZOO_FACING !== 'undefined' && ZOO_FACING[type]) || 'front';
+  if (facing === 'front') return 1;
+  if (facing === 'left') return dir === 'left' ? 1 : -1;
+  return dir === 'right' ? 1 : -1;      // facing === 'right'
+}
+
 function drawZoo(ctx, x, y, o) {
-  const hop = o.moving ? Math.abs(Math.sin(o.walkPhase)) * 4.5 : Math.sin(o.t * 2 + o.phase) * 1.6;
   const s = o.size;
-  drawShadow(ctx, x, y, s * 0.4);
-  const flip = o.dir === 'left' ? -1 : 1;
+  const moving = !!o.moving;
+  const wp = o.walkPhase || 0;
+  // 走路时用「上下颠 + 左右轻摆 + 前倾」做出自然的步态；站着时轻轻呼吸
+  const walkBob = Math.abs(Math.sin(wp));
+  const breath = Math.sin(o.t * 2 + o.phase) * 1.6;
+  const fly = o.fly;
+  const hop = moving ? (fly ? walkBob * s * 0.10 : walkBob * s * 0.045) : breath * 0.5 + 0.6;
+  const sc = moving ? 1 + Math.sin(o.t * 2.4 + o.phase) * 0.012 : 1 + Math.sin(o.t * 2.2 + o.phase) * 0.022;
+  // 面向：按量好的每种动物「头朝哪边」来镜像，保证朝着前进方向，不会倒着走
+  const flip = zooFlip(o.type, o.dir);
+
+  drawShadow(ctx, x, y, s * 0.4 * (1 - hop / (s * 1.6)));
   ctx.save();
   ctx.translate(x, y - hop);
   ctx.scale(flip, 1);
+  // 走路时朝前倾一点，像在迈步
+  const lean = moving ? (fly ? Math.sin(wp * 2) * 0.05 : 0.055) : 0;
+  ctx.rotate(-lean);
   if (o.rec && o.rec.ok && o.rec.img) {
-    // 有动画 gif 时浏览器自己播放；静态 png 时用 canvas 叠加呼吸与摇摆
-    if (o.rec.kind === 'png') {
-      ctx.rotate(Math.sin(o.t * 2 + o.phase) * 0.05);
-      const sc = 1 + Math.sin(o.t * 2.4 + o.phase) * 0.035;
-      ctx.scale(sc, sc);
-    }
+    ctx.scale(sc, sc);
+    // 图是往前（右）画的，所以这里以「右下角」为支点略微旋转，看起来像脚踏实地
     ctx.drawImage(o.rec.img, -s / 2, -s, s, s);
   } else {
-    // 图片还在加载时，先用文字 emoji 顶上
     ctx.font = Math.round(s * 0.8) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#222';

@@ -609,6 +609,9 @@ function loadEmoji(cp) {
   if (typeof Image === 'undefined') return rec;
   const tryLoad = (url, kind, onFail) => {
     const im = new Image();
+    // 允许跨域读取（图都来自 fonts.gstatic.com，带 CORS 头）：
+    // 这样画布不会被「污染」，需要时还能 getImageData 做像素级检查
+    try { im.crossOrigin = 'anonymous'; } catch (e) {}
     im.onload = () => { rec.img = im; rec.ok = true; rec.kind = kind; };
     im.onerror = () => { if (onFail) onFail(); };
     im.src = url;
@@ -654,6 +657,18 @@ const ZOO_SHOP = [
 const ZOO_MAP = {};
 ZOO_SHOP.forEach(function (z) { ZOO_MAP[z.type] = z; });
 const MAX_ZOO = 30;
+
+// 每种动物「画出来的时候头朝哪边」——用脚本量过每张 emoji 图上半部的重心，
+// 走路时按这个来镜像，保证它朝着前进方向走，不会倒着走。
+// left = 图里的头在左边（往左走时不用翻转）｜right = 头在右边｜front = 正面（不用翻转）
+const ZOO_FACING = {
+  bear: 'front', bee: 'front', butterfly: 'front', elephant: 'left', flamingo: 'left', fox: 'front',
+  frog: 'front', giraffe: 'left', hedgehog: 'left', kangaroo: 'left', koala: 'front',
+  lion: 'front', lizard: 'left', monkey: 'front', panda: 'front', peacock: 'front',
+  penguin: 'left', rabbit: 'left', raccoon: 'front', sloth: 'front', snail: 'left',
+  snake: 'left', squirrel: 'left', turtle: 'right', zebra: 'left',
+};
+const ZOO_FLY = { bee: 1, butterfly: 1, flamingo: 0, peacock: 0 };   // 会飞的（轻盈地飘）
 
 // ---------------- 鸡棚规则（母鸡 / 孵蛋 / 小鸡） ----------------
 const MAX_HENS = 5;              // 最多 5 只母鸡
@@ -1528,7 +1543,7 @@ function newZoo(type, x, y) {
   return {
     type, x, y, dir: Math.random() < .5 ? 'left' : 'right',
     moving: false, walkPhase: 0, phase: rand(0, 6),
-    tx: x, ty: y, waitT: rand(1, 4), voiceT: rand(6, 22),
+    tx: x, ty: y, waitT: rand(1, 4), voiceT: rand(6, 22), speedK: 0,
     home: { x, y, r: 230 },
   };
 }
@@ -2686,15 +2701,25 @@ function update(dt) {
   for (const z of G.zoo) {
     const zd = ZOO_MAP[z.type] || ZOO_SHOP[0];
     if (z.moving) {
-      const d = dist(z.x, z.y, z.tx, z.ty);
-      if (d < 6) { z.moving = false; z.waitT = rand(1.5, 5); }
-      else {
-        const ang = Math.atan2(z.ty - z.y, z.tx - z.x);
-        const spd = 26 + zd.size * 0.22;          // 大动物走得快一点
+      const dx = z.tx - z.x, dy = z.ty - z.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 5) {
+        // 走到了：停下歇一会儿，并且朝着刚走的方向站住
+        z.moving = false;
+        z.waitT = rand(1.2, 4.5) * (1 + zd.size / 90);
+        z.walkPhase = 0; z.speedK = 0;
+      } else {
+        const ang = Math.atan2(dy, dx);
+        // 刚起步慢慢加速到 1（1 秒左右），不会「嗖」地一下弹出去
+        z.speedK = Math.min(1, (z.speedK == null ? 1 : z.speedK) + dt * 1.2);
+        // 步伐带动速度轻微起伏（一步一步的节奏感）
+        z.walkPhase += dt * (4.6 + zd.size * 0.055);
+        const gait = 0.86 + Math.abs(Math.sin(z.walkPhase)) * 0.26;
+        const spd = (26 + zd.size * 0.22) * z.speedK * gait;
         z.x += Math.cos(ang) * spd * dt;
         z.y += Math.sin(ang) * spd * dt;
-        z.dir = Math.cos(ang) < 0 ? 'left' : 'right';
-        z.walkPhase += dt * (5 + zd.size * 0.06);
+        // 朝着前进方向：用水平分量的正负来决定（别用角度，避免抖动时来回翻）
+        if (Math.abs(Math.cos(ang)) > 0.18) z.dir = Math.cos(ang) < 0 ? 'left' : 'right';
       }
     } else {
       z.waitT -= dt;
@@ -3004,6 +3029,7 @@ function render() {
     drawables.push({
       y: z.y + 4,
       draw: () => drawZoo(ctx, z.x, z.y, {
+        type: z.type, fly: !!ZOO_FLY[z.type],
         size: zd.size, rec, moving: z.moving, walkPhase: z.walkPhase,
         phase: z.phase, emoji: zd.icon, dir: z.dir, t,
       }),
@@ -3474,11 +3500,12 @@ renderHUD();
 
 // 调试用的小开关（方便在控制台里看状态 / 测试）
 window.__farm = {
-  G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS,
+  G, HIVE, ZONES, PENS, FOREST, ITEMS, TROUGHS, ZOO_MAP, ZOO_FACING, ZOO_FLY, newZoo,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
   listProfiles, deleteProfile, update, render, nearestInteract, doInteract,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
+  emojiCache, emojiAnimUrl, emojiPngUrl,
 };
 
 requestAnimationFrame(loop);
