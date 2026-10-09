@@ -865,9 +865,9 @@ function canvasHasPixels(x, w, h, thresh) {
 // （画出来永远是第一帧，看着就是「一张图在平移」）。
 // 所以这里用 ImageDecoder 把 GIF 拆成一帧一帧的小画布，再按时间自己换帧，
 // 这样任何浏览器都能看到真的动效，而且节奏可以和游戏时间对齐。
-const EMOJI_ANIM_MAX = 28;      // 最多同时缓存多少套动画（超出就淘汰最早解的那几套）
+const EMOJI_ANIM_MAX = 18;      // 最多同时缓存多少套动画（36 帧/套，控制在 ~40MB 以内）
 const EMOJI_ANIM_PX = 128;      // 每一帧缩到 128px，省内存（游戏里最大也就画 ~70px）
-const EMOJI_ANIM_FRAMES = 18;   // 每套动画最多取 18 帧（±× 128px ≈ 1.2MB/套，够顺滑了）
+const EMOJI_ANIM_FRAMES = 36;   // 每套动画最多取 36 帧（尽量贴近原动图的流畅度）
 const emojiAnims = {};          // cp -> { frames:[canvas], delay:[ms], total }
 const ANIM_PARALLEL = 4;        // 同时最多解 4 套动画（一次几十个请求容易有个别加载失败）
 let animRunning = 0;
@@ -924,7 +924,7 @@ function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
   return true;
 }
 // 把 GIF 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
-function decodeEmojiAnim(cp, url, cb, isRetry) {
+function decodeEmojiAnim(cp, url, cb, attempt) {
   if (emojiAnims[cp]) {                                        // 已经解过 / 正在解
     const a = emojiAnims[cp];
     if (a.frames && a.frames.length > 1) { if (cb) cb(true); return; }
@@ -934,15 +934,16 @@ function decodeEmojiAnim(cp, url, cb, isRetry) {
   if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') { if (cb) cb(false); return; }
   const cbList = cb ? [cb] : [];                                // 必须在下面赋值之前定义
   emojiAnims[cp] = { frames: [], delay: [], total: 0, pending: true, cbs: cbList };
-  // 万一这次没解出来（网络慢 / 解析失败），过几秒再试一次，
-  // 否则这只动物会一直停在静态图上不动
-  if (!isRetry) {
+  // 万一这次没解出来（网络慢 / 解析失败），隔一小会儿再试，最多 4 次（2s → 4s → 8s → 16s）。
+  // 不重试的话，这只动物就会一直停在静态图上不动。
+  const nextAttempt = (attempt || 0) + 1;
+  if (nextAttempt <= 4) {
     setTimeout(function () {
       const a2 = emojiAnims[cp];
       if (a2 && a2.frames && a2.frames.length > 1) return;       // 已经成功了
       if (a2) delete emojiAnims[cp];                            // 卡住了 → 清掉重来
-      decodeEmojiAnim(cp, url, null, true);
-    }, 12000);
+      decodeEmojiAnim(cp, url, null, nextAttempt);
+    }, 1000 * Math.pow(2, nextAttempt));
   }
   const finishCb = (ok) => {
     const list = cbList.slice();
