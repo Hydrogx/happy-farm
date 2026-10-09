@@ -255,7 +255,6 @@ const STR = {
     welcome: '欢迎来到快乐小牧场，{name}！去找点事情做吧 🌱',
     welcomeBack: '欢迎回来，{name}！第 {day} 天继续加油 🌻',
     loadFailed: '存档读不出来，重新开始吧',
-    saveOk: '💾 游戏已保存',
     night: '🌙 天黑啦，睡觉觉…',
     morning: '☀️ 第 {day} 天开始啦！',
     rainHint: '🌧️ 今天下雨，不用浇水～',
@@ -341,7 +340,6 @@ const STR = {
     maxProfiles: '存档太多了，先删掉一个再用新名字吧',
     nameOccupied: '这个名字已经有存档了，点下面的存档继续玩，或换个名字',
     saveDeleted: '删掉了「{name}」的存档',
-    saveOkName: '💾 {name} 的牧场已保存',
     saveFailed: '存档失败，浏览器空间可能满了',
     dayUnit: '天',
     // —— 大图卡片 ——
@@ -474,7 +472,6 @@ const STR = {
     welcome: 'Welcome to Happy Little Farm, {name}! Go find something to do 🌱',
     welcomeBack: 'Welcome back, {name}! Day {day} — let\'s go 🌻',
     loadFailed: 'Could not read the save — starting fresh',
-    saveOk: '💾 Game saved',
     night: '🌙 It\'s dark — time to sleep…',
     morning: '☀️ Day {day} begins!',
     rainHint: '🌧️ It\'s raining — no need to water today!',
@@ -559,7 +556,6 @@ const STR = {
     maxProfiles: 'Too many saves — delete one before using a new name',
     nameOccupied: 'That name already has a save. Tap it below, or pick another name',
     saveDeleted: 'Deleted "{name}"\'s save',
-    saveOkName: '💾 {name}\'s farm is saved',
     saveFailed: 'Could not save — browser storage may be full',
     dayUnit: 'd',
     // —— big cards ——
@@ -1514,10 +1510,9 @@ function clearSave() {
   if (playerPid >= 0) { try { localStorage.removeItem(slotKey(playerPid)); } catch (e) {} }
 }
 
-function saveGame(silent = false, opts) {
+// 存档本身不弹提示、不写日志 —— 右上角的 💾 闪一下就是「存好了」
+function saveGame(silent = true) {
   if (!G.started) return false;   // 还没开始玩就不存
-  opts = opts || {};
-  const showLog = opts.log || !silent;   // 手动点 💾 时即使 silent 也写日志
   // 还没定名字（比如直接继续了旧存档）：自动补一个
   if (playerPid < 0) {
     let pid = 0; while (pidInUse(pid)) pid++;
@@ -1568,11 +1563,6 @@ function saveGame(silent = false, opts) {
     writeIndex(list);
     G.saveT = 0;
     flashSaveIcon();
-    if (showLog) {
-      const msg = playerName ? t('saveOkName', { name: playerName }) : t('saveOk');
-      toast(msg, 2000);
-      addLog(msg);
-    }
     return true;
   } catch (e) {
     if (!silent) { toast(t('saveFailed'), 2400); }
@@ -1993,7 +1983,7 @@ function placeDecoration() {
   sfx.equip();
   spawnParticles(x, y - 20, '✨', 8);
   G.placing = null;
-  saveGame();
+  saveGame(true);
   say('placedDecor', { decor: nm('decor', id) }, 2200);
 }
 
@@ -2072,9 +2062,8 @@ function updateSaveInfo() {
 // 手动存档（点右上角的 💾）
 function manualSave() {
   if (!G.started) return false;
-  const ok = saveGame(true, { log: true });
-  if (ok) { sfx.buy(); spawnParticles(G.player.x, G.player.y - 30, '💾', 3); }
-  return ok;
+  // 存档不弹提示、不写日志、也不出音效 —— 右上角的 💾 闪一下就够了
+  return saveGame(true);
 }
 function applyLang() {
   // 静态界面文字
@@ -3365,7 +3354,7 @@ function nextDay() {
   dailyFarmUpdate();
   renderHUD();
   if (G.weather === 'rain') sfx.rain(); else sfx.morning();
-  saveGame();   // 换天时存一次
+  saveGame(true);   // 换天时存一次（安静存档）
   say('morning', { day: G.day }, 2500);
   if (G.weather === 'rain') addLog(t('rainHint'));
 }
