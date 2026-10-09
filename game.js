@@ -731,9 +731,96 @@ function emojiDrawable(im) {
     return false;                                               // 图坏了 / 跨域不让读
   }
 }
+
+// ---------------- 动画 emoji：自己解 GIF 的每一帧 ----------------
+// 直接把 <img src="xxx.gif"> 画到 canvas 上，浏览器**不会**推进 GIF 的动画帧
+// （画出来永远是第一帧，看着就是「一张图在平移」）。
+// 所以这里用 ImageDecoder 把 GIF 拆成一帧一帧的小画布，再按时间自己换帧，
+// 这样任何浏览器都能看到真的动效，而且节奏可以和游戏时间对齐。
+const EMOJI_ANIM_MAX = 28;      // 最多同时缓存多少套动画（超出就淘汰最早解的那几套）
+const EMOJI_ANIM_PX = 128;      // 每一帧缩到 128px，省内存（游戏里最大也就画 ~70px）
+const EMOJI_ANIM_FRAMES = 18;   // 每套动画最多取 18 帧（±× 128px ≈ 1.2MB/套，够顺滑了）
+const emojiAnims = {};          // cp -> { frames:[canvas], delay:[ms], total }
+let emojiAnimQueue = [];
+function emojiFrameReady(cp) {
+  const a = emojiAnims[cp];
+  return !!(a && a.frames && a.frames.length > 1);
+}
+// 取这一时刻该显示第几帧
+function emojiFrameIndex(cp, tSec) {
+  const a = emojiAnims[cp];
+  if (!a || !a.frames || a.frames.length < 2) return -1;
+  let ms = ((tSec * 1000) % a.total + a.total) % a.total;
+  for (let i = 0; i < a.frames.length; i++) {
+    if (ms < a.delay[i]) return i;
+    ms -= a.delay[i];
+  }
+  return a.frames.length - 1;
+}
+// 画一帧动画（没有动画就返回 false，让调用方退回静态图）
+function drawEmojiFrame(ctx, cp, cx, cy, size, tSec) {
+  const i = emojiFrameIndex(cp, tSec);
+  if (i < 0) return false;
+  const a = emojiAnims[cp];
+  ctx.drawImage(a.frames[i], cx - size / 2, cy - size / 2, size, size);
+  return true;
+}
+// 把 GIF 解码成帧（浏览器不支持 / 解码失败就静默放弃，继续用静态图）
+function decodeEmojiAnim(cp, url) {
+  if (emojiAnims[cp]) return;                                  // 已经解过 / 正在解
+  if (typeof ImageDecoder === 'undefined' || typeof fetch === 'undefined') return;
+  emojiAnims[cp] = { frames: [], delay: [], total: 0 };        // 占位，避免重复解码
+  const fail = () => { delete emojiAnims[cp]; };
+  fetch(url).then(r => r.arrayBuffer()).then(buf => {
+    let dec;
+    try { dec = new ImageDecoder({ data: buf, type: 'image/gif' }); }
+    catch (e) { fail(); return; }
+    // 必须等 tracks.ready，否则 frameCount 还是 0
+    return dec.tracks.ready.then(() => {
+      const track = dec.tracks.selectedTrack || dec.tracks[0];
+      const count = (track && track.frameCount) || 0;
+      if (count < 2) { fail(); return; }                       // 单帧：不需要做动画
+      const total = Math.min(count, EMOJI_ANIM_FRAMES);        // 限制帧数，控制内存
+      const shots = [];
+      const off = document.createElement('canvas');
+      off.width = EMOJI_ANIM_PX; off.height = EMOJI_ANIM_PX;
+      const octx = off.getContext('2d');
+      const step = () => {
+        if (shots.length >= total) { finish(shots); return; }
+        const idx = Math.floor(shots.length * count / total);
+        dec.decode({ frameIndex: idx }).then(r2 => {
+          const vf = r2.image;
+          octx.clearRect(0, 0, EMOJI_ANIM_PX, EMOJI_ANIM_PX);
+          octx.drawImage(vf, 0, 0, EMOJI_ANIM_PX, EMOJI_ANIM_PX);
+          const cv = document.createElement('canvas');
+          cv.width = cv.height = EMOJI_ANIM_PX;
+          cv.getContext('2d').drawImage(off, 0, 0);
+          // duration 单位是微秒，转成毫秒（太短就给个下限，别闪得太快）
+          shots.push({ cv: cv, dur: Math.max(40, (vf.duration || 0) / 1000) });
+          if (vf.close) vf.close();
+          step();
+        }).catch(() => finish(shots));
+      };
+      const finish = (list) => {
+        if (!list || list.length < 2) { fail(); return; }
+        const a = emojiAnims[cp];
+        a.frames = list.map(x => x.cv);
+        a.delay = list.map(x => x.dur);
+        a.total = a.delay.reduce((x, y) => x + y, 0) || 1200;
+        emojiAnimQueue.push(cp);
+        // 超出上限就把最早解的那几套丢掉，避免越积越多占内存
+        while (emojiAnimQueue.length > EMOJI_ANIM_MAX) {
+          const old = emojiAnimQueue.shift();
+          if (old && old !== cp && emojiAnims[old]) delete emojiAnims[old];
+        }
+      };
+      step();
+    });
+  }).catch(fail);
+}
+
 // 加载 emoji 图：先加载静态 PNG 保证「立刻能用」，再尝试动画 GIF，
-// 只有在「GIF 确实能画出东西」的时候才换成 GIF。
-// 这样海豚、鲨鱼会老老实实显示 PNG（不再空白），金鱼、斑马等也不会再让渲染中途抛错。
+// 只有「GIF 确实能画出东西」才留下它，同时后台把 GIF 拆成帧做真动画。
 function loadEmoji(cp) {
   if (!cp) return null;
   let rec = emojiCache[cp];
@@ -742,7 +829,6 @@ function loadEmoji(cp) {
   if (typeof Image === 'undefined' || typeof document === 'undefined') return rec;
   const make = () => {
     const im = new Image();
-    // 允许跨域读取（图都来自 fonts.gstatic.com，带 CORS 头），画布不会被污染
     try { im.crossOrigin = 'anonymous'; } catch (e) {}
     return im;
   };
@@ -757,18 +843,19 @@ function loadEmoji(cp) {
   rec.gifUrl = emojiAnimUrl(cp);
   rec.pngImg = png;
   png.src = rec.pngUrl;
-  // ② 再试动画 GIF，确认能画出东西才换成 GIF
+  // ② 再试动画 GIF
   const gif = make();
   gif.onload = () => {
-    if (!emojiDrawable(gif)) { rec.gifBad = true; return; }   // 空白 / 坏的 → 继续用 PNG
+    if (!emojiDrawable(gif)) { rec.gifBad = true; return; }      // 空白 / 坏的 → 继续用 PNG
     rec.img = gif; rec.ok = true; rec.kind = 'gif'; rec.gifOk = true;
+    decodeEmojiAnim(cp, rec.gifUrl);                             // 后台拆帧 → 真动画
   };
   gif.onerror = () => { rec.gifBad = true; };
   gif.src = rec.gifUrl;
   return rec;
 }
 // DOM 里显示某个 emoji 图时该用哪个地址：
-// 确认过 GIF 能用就用 GIF（有动画）；GIF 不能用（404 / 空白）就用 PNG
+// 确认过 GIF 能用就用 GIF（浏览器自己会播动画）；GIF 不能用就用 PNG
 function emojiSrcFor(rec) {
   if (!rec) return '';
   if (rec.gifOk) return rec.gifUrl;
@@ -3986,6 +4073,7 @@ window.__farm = {
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
   emojiCache, emojiAnimUrl, emojiPngUrl, emojiSrcFor, emojiDrawable,
+  emojiAnims, emojiFrameIndex, drawEmojiFrame, decodeEmojiAnim,
 };
 
 requestAnimationFrame(loop);

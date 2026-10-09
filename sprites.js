@@ -1418,8 +1418,11 @@ function drawAquarium(ctx, x, y, t, fish) {
     ctx.save();
     ctx.translate(fx, fy);
     if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
-    if (rec && rec.ok && rec.img) {
-      ctx.drawImage(rec.img, -size / 2, -size / 2, size, size);
+    if (rec && rec.ok) {
+      // 优先用自己解码的动画帧（GIF 直接画上画布不会动）
+      if (!drawEmojiFrame(ctx, it.cp, 0, 0, size, t)) {
+        ctx.drawImage(rec.img, -size / 2, -size / 2, size, size);
+      }
     } else {
       ctx.font = Math.round(size * 0.85) + 'px sans-serif'; ctx.textAlign = 'center';
       ctx.fillStyle = '#123'; ctx.fillText(it.icon, 0, size * 0.3);
@@ -1478,8 +1481,10 @@ function drawZoo(ctx, x, y, o) {
   ctx.rotate(-lean);
   if (o.rec && o.rec.ok && o.rec.img) {
     ctx.scale(sc, sc);
-    // 图是往前（右）画的，所以这里以「右下角」为支点略微旋转，看起来像脚踏实地
-    ctx.drawImage(o.rec.img, -s / 2, -s, s, s);
+    // 优先用「自己解码的动画帧」——直接把 GIF 画上画布是不会动的（永远第一帧）
+    if (!drawEmojiFrame(ctx, o.rec.cp, 0, -s / 2, s, o.t)) {
+      ctx.drawImage(o.rec.img, -s / 2, -s, s, s);      // 退路：静态图
+    }
   } else {
     ctx.font = Math.round(s * 0.8) + 'px sans-serif';
     ctx.textAlign = 'center';
