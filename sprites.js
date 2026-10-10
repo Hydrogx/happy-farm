@@ -20,6 +20,15 @@ function ellipse(ctx, x, y, rx, ry) {
 }
 
 // 影子
+// 各个角色「脚底」在自己贴图里的本地 y：阴影要画在这里（画在原点会被身体挡住）
+const PLAYER_FOOT_Y = 22;      // 人物（连鞋子）
+const CHICK_FOOT_Y = 9;
+const SHEEP_FOOT_Y = 14;
+const COW_FOOT_Y = 17;
+const PET_FOOT_Y = 9;
+const DUCK_FOOT_Y = 10;
+const GOOSE_FOOT_Y = 11;
+
 function drawShadow(ctx, x, y, w) {
   ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ellipse(ctx, x, y, w, w * 0.35);
@@ -370,37 +379,61 @@ function drawVehicle(ctx, id, o) {
   }
 }
 
+// 停车架：不骑的车停在这里（两根木柱 + 一根横杆 + 🅿️ 牌子）
+function drawBikeRack(ctx, x, y, t) {
+  drawShadow(ctx, x, y + 2, 44);
+  ctx.fillStyle = '#a57c4a';
+  rr(ctx, x - 34, y - 26, 7, 28, 3); ctx.fill();
+  rr(ctx, x + 27, y - 26, 7, 28, 3); ctx.fill();
+  ctx.fillStyle = '#c98a5a';
+  rr(ctx, x - 37, y - 31, 74, 8, 3.5); ctx.fill();
+  ctx.fillStyle = '#e0b878';
+  rr(ctx, x - 37, y - 31, 74, 3, 1.5); ctx.fill();
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('🅿️', x, y - 38 + Math.sin(t * 2) * 1.2);
+}
+
 // 每辆车的比例 / 座位高度（人物缩小一点坐上去，看着才像真的在骑）
 const VEH_SPEC = {
-  // vs = 车辆放大倍数｜ps = 人物缩放｜px/py = 人物位置（让胯部正好坐在座位上）
-  scooter:    { vs: 1.35, ps: 0.68, px: 2,  py: -9,  pose: 'deck' },
-  bicycle:    { vs: 1.40, ps: 0.68, px: 4,  py: -14, pose: 'ride' },
-  motorcycle: { vs: 1.50, ps: 0.70, px: 2,  py: -17, pose: 'ride' },
+  // vs = 车辆放大倍数｜ps = 人物缩放｜px = 人物左右位置
+  // footLocal = 脚底应该踩在车辆的哪个高度（车辆本地坐标，会乘上 vs）
+  //   · 滑板车：踏板面 -8   · 自行车：脚踏 -12   · 摩托车：踏板/排气管 -14.7
+  scooter:    { vs: 1.35, ps: 0.68, px: 2, pose: 'deck', footLocal: -8 },
+  bicycle:    { vs: 1.40, ps: 0.68, px: 4, pose: 'ride', footLocal: -12 },
+  motorcycle: { vs: 1.50, ps: 0.70, px: 2, pose: 'ride', footLocal: -14.7 },
 };
 // 画「人物 + 座驾」：mirror 由这里统一处理（人和车一起镜像，车头才不会反）
 function drawRider(ctx, x, y, o) {
   const id = o.vehicleId;
   const spec = VEH_SPEC[id] || VEH_SPEC.bicycle;
   const mirror = (o.dir === 'left') ? -1 : 1;
+  // ★ 车轮要落在地面上：人物站着的脚底在 player.y + PLAYER_FOOT_Y×scale，
+  //   所以整组（车 + 人）也往下挪这么多，车轮的着地点才和脚底是同一条线
+  const ground = PLAYER_FOOT_Y * (o.scale || 1);
+  const riderScale = (o.scale || 1) * spec.ps;
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(x, y + ground);
   ctx.scale(mirror, 1);
   if (id === 'scooter' || o.pose === 'ride' || o.pose === 'deck') {
-    // 人在车上：先画车，再把缩小的人物放上去
+    // 人在车上：先画车，再把缩小的人物放上去（脚正好踩在踏板 / 座位上）
     ctx.save();
     ctx.scale(spec.vs, spec.vs);
     drawVehicle(ctx, id, o);
     ctx.restore();
-    drawPlayer(ctx, spec.px, spec.py, Object.assign({}, o, {
-      scale: (o.scale || 1) * spec.ps, pose: spec.pose,
+    // py 由「脚底要落在车上的高度」反推：脚底 = py + PLAYER_FOOT_Y × riderScale
+    const footTarget = (spec.footLocal || 0) * spec.vs;
+    const py = footTarget - PLAYER_FOOT_Y * riderScale;
+    drawPlayer(ctx, spec.px, py, Object.assign({}, o, {
+      scale: riderScale, pose: spec.pose, noShadow: true,   // 阴影由车轮下面那圈负责
     }));
   } else {
-    // 站在车旁边：车停在身后
+    // 站在车旁边：车停在身后，人站在地上
     ctx.save();
     ctx.scale(spec.vs, spec.vs);
     drawVehicle(ctx, id, Object.assign({}, o, { moving: false }));
     ctx.restore();
-    drawPlayer(ctx, 14, 0, Object.assign({}, o, { pose: 'veh' }));
+    drawPlayer(ctx, 14, -ground, Object.assign({}, o, { pose: 'veh' }));
   }
   ctx.restore();
 }
@@ -434,7 +467,8 @@ function drawPlayer(ctx, x, y, o) {
   const sc = o.scale || 1;
   if (sc !== 1) ctx.scale(sc, sc);
 
-  drawShadow(ctx, 0, bob, 15);
+  // ★ 阴影画在**脚底**：本地 y = 呼吸偏移/sc + 脚底，换算到世界坐标正好落在脚上
+  if (!o.noShadow) drawShadow(ctx, 0, bob / sc + PLAYER_FOOT_Y, 15);
 
   // --- 腿（裤子层；穿裙子时是光腿） ---
   ctx.fillStyle = dressKey ? skin : pants.main;
@@ -1059,7 +1093,11 @@ const SHOE_STYLES = {
 // 画一只鞋：脚的位置 (cx, cy)，朝向由 dirX 决定
 function drawOneShoe(ctx, key, cx, cy, dirX) {
   const s = SHOE_STYLES[key];
-  if (!s) return;                       // 光脚：什么都不画
+  if (!s) {                             // 光脚：画一只小脚丫（脚底高度和穿鞋一样，都是 cy+5 左右）
+    ctx.fillStyle = '#ffdbac';
+    ellipse(ctx, cx + (dirX || 1) * 1.2, cy + 2.6, 4.6, 2.9); ctx.fill();
+    return;
+  }
   const sh = s.shape;
   if (sh === 'boot') {
     ctx.fillStyle = s.main;
@@ -1117,7 +1155,6 @@ function drawOneShoe(ctx, key, cx, cy, dirX) {
 // 两只脚一起画（walk = 走路摆动；其他姿势两只脚并排）
 // 脚的位置和以前硬编码的「棕鞋子」完全对齐（走路 y≈17、滑板车 16.5、骑车 14）
 function drawShoes(ctx, key, swing, mode, dirX) {
-  if (!key || key === 'none') return;
   const dx = dirX || 1;
   if (mode === 'ride') {
     drawOneShoe(ctx, key, 11, 14, dx);
@@ -1270,7 +1307,7 @@ function drawChicken(ctx, x, y, a) {
   ctx.translate(x, y - hop * s);
   if (a.dir === 'left') ctx.scale(-1, 1);
   if (s !== 1) ctx.scale(s, s);
-  drawShadow(ctx, 0, hop, isChick ? 7 : 9);
+  drawShadow(ctx, 0, hop + CHICK_FOOT_Y, isChick ? 7 : 9);   // 阴影压在脚上
   const step = a.moving ? Math.sin(a.walkPhase) * 3 : 0;
   ctx.strokeStyle = isChick ? '#f0b45c' : '#e8930c'; ctx.lineWidth = 2;
   ctx.beginPath();
@@ -1328,7 +1365,7 @@ function drawSheep(ctx, x, y, a) {
   if (a.dir === 'left') ctx.scale(-1, 1);
   const sc = a.scale || 1;
   if (sc !== 1) ctx.scale(sc, sc);
-  drawShadow(ctx, 0, bob, 14);
+  drawShadow(ctx, 0, bob / sc + SHEEP_FOOT_Y, 14);   // 阴影压在脚上
   const step = a.moving ? Math.sin(a.walkPhase) * 4 : 0;
   ctx.strokeStyle = '#4a4a4a'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -1364,7 +1401,7 @@ function drawCow(ctx, x, y, a) {
   if (a.dir === 'left') ctx.scale(-1, 1);
   const sc = a.scale || 1;
   if (sc !== 1) ctx.scale(sc, sc);
-  drawShadow(ctx, 0, bob, 19);
+  drawShadow(ctx, 0, bob / sc + COW_FOOT_Y, 19);     // 阴影压在脚上
   const step = a.moving ? Math.sin(a.walkPhase) * 4 : 0;
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -1405,7 +1442,6 @@ function drawCow(ctx, x, y, a) {
 // 小鸭子宠物
 function drawDuckPet(ctx, p) {
   const waddle = p.moving ? Math.sin(p.walkPhase) * 0.13 : Math.sin(p.t * 2 + p.phase) * 0.035;
-  drawShadow(ctx, 0, 0, 9);
   ctx.save();
   ctx.rotate(waddle);
   const step = p.moving ? Math.sin(p.walkPhase) * 2.5 : 0;
@@ -1444,7 +1480,6 @@ function drawDuckPet(ctx, p) {
 function drawGoosePet(ctx, p) {
   const waddle = p.moving ? Math.sin(p.walkPhase) * 0.15 : Math.sin(p.t * 2 + p.phase) * 0.04;
   const bob = Math.sin(p.t * 2.4 + p.phase) * 1;
-  drawShadow(ctx, 0, 0, 10);
   ctx.save();
   ctx.rotate(waddle);
   const step = p.moving ? Math.sin(p.walkPhase) * 3 : 0;
@@ -1500,9 +1535,11 @@ function drawPet(ctx, x, y, p) {
   if (p.dir === 'left') ctx.scale(-1, 1);
   const sc = p.scale || 1;
   if (sc !== 1) ctx.scale(sc, sc);
+  // ★ 阴影压在脚上（画在原点会被身体挡住，看起来就像没阴影）
+  const petFoot = p.type === 'duck' ? DUCK_FOOT_Y : p.type === 'goose' ? GOOSE_FOOT_Y : PET_FOOT_Y;
+  drawShadow(ctx, 0, hop / sc + petFoot, 9);
   if (p.type === 'duck') { drawDuckPet(ctx, p); ctx.restore(); return; }
   if (p.type === 'goose') { drawGoosePet(ctx, p); ctx.restore(); return; }
-  drawShadow(ctx, 0, hop, 9);
   const body = p.type === 'dog' ? '#e8b36a' : '#b8b8c8';
   const dark = p.type === 'dog' ? '#c78f3f' : '#8a8a9e';
   const step = p.moving ? Math.sin(p.walkPhase) * 3.5 : 0;

@@ -6152,6 +6152,24 @@ function render() {
       ? drawStrawberryBush(ctx, tr.x, tr.y, t, tr.phase, tr.fruits)
       : drawTree(ctx, tr.x, tr.y, t, tr.phase, tr.fruits, tr.type),
   });
+  // 🅿️ 停车架 + 停好的交通工具（正在骑的那辆不画在这里）
+  drawables.push({ y: ZONES.rack.y + 4, draw: () => drawBikeRack(ctx, ZONES.rack.x, ZONES.rack.y, t) });
+  const parkedVeh = G.vehicles.filter(v => v !== G.vehicle);
+  parkedVeh.forEach((vid, i) => {
+    const px = ZONES.rack.x - (parkedVeh.length - 1) * 27 + i * 54;
+    drawables.push({
+      y: ZONES.rack.y + 4,
+      draw: () => {
+        const spec = VEH_SPEC[vid] || VEH_SPEC.bicycle;
+        ctx.save();
+        ctx.translate(px, ZONES.rack.y);
+        ctx.scale(spec.vs, spec.vs);
+        drawVehicle(ctx, vid, { t, moving: false, walkPhase: 0 });
+        ctx.restore();
+      },
+    });
+  });
+
   // 庭院装饰：压在建筑底下的那些不在这里排队，等所有实体的画完再单独画在最外层
   const decorSolids = solidRects();
   for (const dc of G.decorations) {
@@ -6320,7 +6338,7 @@ function render() {
     });
   }
   drawables.push({
-    y: p_y() + 20,
+    y: p_y() + PLAYER_FOOT_Y * PET_SCALE,      // 排序锚点 = 人物真正的脚底（最低点）
     draw: () => {
       const pl = {
         gender: G.player.gender, dir: G.player.dir,
@@ -6855,6 +6873,7 @@ window.__farm = {
   addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
   FARM_RECTS, farmRect, QUEUE_SLOTS, MAX_BUYERS, MAX_LV, WORLD_W, WORLD_H, PEN_HOME, TROUGH_OFF, DECOR_SHOP, DECOR_R,
   renderMinimap, miniCanvas, MINI_K, miniRect,
+  drawPlayer, drawRider, drawVehicle, drawPet, drawChicken, drawSheep, drawCow, drawShadow, drawBikeRack, VEH_SPEC, PLAYER_FOOT_Y,
   openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
   tankRect, pointInSea, SEA_POLY, decorUnderBuilding,
   newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
