@@ -6512,7 +6512,7 @@ function renderMinimap() {
     mctx.beginPath();
     mctx.ellipse(spec.x * MINI_K, spec.y * MINI_K,
                  Math.max(2, sz.w / 2 * MINI_K), Math.max(2, sz.h / 2 * MINI_K), 0, 0, Math.PI * 2);
-    mctx.fillStyle = p.locked ? '#9fd6ef' : '#63c6f7';   // 没解锁的也是蓝色（淡一点）
+    mctx.fillStyle = '#63c6f7';                           // 有没有解锁都是同一个蓝
     mctx.fill();
   }
   // 房子：主角家 / 衣柜 / 厨房 / 宠物房 / 卖货箱 / 水族箱 / 商店 / 销售门面

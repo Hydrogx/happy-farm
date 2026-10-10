@@ -1772,34 +1772,9 @@ function drawStall(ctx, x, y, t, sc) {
 }
 
 function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
-  // 还没解锁的水坑：**也画成一汪蓝色的水**（只是蓝得淡一点、不晃波纹），
-  // 名牌上挂一把 🔒 提醒「升级水坑才会开放」——小朋友看地图就是三个水坑都在
-  if (locked) {
-    ctx.fillStyle = 'rgba(255,255,255,.4)';                 // 岸边浅色沙圈
-    ellipse(ctx, x, y, w / 2 + 13, h / 2 + 11); ctx.fill();
-    ctx.fillStyle = '#9fd6ef';                              // 淡水蓝
-    ellipse(ctx, x, y, w / 2, h / 2); ctx.fill();
-    ctx.fillStyle = '#c3e7f7';                              // 水面高光
-    ellipse(ctx, x - w * 0.12, y - h * 0.15, w / 2.8, h / 3); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
-    ellipse(ctx, x, y, w / 2 * 0.68, h / 2 * 0.68); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.35)';
-    ellipse(ctx, x + w * 0.1, y + h * 0.12, w / 2 * 0.38, h / 2 * 0.38); ctx.stroke();
-    if (label) {
-      const txt = '🔒 ' + label;
-      const sw = Math.max(66, txt.length * 13 + 18);
-      const sy = y - h / 2 - 32 + Math.sin(t * 1.8) * 1.5;
-      ctx.fillStyle = 'rgba(255,255,255,.9)';
-      rr(ctx, x - sw / 2, sy, sw, 20, 6); ctx.fill();
-      ctx.strokeStyle = '#5fb8e8'; ctx.lineWidth = 2.2;
-      rr(ctx, x - sw / 2, sy, sw, 20, 6); ctx.stroke();
-      ctx.fillStyle = '#2a6a95';
-      ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(txt, x, sy + 15);
-    }
-    return;
-  }
-  // deep = 大海里的「蓝洞」：比周围的海水更深、更蓝
+  // 水坑的水**不管有没有解锁都画成完全一样**（颜色、深浅、岸边沙圈、水纹波纹一模一样，
+  // 连一个像素都不差）；没解锁的只在名牌上多挂一把 🔒，走过去会提示去升级水坑
+  // deep = 大海里的「蓝洞」：比周围的海水更深、更蓝（解锁与否都一样）
   ctx.fillStyle = deep ? 'rgba(255,255,255,.35)' : '#c9b280';
   ellipse(ctx, x, y, w / 2 + 14, h / 2 + 12); ctx.fill();
   ctx.fillStyle = deep ? '#0d4a94' : '#5fb8e8';
@@ -1814,9 +1789,10 @@ function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-  // 水坑名牌
+  // 水坑名牌（没解锁的多一把 🔒）
   if (label) {
-    const sw = Math.max(58, label.length * 15 + 20);
+    const txt = (locked ? '🔒 ' : '💧 ') + label;
+    const sw = Math.max(58, txt.length * 15 + 20);
     const sx = x - sw / 2, sy = y - h / 2 - 36 + Math.sin(t * 1.8) * 1.5;
     ctx.fillStyle = '#fff3d6';
     rr(ctx, sx, sy, sw, 20, 6); ctx.fill();
@@ -1824,7 +1800,7 @@ function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
     rr(ctx, sx, sy, sw, 20, 6); ctx.stroke();
     ctx.fillStyle = '#2a6a95';
     ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('💧 ' + label, x, sy + 15);
+    ctx.fillText(txt, x, sy + 15);
   }
 }
 
@@ -1832,8 +1808,6 @@ function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
  * 升级系统的场景元素
  * ---------------------------------------------------------- */
 
-// 「以后会扩到这里」的虚线框：1、2 级时把下一次扩建的范围画出来，
-// 地图上就一眼能看出「这里留着地方给它长大」。
 // 以前用来画「扩建预留区」的白色虚线框：现在地图上不再画预留区了（函数留着备用）
 function drawExpandOutline(ctx, rect, t, text) {
   if (!rect) return;
