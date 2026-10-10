@@ -396,12 +396,15 @@ function drawBikeRack(ctx, x, y, t) {
 
 // 每辆车的比例 / 座位高度（人物缩小一点坐上去，看着才像真的在骑）
 const VEH_SPEC = {
-  // vs = 车辆放大倍数｜ps = 人物缩放｜px = 人物左右位置
+  // vs = 车辆放大倍数｜px = 人物左右位置
   // footLocal = 脚底应该踩在车辆的哪个高度（车辆本地坐标，会乘上 vs）
   //   · 滑板车：踏板面 -8   · 自行车：脚踏 -12   · 摩托车：踏板/排气管 -14.7
-  scooter:    { vs: 1.35, ps: 0.68, px: 2, pose: 'deck', footLocal: -8 },
-  bicycle:    { vs: 1.40, ps: 0.68, px: 4, pose: 'ride', footLocal: -12 },
-  motorcycle: { vs: 1.50, ps: 0.70, px: 2, pose: 'ride', footLocal: -14.7 },
+  // ★ 人物**不再缩小**（ps 固定 1）：骑上去和走路一样大。
+  //   车辆原来就是按「正常大小的人物」配的比例（车座 / 踏板 / 车把的高度都合适），
+  //   所以只要让人物保持原大小、脚底照样落在踏板上就行。
+  scooter:    { vs: 1.35, ps: 1, px: 2, pose: 'deck', footLocal: -8 },
+  bicycle:    { vs: 1.40, ps: 1, px: 4, pose: 'ride', footLocal: -12 },
+  motorcycle: { vs: 1.50, ps: 1, px: 2, pose: 'ride', footLocal: -14.7 },
 };
 // 画「人物 + 座驾」：mirror 由这里统一处理（人和车一起镜像，车头才不会反）
 function drawRider(ctx, x, y, o) {
