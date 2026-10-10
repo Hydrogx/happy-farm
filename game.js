@@ -5097,7 +5097,7 @@ function spawnCustomer() {
     kind: 'buyer',
     seq: (G.customerSeq = (G.customerSeq || 0) + 1),   // 先来后到，用来排队
     qSlot: 0,                                          // 站在队伍的第几个位置
-    items: items, want: want, state: 'come', waitT: 25, happy: false,
+    items: items, want: want, state: 'come', happy: false,
     pet: null,
   };
   if (Math.random() < 0.7) {   // 大部分客人带一只小宠物
@@ -5576,7 +5576,8 @@ function update(dt) {
   // --- 客人 ---
   // 买东西的客人：最多同时来 MAX_BUYERS 位，在销售门面右边排成一队
   G.customerTimer -= dt;
-  if (G.customerTimer <= 0 && G.customers.filter(c => c.kind !== 'visitor').length < MAX_BUYERS) {
+  if (G.customerTimer <= 0 && !G.bed.active &&
+      G.customers.filter(c => c.kind !== 'visitor').length < MAX_BUYERS) {
     G.customerTimer = rand(35, 65);
     spawnCustomer();
   }
@@ -5590,7 +5591,7 @@ function update(dt) {
   if (G.visitorTimer <= 0) {
     G.visitorTimer = rand(16, 34);
     const now = G.customers.filter(c => c.kind === 'visitor').length;
-    if (G.started && now < visitorSlots()) spawnVisitor();
+    if (G.started && !G.bed.active && now < visitorSlots()) spawnVisitor();
   }
   for (let i = G.customers.length - 1; i >= 0; i--) {
     const c = G.customers[i];
@@ -5619,12 +5620,14 @@ function update(dt) {
         if (c.state === 'come') { c.state = 'wait'; c.dir = 'left'; }   // 站好了，脸朝着柜台
       }
       if (c.state === 'wait') {
-        c.waitT -= dt;
-        if (c.waitT <= 0) {
+        // ★ 客人的耐心变得很长：只要天还没黑，他就一直在队伍里等着，
+        //   最长可以等到当天结束（20:00）才回家 —— 小朋友慢慢凑东西也不会跑掉
+        //   （不看秒表，直接看游戏里的钟点；客人对象上不再存 waitT）
+        if (G.timeMin >= DAY_END - 0.5) {
           c.state = 'leave';
           spawnParticles(c.x, c.y - 30, '💦', 3);
           sfx.sad();
-          say('customerGone', { name: custName(c) });
+          say('customerGone', { name: custName(c) }, 2200);
         }
       }
     }
@@ -5962,6 +5965,11 @@ function openBedtime() {
   if (G.fishing) G.fishing = null;          // 天黑了先收杆
   if (G.placing) G.placing = null;
   if (G.math) closeMathChallenge();         // 天黑了不算客人等超时，明天再说
+  // 天黑了：还在排队 / 参观的客人今天先回家（明天再来）
+  for (const c of G.customers) {
+    if (c.kind === 'buyer') { c.state = 'leave'; c.moving = true; }
+    else if (c.kind === 'visitor') { c.state = 'leave'; c.moving = true; }
+  }
   G.player.moving = false;
   if (G.modalOpen && G.modalOpen !== 'bed-modal') closeModal(G.modalOpen);
   bedInitStep(0);
@@ -6002,6 +6010,7 @@ function nextDay() {
   G.day++;
   G.timeMin = DAY_START;
   G.bed.active = false; G.bed.step = 0; G.bed.done = [false, false, false];
+  G.customers = [];                       // 客人都回家睡觉了，第二天再来
   // 新一天天气
   const r = Math.random();
   G.weather = r < 0.55 ? 'sunny' : r < 0.8 ? 'cloudy' : 'rain';
