@@ -409,7 +409,15 @@ body.touch #prompt { left: 50%; max-width: 94%; bottom: 128px; }
 .char-row { align-items: center; }
 .char-label { font-size: 17px; font-weight: bold; color: #b08a3a; margin-right: 4px; }
 
-/* ---------- 图鉴 / 帮助按钮 + 小地图（统一放在右上角） ---------- */
+/* ---------- 小地图（左上角，HUD 那一排下面） ---------- */
+#top-left {
+  position: absolute; left: 12px; top: calc(62px * var(--ui-scale) + 14px); z-index: 26;
+  pointer-events: none;
+}
+/* 触摸版：左上角是牧场日志，小地图就待在右上角 */
+body.touch #top-left { left: auto; right: 12px; }
+
+/* ---------- 图鉴 / 帮助按钮（右上角） ---------- */
 #top-right {
   position: absolute; right: 12px; top: calc(62px * var(--ui-scale) + 14px); z-index: 26;
   display: flex; flex-direction: column; align-items: flex-end; gap: 6px;

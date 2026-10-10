@@ -1838,6 +1838,7 @@ function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
 
 // 「以后会扩到这里」的虚线框：1、2 级时把下一次扩建的范围画出来，
 // 地图上就一眼能看出「这里留着地方给它长大」。
+// 以前用来画「扩建预留区」的白色虚线框：现在地图上不再画预留区了（函数留着备用）
 function drawExpandOutline(ctx, rect, t, text) {
   if (!rect) return;
   ctx.save();

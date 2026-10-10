@@ -6084,10 +6084,9 @@ function render() {
   for (let fx = fRect.x; fx <= fRect.x + fRect.w; fx += 24) {
     ctx.beginPath(); ctx.moveTo(fx, fRect.y - 4); ctx.lineTo(fx, fRect.y + 4); ctx.stroke();
   }
-  // 农田没有等级，直接把 3 级的大范围画出来当「预留升级区」
-  drawExpandOutline(ctx, FARM_RECTS[MAX_LV - 1], t, TXT('expandArea'));
+  // 农田没有等级（预留区也不再画出来了）
 
-  // 果树园：栅栏 + 「下次扩建到这里」的虚线预留区
+  // 果树园：栅栏
   const oRect = orchardRect();
   ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
   ctx.strokeRect(oRect.x, oRect.y, oRect.w, oRect.h);
@@ -6095,15 +6094,7 @@ function render() {
   for (let fx = oRect.x; fx <= oRect.x + oRect.w; fx += 26) {
     ctx.beginPath(); ctx.moveTo(fx, oRect.y - 4); ctx.lineTo(fx, oRect.y + 4); ctx.stroke();
   }
-  if (lvOf('orchard') < MAX_LV) {
-    drawExpandOutline(ctx, ORCHARD_RECTS[lvOf('orchard')], t, TXT('expandArea'));
-  }
-  // 其它设施的扩建预留区（围栏 / 水坑 / 宠物房间 / 水族箱 / 商店摊位）
-  if (lvOf('coop') < MAX_LV)    drawExpandOutline(ctx, PEN_RECTS.chicken[lvOf('coop')], t, TXT('expandArea'));
-  if (lvOf('sheep') < MAX_LV)   drawExpandOutline(ctx, PEN_RECTS.sheep[lvOf('sheep')], t, TXT('expandArea'));
-  if (lvOf('cow') < MAX_LV)     drawExpandOutline(ctx, PEN_RECTS.cow[lvOf('cow')], t, TXT('expandArea'));
-  if (lvOf('petroom') < MAX_LV) drawExpandOutline(ctx, PETROOM_RECTS[lvOf('petroom')], t, TXT('expandArea'));
-  if (lvOf('tank') < MAX_LV)    drawExpandOutline(ctx, tankRect(lvOf('tank') + 1), t, TXT('expandArea'));
+  // ★ 所有设施的「扩建预留区 / 白色虚线框」都不再画出来（升级照样能升，只是地图上不提前画框）
 
   // 池塘（没解锁的画成干土坑 + 🔒）；大海水蓝洞在大海里，画成更深的蓝洞
   for (const pond of PONDS) {
