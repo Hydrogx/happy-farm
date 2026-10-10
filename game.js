@@ -558,9 +558,15 @@ const STR = {
     tankTierNote: '水族箱 {lv} 级 · 升级后能养更多鱼',
     tierLocked: '🔒 升级后开放',
     // —— 宠物房间 ——
-    petTitle: '🐾 宠物房间',
-    prPetRoom: '🐾 去宠物房间',
-    petRoomLv: '宠物房间 {lv} 级 · {cap}',
+    prPetFood: '🍖 给{pet}喂食（{n} 金币）',
+    prPetClean: '🧹 清理{pet}的便便',
+    prPetBath: '🛁 给{pet}洗澡',
+    petNoPet: '还没有宠物呢，去商店的「🍖 宠物用品」领养一只吧',
+    petHaveOne: '现在带着 {pet} · 再买一只就是换掉它',
+    petShopHead: '还没有宠物，先领养一只吧',
+    petSwapThis: '换成这只',
+    petSwapped: '{pet}换好啦，真可爱！',
+
     petHunger: '🍖 饱腹',
     petClean: '🛁 清洁',
     petPoop: '💩 便便 ×{n}',
@@ -573,13 +579,11 @@ const STR = {
     petFed: '{pet}吃得饱饱的 🍖（花了 {n} 金币）',
     petCleaned: '{pet}的便便清理干净啦 🧹',
     petBathed: '{pet}洗得香香的 🛁',
-    petFull: '宠物房间住满啦（最多 {max} 只），升级房间能多养几只',
     petAdoptDone: '{pet}搬进宠物房间啦 🐾',
     petNeedHungry: '肚子饿了',
     petNeedPoop: '该清理便便了',
     petNeedDirty: '该洗澡了',
     petAllHappy: '宠物们都很开心 💖',
-    petRoomEmpty: '还没有宠物，去领养一只吧！',
     petStatusOk: '开开心心 💖',
     // —— 衣帽间 ——
     // —— 🎫 来参观的客人（观赏费）——
@@ -606,7 +610,6 @@ const STR = {
     stKitchen: '能做 {n}/{max} 道菜 · 现在材料够做 {can} 道',
     stWardrobe: '开放 {t}/{tm} 档服饰 · 能买到 {avail} 件 · 衣橱里已有 {n} 件',
     stShop: '开放 {t}/{tm} 档商品 · 现在在卖 {n} 种',
-    stPetroom: '宠物 {n}/{max} 只 · 有 {need} 只等着照顾',
     closetTitle: '👗 我的衣帽间',
     closetMirror: '🪞 试衣镜',
     wtabHair: '🎀 头饰', wtabDress: '👗 裙子', wtabShoes: '👟 鞋子',
@@ -909,9 +912,15 @@ const STR = {
     tankTierNote: 'Aquarium level {lv} · unlock more fish space when you upgrade',
     tierLocked: '🔒 Upgrade to unlock',
     // —— 宠物房间 ——
-    petTitle: '🐾 Pet Room',
-    prPetRoom: '🐾 Visit the pet room',
-    petRoomLv: 'Pet room level {lv} · {cap}',
+    prPetFood: '🍖 Feed {pet} (💰{n})',
+    prPetClean: "🧹 Clean up {pet}'s poop",
+    prPetBath: '🛁 Bathe {pet}',
+    petNoPet: 'No pet yet — adopt one in the shop (🍖 Pet care)',
+    petHaveOne: 'You have {pet} · buying another swaps it',
+    petShopHead: 'No pet yet — adopt one!',
+    petSwapThis: 'Swap to this one',
+    petSwapped: '{pet} is yours now — so cute!',
+
     petHunger: '🍖 Fullness',
     petClean: '🛁 Clean',
     petPoop: '💩 Poop ×{n}',
@@ -924,13 +933,11 @@ const STR = {
     petFed: '{pet} is full 🍖 (cost {n} coins)',
     petCleaned: 'Cleaned up {pet}\'s mess 🧹',
     petBathed: '{pet} smells lovely 🛁',
-    petFull: 'The pet room is full (max {max}) — upgrade it to keep more',
     petAdoptDone: '{pet} moved into the pet room 🐾',
     petNeedHungry: 'hungry',
     petNeedPoop: 'needs cleanup',
     petNeedDirty: 'needs a bath',
     petAllHappy: 'All your pets are happy 💖',
-    petRoomEmpty: 'No pets yet — adopt one!',
     petStatusOk: 'Happy 💖',
     // —— 衣帽间 ——
     // —— 🎫 Visitors (viewing fee) ——
@@ -957,7 +964,6 @@ const STR = {
     stKitchen: '{n}/{max} recipes unlocked · {can} cookable right now',
     stWardrobe: 'tier {t}/{tm} clothes unlocked · {avail} items for sale · {n} in your closet',
     stShop: 'tier {t}/{tm} goods unlocked · {n} kinds on sale',
-    stPetroom: '{n}/{max} pets · {need} need attention',
     closetTitle: '👗 My Walk-in Closet',
     closetMirror: '🪞 Mirror',
     wtabHair: '🎀 Hair', wtabDress: '👗 Dresses', wtabShoes: '👟 Shoes',
@@ -1730,7 +1736,7 @@ const G = {
   pets: [],
   petHatsOwned: [],
   // 设施等级：十个设施都是从这个初始值开始往上升
-  levels: { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 },
+  levels: { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1 },
   vehicles: [],           // 已经买到的交通工具
   vehicle: null,          // 正在骑的那辆（null = 走路）
   math: null,             // 找零钱小挑战：{c, price, paid, change, choices, t, total}
@@ -1767,13 +1773,20 @@ const ZONES = {
   house:    { x: 900,  y: 640 },           // 主角家（第二排正中间）
   wardrobe: { x: 680,  y: 660, r: 55 },    // 衣柜
   kitchen:  { x: 790,  y: 660, r: 55 },    // 厨房
-  petroom:  { x: 540,  y: 682, r: 74 },    // 宠物家（第二排最左的小屋）
+  // （宠物家取消了：原来的位置改成下面三个能互动的小物件）
   bin:      { x: 1090, y: 660, r: 55 },    // 卖货箱
   stall:    { x: 1240, y: 651, r: 78 },    // 商店（玩家在这里买东西）
   counter:  { x: 1400, y: 670, r: 78 },    // 销售门面（客人从右边排队过来买东西）
   tank:     { x: 1260, y: 410, r: 140 },   // 大水族箱（第一排，占掉果园右边一整片）
   rack:     { x: 700,  y: 480, r: 86 },    // 停车架（第二排小屋旁边的空地）
   hatchery: { x: 1193, y: 840, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡棚升级一起挪）
+};
+
+// 🐾 宠物区：宠物家取消以后，改成三个可以直接互动的小物件（对着谁按 E 就做哪件事）
+const PET_SPOTS = {
+  food:  { x: 498, y: 668, r: 50 },   // 🍖 宠物粮食 → 喂食
+  clean: { x: 562, y: 690, r: 50 },   // 🧹 砂盆     → 清理便便
+  bath:  { x: 626, y: 664, r: 50 },   // 🛁 浴缸     → 洗澡
 };
 
 // 动物棚舍区域（每种动物一个独立围栏）
@@ -1867,15 +1880,6 @@ function tankRect(lv) {
 }
 // 商店摊位：升级后摊子变大、货架变多
 const STALL_SCALE = [1, 1.2, 1.45];
-
-// 宠物房间：三个等级的占地（房门在下方中间，第一排最右）
-// ★ 宠物房是给宠物住的小屋，做得**比主角家小一圈**（主角家连屋顶约 144×160，
-//   宠物房最大 124×82 + 小屋顶），所以第一排右边空出来的草地正好用来摆装饰
-const PETROOM_RECTS = [
-  { x: 492, y: 630, w: 96,  h: 60 },
-  { x: 485, y: 618, w: 110, h: 72 },
-  { x: 478, y: 608, w: 124, h: 82 },
-];
 
 // 农田（4×3 共 12 块地）：现在只有 1 级大小，四周按 3 级的大小**预留出升级区域**（白色虚线框）
 const FARM_RECTS = [
@@ -2012,18 +2016,8 @@ const FACILITIES = {
               ['开放「高级」商品', 'Premium goods unlocked']],
     growText: ['摊位变大 →', 'Bigger stall →'],
   },
-  petroom: {
-    name: '宠物房间', nameEn: 'Pet Room', icon: '🐾',
-    tip: '给宠物喂食、清理便便、洗澡', tipEn: 'Feed, clean and bathe your pets',
-    cost: [0, 200, 500],
-    cap: [1, 2, 4],
-    capText: [['最多养 1 只宠物', 'Up to 1 pet'],
-              ['最多养 2 只宠物', 'Up to 2 pets'],
-              ['最多养 4 只宠物', 'Up to 4 pets']],
-    growText: ['宠物房变大 →', 'Bigger pet room →'],
-  },
 };
-const FACILITY_ORDER = ['coop', 'sheep', 'cow', 'orchard', 'pond', 'tank', 'kitchen', 'wardrobe', 'shop', 'petroom'];
+const FACILITY_ORDER = ['coop', 'sheep', 'cow', 'orchard', 'pond', 'tank', 'kitchen', 'wardrobe', 'shop'];
 
 // 设施名字（中/英）
 function facName(f) { const d = FACILITIES[f]; return lang === 'en' ? d.nameEn : d.name; }
@@ -2046,7 +2040,6 @@ function upgradeShort(f) { return isMaxLv(f) ? 0 : Math.max(0, upgradeCost(f) - 
 //   所以牌子不会落进动物活动的范围里，升级扩建之后也不会被圈进围栏。
 function maxPenRect(type) { return PEN_RECTS[type][MAX_LV - 1]; }
 function boardSpots() {
-  const pr = PETROOM_RECTS[MAX_LV - 1];            // 宠物房间按 3 级的大小留位
   const orr = ORCHARD_RECTS[MAX_LV - 1];           // 果园按 3 级的大小留位
   // 三个水坑共用一个升级板：放在大海水蓝洞**最大时**的下方，升级后也不会被水淹到
   const lp = POND_SPEC.find(s => s.id === 'large');
@@ -2066,7 +2059,6 @@ function boardSpots() {
     ['kitchen',  ZONES.kitchen.x, ZONES.kitchen.y + 48, '🍳'],
     ['wardrobe', ZONES.wardrobe.x + 8, ZONES.wardrobe.y + 52, '👗'],
     ['shop',     ZONES.stall.x, ZONES.stall.y + 78, '🛒'],
-    ['petroom',  pr.x + pr.w / 2, pr.y + pr.h + 30, '🐾'],
   ];
 }
 
@@ -2081,7 +2073,7 @@ function maxOrchard() { return FACILITIES.orchard.cap[lvOf('orchard') - 1]; }
 function maxTank() { return FACILITIES.tank.cap[lvOf('tank') - 1]; }
 function tankSize() { return TANK_SIZE[lvOf('tank') - 1]; }
 function maxRecipes() { return FACILITIES.kitchen.cap[lvOf('kitchen') - 1]; }
-function maxPets() { return FACILITIES.petroom.cap[lvOf('petroom') - 1]; }
+function maxPets() { return 1; }        // 一个人只带一只宠物（想换别的去衣帽间 / 商店换）
 function outfitTierMax() { return FACILITIES.wardrobe.cap[lvOf('wardrobe') - 1]; }
 function shopTierMax() { return FACILITIES.shop.cap[lvOf('shop') - 1]; }
 function pondUnlocked(p) { return lvOf('pond') >= p.unlockLv; }
@@ -2089,7 +2081,6 @@ function unlockedPonds() { return PONDS.filter(pondUnlocked); }
 function orchardRect() { return ORCHARD_RECTS[lvOf('orchard') - 1]; }
 function penRect(type) { return PEN_RECTS[type][lvOf(FACILITY_OF_PEN[type]) - 1]; }
 function penHome(type) { return PEN_HOME[type][lvOf(FACILITY_OF_PEN[type]) - 1]; }
-function petRoomRect() { return PETROOM_RECTS[lvOf('petroom') - 1]; }
 const FACILITY_OF_PEN = { chicken: 'coop', sheep: 'sheep', cow: 'cow' };
 // 棚舍对应的设施 id（鸡巢 / 羊棚 / 牛棚）
 function facOfPen(type) { return FACILITY_OF_PEN[type]; }
@@ -2122,13 +2113,9 @@ function applyLevels() {
     p.unlockLv = spec.unlockLv;
     p.locked = !pondUnlocked(p);
   }
-  // ③ 水族箱 / 宠物房间的交互半径跟着体积走一点
+  // ③ 水族箱的交互半径跟着体积走一点
   const ts = tankSize();
   ZONES.tank.r = Math.max(120, ts.w / 2 + 8);
-  const pr = petRoomRect();
-  ZONES.petroom.x = pr.x + pr.w / 2;
-  ZONES.petroom.y = pr.y + pr.h - 8;                 // 门口（木板在更下面一点，互不抢占）
-  ZONES.petroom.r = Math.max(74, pr.w / 2);
   // ⑤ 农场动物（按等级）出生 / 散步的活动范围
   G.animalArea = { sheep: PENS.sheep, cow: PENS.cow, chicken: PENS.chicken };
 }
@@ -2420,7 +2407,7 @@ function initWorld() {
     { x: 810, y: 140, w: 900, h: 340 },   // 大水族箱（3 级最大范围，含下方木牌）
     // —— 第二排 ——
     { x: FOREST.x, y: FOREST.y, w: FOREST.w, h: FOREST.h },   // 森林（第二、三、四排最左）
-    { x: 462, y: 570, w: 156, h: 175 },   // 宠物家（小屋，含下方木牌）
+    { x: 462, y: 630, w: 180, h: 100 },   // 🍖 宠物粮食 / 🧹 砂盆 / 🛁 浴缸
     { x: 650, y: 620, w: 180, h: 105 },   // 衣柜 + 厨房（连木牌）
     { x: 878, y: 525, w: 165, h: 185 },   // 主角家
     { x: 1062, y: 632, w: 56, h: 54 },    // 卖货箱
@@ -2975,7 +2962,7 @@ function resetGame() {
   G.petHatsOwned = [];
   G.vehicles = []; G.vehicle = null;
   // 十个设施全部从 1 级开始
-  G.levels = { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 };
+  G.levels = { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1 };
   G.player.x = PLAYER_SPAWN.x; G.player.y = PLAYER_SPAWN.y; G.player.dir = 'down';
   G.player.gender = chosenGender;
   G.player.outfit = { hat: 'ragged', hair: 'none', shirt: 'ragged', dress: 'none', pants: 'ragged', shoes: 'none' };
@@ -3012,7 +2999,7 @@ function newZoo(type, x, y) {
 //   小朋友可以先把装饰摆在那儿 —— 等扩建压上来，render() 会把装饰画在最外层。
 function solidRects(lv) {
   const cur = (f) => Math.max(1, Math.min(MAX_LV, lv || lvOf(f)));
-  const pr = PETROOM_RECTS[cur('petroom') - 1], orr = ORCHARD_RECTS[cur('orchard') - 1];
+  const orr = ORCHARD_RECTS[cur('orchard') - 1];
   const ts = TANK_SIZE[cur('tank') - 1], k = STALL_SCALE[cur('shop') - 1], fr = FARM_RECTS[cur('farm') - 1];
   const h = ZONES.house;
   return [
@@ -3021,7 +3008,9 @@ function solidRects(lv) {
     { x: ZONES.kitchen.x - 22, y: ZONES.kitchen.y - 22, w: 44, h: 40 },             // 厨房
     { x: ZONES.bin.x - 22, y: ZONES.bin.y - 22, w: 44, h: 42 },                     // 卖货箱
     { x: ZONES.counter.x - 68, y: ZONES.counter.y - 108, w: 136, h: 124 },         // 销售门面
-    { x: pr.x - 8, y: pr.y - 32, w: pr.w + 16, h: pr.h + 44 },                       // 宠物房间（小房子）
+    { x: PET_SPOTS.food.x - 24,  y: PET_SPOTS.food.y - 26,  w: 48, h: 42 },          // 🍖 宠物粮食
+    { x: PET_SPOTS.clean.x - 26, y: PET_SPOTS.clean.y - 22, w: 52, h: 38 },          // 🧹 砂盆
+    { x: PET_SPOTS.bath.x - 28,  y: PET_SPOTS.bath.y - 30,  w: 56, h: 46 },          // 🛁 浴缸
     { x: orr.x, y: orr.y, w: orr.w, h: orr.h },                                     // 果树园
     { x: ZONES.tank.x - ts.w / 2 - 10, y: ZONES.tank.y - ts.h - 18, w: ts.w + 20, h: ts.h + 36 }, // 大水族箱
     { x: ZONES.stall.x - 47 * k, y: ZONES.stall.y + 20 - 92 * k, w: 94 * k, h: 116 * k },         // 商店摊位
@@ -3754,7 +3743,6 @@ function refreshAllPanels() {
   if (!$('cook-modal').classList.contains('hidden')) renderCook();
   if (!$('tank-modal').classList.contains('hidden')) renderTank();
   if (!$('wardrobe-modal').classList.contains('hidden')) renderWardrobe();
-  if (!$('pet-modal').classList.contains('hidden')) renderPetRoom();
   if (!$('upgrade-modal').classList.contains('hidden')) renderUpgradeModal(upgradeTarget);
   renderHUD();
 }
@@ -3789,10 +3777,6 @@ function facilityStatus(f) {
     case 'shop': {
       const tier = shopTierMax();
       return t('stShop', { t: tier, tm: MAX_LV, n: shopGoodsCount(tier) });
-    }
-    case 'petroom': {
-      const need = G.pets.filter(petIsSad).length;
-      return t('stPetroom', { n: G.pets.length, max: maxPets(), need: need });
     }
   }
   return '';
@@ -3886,126 +3870,25 @@ const PET_ADOPT_PRICE = 120;   // 领养一只新宠物
 const PET_TYPES = ['dog', 'cat', 'duck', 'goose'];
 const PET_EMOJI = { dog: '🐶', cat: '🐱', duck: '🦆', goose: '🦢' };
 
-function renderPetRoom() {
-  const box = $('pet-list');
-  const sub = $('pet-room-sub');
-  if (sub) sub.textContent = t('petRoomLv', { lv: lvOf('petroom'), cap: facCapText('petroom', lvOf('petroom')) });
-  if (!box) return;
-  box.innerHTML = '';
-  if (!G.pets.length) {
-    const e = document.createElement('div');
-    e.className = 'closet-empty';
-    e.textContent = t('petRoomEmpty');
-    box.appendChild(e);
-  }
-  G.pets.forEach(function (p, i) {
-    const card = document.createElement('div');
-    card.className = 'pet-card' + (petIsSad(p) ? ' sad' : '');
-    const av = document.createElement('div');
-    av.className = 'pet-avatar' + (p.anim ? ' acting ' + p.anim.kind : '');
-    av.textContent = PET_EMOJI[p.type] || '🐶';
-    if (p.anim) {
-      const fx = document.createElement('div');
-      fx.className = 'pet-fx';
-      const ic = p.anim.kind === 'eat' ? ['🍖', '💖', '😋'] : p.anim.kind === 'clean' ? ['🧹', '✨', '✨'] : ['🛁', '🫧', '🫧'];
-      ic.forEach(function (e, ei) {
-        const sp = document.createElement('span');
-        sp.textContent = e;
-        sp.style.animationDelay = (ei * 0.22) + 's';
-        sp.style.left = (18 + ei * 26) + '%';
-        fx.appendChild(sp);
-      });
-      av.appendChild(fx);
-    }
-    card.appendChild(av);
-
-    const body = document.createElement('div');
-    body.className = 'pet-body';
-    const nmEl = document.createElement('div');
-    nmEl.className = 'pet-name';
-    nmEl.textContent = '#' + (i + 1) + ' ' + petName(p) + (p.hat && p.hat !== 'none' ? ' 🎩' : '');
-    body.appendChild(nmEl);
-
-    // 三条状态：饱腹 / 清洁 / 便便
-    const bars = document.createElement('div');
-    bars.className = 'pet-bars';
-    const mk = (label, val, cls) => {
-      const d = document.createElement('div');
-      d.className = 'pet-bar';
-      d.innerHTML = '<span>' + label + '</span><span class="pet-track">' +
-        '<span class="pet-fill ' + cls + '" style="width:' + Math.round(val) + '%"></span></span>';
-      return d;
-    };
-    bars.appendChild(mk(t('petHunger'), p.hunger, 'hunger'));
-    bars.appendChild(mk(t('petClean'), p.clean, 'clean'));
-    const poopEl = document.createElement('div');
-    poopEl.className = 'pet-bar';
-    poopEl.textContent = t('petPoop', { n: p.poop });
-    bars.appendChild(poopEl);
-    body.appendChild(bars);
-
-    const need = petNeed(p);
-    const needEl = document.createElement('div');
-    needEl.className = 'pet-need';
-    needEl.textContent = need === 'hungry' ? '🍖 ' + t('petNeedHungry')
-                       : need === 'poop' ? '💩 ' + t('petNeedPoop')
-                       : need === 'dirty' ? '🛁 ' + t('petNeedDirty')
-                       : t('petStatusOk');
-    body.appendChild(needEl);
-    card.appendChild(body);
-
-    const btns = document.createElement('div');
-    btns.className = 'pet-btns';
-    const feed = document.createElement('button');
-    feed.textContent = t('petFeed') + ' 💰' + PET_FEED_COST;
-    feed.disabled = G.coins < PET_FEED_COST || p.hunger >= 100;
-    feed.onclick = function () { feedPet(p); };
-    const clean = document.createElement('button');
-    clean.className = 'blue';
-    clean.textContent = t('petBrush');
-    clean.disabled = p.poop <= 0;
-    clean.onclick = function () { cleanPet(p); };
-    const bath = document.createElement('button');
-    bath.className = 'pink';
-    bath.textContent = t('petBath');
-    bath.disabled = p.clean >= 100;
-    bath.onclick = function () { bathePet(p); };
-    btns.appendChild(feed); btns.appendChild(clean); btns.appendChild(bath);
-    card.appendChild(btns);
-    box.appendChild(card);
-  });
-  // 领养
-  const adopt = document.createElement('div');
-  adopt.className = 'pet-adopt';
-  if (G.pets.length >= maxPets()) {
-    const e = document.createElement('div');
-    e.className = 'closet-note';
-    e.textContent = t('petFull', { max: maxPets() });
-    adopt.appendChild(e);
-  } else {
-    PET_TYPES.forEach(function (ty) {
-      const b = document.createElement('button');
-      b.className = 'big-btn';
-      b.style.fontSize = '17px';
-      b.textContent = (PET_EMOJI[ty] || '') + ' ' + t(ty === 'goose' ? 'petGoose' : ty === 'duck' ? 'petDuck' : ty) + ' 💰' + PET_ADOPT_PRICE;
-      b.disabled = G.coins < PET_ADOPT_PRICE;
-      b.onclick = function () { adoptPet(ty); };
-      adopt.appendChild(b);
-    });
-  }
-  box.appendChild(adopt);
+// 宠物区三个小物件的交互名（站在旁边按 E 会提示什么）
+function petSpotLabel(which) {
+  const pet = G.pets[0];
+  const who = pet ? petName(pet) : '';
+  if (which === 'food')  return t('prPetFood', { pet: who, n: PET_FEED_COST });
+  if (which === 'clean') return t('prPetClean', { pet: who });
+  return t('prPetBath', { pet: who });
+}
+// 对着小物件按 E：没有宠物就提示先去领养
+function withPet(fn) {
+  const p = G.pets[0];
+  if (!p) { sfx.error(); say('petNoPet', null, 2400); return; }
+  fn(p);
 }
 // 三个动作都会给宠物加一段「正在做事」的动画（1.6~2 秒），
-// 地图上会画出食盆 / 扫帚 / 澡盆，面板里的头像也会跟着弹一下。
+// 地图上会画出食盆 / 扫帚 / 澡盆。
 function startPetAnim(p, kind) {
   p.anim = { kind: kind, t: 0, dur: kind === 'eat' ? 1.9 : 1.7 };
   p.happy = 3;
-  // 动画放完以后把面板再画一遍：卡片上的动作特效跟着收起来
-  const dur = p.anim.dur;
-  setTimeout(function () {
-    const el = $('pet-modal');
-    if (el && !el.classList.contains('hidden')) renderPetRoom();
-  }, dur * 1000 + 80);
 }
 function feedPet(p) {
   if (p.hunger >= 100) { sfx.error(); say('petAlreadyFull', { pet: petName(p) }); return; }
@@ -4017,7 +3900,7 @@ function feedPet(p) {
   spawnParticles(p.x, p.y - 14, '🍖', 4);
   coinBurst(p.x, p.y - 34, -PET_FEED_COST);
   say('petFed', { pet: petName(p), n: PET_FEED_COST }, 2200);
-  saveGame(true); renderPetRoom(); renderHUD();
+  saveGame(true); renderHUD();
 }
 function cleanPet(p) {
   p.poop = 0; p.poopT = rand(70, 130);
@@ -4025,7 +3908,7 @@ function cleanPet(p) {
   sfx.water(); sfx.sparkle();
   spawnParticles(p.x, p.y + 4, '✨', 6);
   say('petCleaned', { pet: petName(p) }, 2000);
-  saveGame(true); renderPetRoom();
+  saveGame(true);
 }
 function bathePet(p) {
   p.clean = 100;
@@ -4033,19 +3916,30 @@ function bathePet(p) {
   sfx.water(); sfx.sparkle();
   spawnParticles(p.x, p.y - 10, '🫧', 7);
   say('petBathed', { pet: petName(p) }, 2200);
-  saveGame(true); renderPetRoom();
+  saveGame(true);
 }
+// 一个人只带一只宠物：已经有宠物时，领养就是**换一只**（把现在这只换掉）
 function adoptPet(type) {
-  if (G.pets.length >= maxPets()) { sfx.error(); say('petFull', { max: maxPets() }); return; }
   if (G.coins < PET_ADOPT_PRICE) { sfx.error(); say('upgradeNoCoin', { n: PET_ADOPT_PRICE }); return; }
   G.coins -= PET_ADOPT_PRICE;
-  const z = ZONES.petroom;
-  const p = newPet(type, z.x + rand(-40, 40), z.y + rand(6, 30));
-  G.pets.push(p);
-  sfx.buy(); sfx.petVoice(type, 260);
-  spawnParticles(p.x, p.y - 20, '💖', 6);
-  say('petAdoptDone', { pet: petName(p) }, 2600, false, { icon: PET_EMOJI[type] || '🐾', sub: t('petAdoptSub') });
-  saveGame(true); renderPetRoom(); renderHUD();
+  let p;
+  if (G.pets.length) {
+    p = G.pets[0];
+    p.type = PET_TYPES.indexOf(type) >= 0 ? type : 'dog';
+    p.hunger = 100; p.clean = 100; p.poop = 0; p.poopT = rand(70, 130);
+    p.anim = null; p.happy = 3;
+    sfx.buy(); sfx.petVoice(p.type, 260);
+    spawnParticles(p.x, p.y - 20, '💖', 6);
+    say('petSwapped', { pet: petName(p) }, 2600, false, { icon: PET_EMOJI[p.type] || '🐾', sub: t('petAdoptSub') });
+  } else {
+    const sp = PET_SPOTS.food;
+    p = newPet(type, sp.x + rand(-30, 30), sp.y + rand(46, 66));
+    G.pets.push(p);
+    sfx.buy(); sfx.petVoice(type, 260);
+    spawnParticles(p.x, p.y - 20, '💖', 6);
+    say('petAdoptDone', { pet: petName(p) }, 2600, false, { icon: PET_EMOJI[type] || '🐾', sub: t('petAdoptSub') });
+  }
+  saveGame(true); renderHUD();
 }
 
 // 图标容器：服饰用「画出来的真实样式」，其它用 emoji
@@ -4184,14 +4078,14 @@ function renderShop() {
     // 宠物用品：宠物口粮 + 领养新宠物
     const phead = document.createElement('div');
     phead.style.cssText = 'grid-column:1/-1;font-size:14px;color:#8a7a52;font-weight:bold;';
-    phead.textContent = t('petRoomLv', { lv: lvOf('petroom'), cap: facCapText('petroom', lvOf('petroom')) });
+    const hasPet = G.pets.length > 0;
+    phead.textContent = hasPet ? t('petHaveOne', { pet: petName(G.pets[0]) }) : t('petShopHead');
     box.appendChild(phead);
     PET_TYPES.forEach(function (ty) {
-      const full = G.pets.length >= maxPets();
       mkCard(iconBox('emoji', PET_EMOJI[ty] || '🐾'),
              t(ty === 'goose' ? 'petGoose' : ty === 'duck' ? 'petDuck' : ty),
              PET_ADOPT_PRICE, () => { adoptPet(ty); renderShop(); },
-             full, full ? t('petFull', { max: maxPets() }) : t('petAdopt'));
+             false, hasPet ? t('petSwapThis') : t('petAdopt'));
     });
   } else if (shopTab === 'vehicles') {
     // 交通工具：买回来后走到停车架按 E 就能骑上，骑上走得快
@@ -4747,7 +4641,9 @@ function nearestInteract() {
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
     ['counter', 'shop', t('prShop')],
-    ['petroom', 'petroom', t('prPetRoom')],
+    ['petfood',  'petfood',  petSpotLabel('food')],
+    ['petclean', 'petclean', petSpotLabel('clean')],
+    ['petbath',  'petbath',  petSpotLabel('bath')],
     ['rack', 'rack', G.vehicle
         ? t('prPark', { v: nm('vehicle', G.vehicle) })
         : (G.vehicles.length ? t('prRide', { v: nm('vehicle', G.vehicles[G.vehicles.length - 1]) }) : t('prRackEmpty'))],
@@ -4756,7 +4652,7 @@ function nearestInteract() {
         : t('prHatch', { n: G.incubating.length, max: maxIncubate() })],
   ];
   for (const [zk, kind, label] of zoneChecks) {
-    const z = ZONES[zk];
+    const z = ZONES[zk] || PET_SPOTS[zk.replace('pet', '')];
     const d = dist(p.x, p.y, z.x, z.y);
     if (d < z.r && d < bestD) { bestD = d; best = { kind, label }; }
   }
@@ -4954,8 +4850,14 @@ function doInteract() {
     case 'upgrade':
       openUpgrade(target.fac);
       break;
-    case 'petroom':
-      renderPetRoom(); sfx.open(); openModal('pet-modal');
+    case 'petfood':
+      withPet((p) => feedPet(p));
+      break;
+    case 'petclean':
+      withPet((p) => cleanPet(p));
+      break;
+    case 'petbath':
+      withPet((p) => bathePet(p));
       break;
   }
 }
@@ -6134,11 +6036,12 @@ function render() {
   drawables.push({ y: ZONES.kitchen.y + 12, draw: () => drawKitchenProp(ctx, ZONES.kitchen.x, ZONES.kitchen.y, t) });
   drawables.push({ y: ZONES.wardrobe.y + 14, draw: () => drawWardrobeProp(ctx, ZONES.wardrobe.x, ZONES.wardrobe.y, t) });
   drawables.push({ y: ZONES.bin.y + 16, draw: () => drawBin(ctx, ZONES.bin.x, ZONES.bin.y, t) });
-  // 🐾 宠物房间
-  drawables.push({
-    y: petRoomRect().y + petRoomRect().h + 6,
-    draw: () => drawPetRoom(ctx, ZONES.petroom.x, 0, t, lvOf('petroom'), G.pets, petRoomRect()),
-  });
+  // 🐾 宠物区：🍖 宠物粮食 / 🧹 砂盆 / 🛁 浴缸（对着谁按 E 就做哪件事）
+  const pet = G.pets[0];
+  const needKind = pet ? petNeed(pet) : null;
+  drawables.push({ y: PET_SPOTS.food.y + 6,  draw: () => drawPetFood(ctx, PET_SPOTS.food.x, PET_SPOTS.food.y, t, needKind === 'hungry') });
+  drawables.push({ y: PET_SPOTS.clean.y + 6, draw: () => drawPetLitter(ctx, PET_SPOTS.clean.x, PET_SPOTS.clean.y, t, needKind === 'poop') });
+  drawables.push({ y: PET_SPOTS.bath.y + 6,  draw: () => drawPetBath(ctx, PET_SPOTS.bath.x, PET_SPOTS.bath.y, t, needKind === 'dirty') });
   // 十块「升级木板」：每栋建筑正下方一块，走过去按 E 就是升级对话
   for (const [f, sx, sy, ic] of boardSpots()) {
     drawables.push({
@@ -6538,8 +6441,9 @@ function renderMinimap() {
   miniRect(hz.x - 12, hz.y - 104, 144, 160, '#ff8f6a');
   miniRect(ZONES.wardrobe.x - 14, ZONES.wardrobe.y - 30, 28, 44, '#d9a066');
   miniRect(ZONES.kitchen.x - 17, ZONES.kitchen.y - 20, 34, 32, '#c9d2dc');
-  const pr = petRoomRect();
-  miniRect(pr.x, pr.y, pr.w, pr.h, '#f0a058');
+  miniRect(PET_SPOTS.food.x - 9,  PET_SPOTS.food.y - 7,  18, 14, '#f0a058');
+  miniRect(PET_SPOTS.clean.x - 9, PET_SPOTS.clean.y - 7, 18, 14, '#c8b48a');
+  miniRect(PET_SPOTS.bath.x - 10, PET_SPOTS.bath.y - 8,  20, 16, '#9fd6ef');
   miniRect(ZONES.bin.x - 16, ZONES.bin.y - 14, 32, 30, '#9a6a3a');
   const ts = tankSize();
   miniRect(ZONES.tank.x - ts.w / 2, ZONES.tank.y - ts.h - 14, ts.w, ts.h + 16, '#8fd0f0');
@@ -6870,13 +6774,13 @@ window.__farm = {
   canvasHasPixels, animSlot, ANIM_PARALLEL, notoNorm, maxIncubate, maxHens, maxChicks,
   maxSheep, maxCows, maxOtherAnimals, maxOrchard, maxTank, maxRecipes, maxPets,
   FACILITIES, FACILITY_ORDER, doUpgrade, applyLevels, lvOf, isMaxLv, upgradeCost,
-  addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
+  addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC,
   FARM_RECTS, farmRect, QUEUE_SLOTS, MAX_BUYERS, MAX_LV, WORLD_W, WORLD_H, PEN_HOME, TROUGH_OFF, DECOR_SHOP, DECOR_R,
   renderMinimap, miniCanvas, MINI_K, miniRect,
   drawPlayer, drawRider, drawVehicle, drawPet, drawChicken, drawSheep, drawCow, drawShadow, drawBikeRack, VEH_SPEC, PLAYER_FOOT_Y,
   openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
   tankRect, pointInSea, SEA_POLY, decorUnderBuilding,
-  newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
+  newPet, petNeed, petName, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE, PET_SPOTS, petSpotLabel, withPet,
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
   countHensLaidToday, countHens, countChicks, dailyFarmUpdate, isHen, isChick,
   newZoo, newAnimal,

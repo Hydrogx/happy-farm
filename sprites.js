@@ -1986,68 +1986,87 @@ function drawPetAction(ctx, x, y, t, anim) {
 }
 
 // 🐾 宠物房间：一间小屋子，里面有食盆、澡盆和垫子；升级后屋子变大、床变多
-function drawPetRoom(ctx, x, y, t, lv, pets, rect) {
-  const r = rect || { x: x - 48, y: y - 60, w: 96, h: 60 };
-  const W = r.w, H = r.h;
-  // 宠物房比主角家小，里面的门 / 窗 / 招牌 / 小枕头都跟着房间一起缩（k = 相对老尺寸的比例）
-  const k = W / 170;
-  const wallTop = r.y, wallBot = r.y + H;
-  const roofH = 34 * k, over = 10 * k;
-  drawShadow(ctx, r.x + W / 2, wallBot + 4, W / 2);
-  // 墙
-  ctx.fillStyle = '#ffe6c8';
-  rr(ctx, r.x, wallTop, W, H, 8 * k + 2); ctx.fill();
-  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = Math.max(1.6, 2.5 * k);
-  rr(ctx, r.x, wallTop, W, H, 8 * k + 2); ctx.stroke();
-  // 屋顶
-  ctx.fillStyle = '#f0a058';
-  ctx.beginPath();
-  ctx.moveTo(r.x - over, wallTop + 4 * k);
-  ctx.lineTo(r.x + W / 2, wallTop - roofH);
-  ctx.lineTo(r.x + W + over, wallTop + 4 * k);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#d8863e';
-  rr(ctx, r.x - over, wallTop, W + over * 2, Math.max(4, 7 * k), 3.5 * k); ctx.fill();
-  // 门（下方中间）
-  const dw = Math.max(16, 30 * k), dh = Math.max(18, 34 * k);
-  ctx.fillStyle = '#b5723a';
-  rr(ctx, r.x + W / 2 - dw / 2, wallBot - dh, dw, dh, 5 * k + 1); ctx.fill();
-  ctx.fillStyle = '#ffd23e';
-  ellipse(ctx, r.x + W / 2 + dw * 0.3, wallBot - dh / 2, Math.max(1.4, 2 * k), Math.max(1.4, 2 * k)); ctx.fill();
-  // 招牌
-  ctx.font = Math.max(10, Math.round(15 * k)) + 'px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('🐾', r.x + W / 2, wallTop + Math.max(14, 26 * k));
-  // 窗户
-  const ww = Math.max(15, 26 * k), wh = Math.max(12, 22 * k), wy = wallTop + Math.max(7, 14 * k);
-  const wx1 = r.x + 12 * k, wx2 = r.x + W - 12 * k - ww;
-  ctx.fillStyle = 'rgba(180,225,245,.9)';
-  rr(ctx, wx1, wy, ww, wh, 4 * k); ctx.fill();
-  rr(ctx, wx2, wy, ww, wh, 4 * k); ctx.fill();
-  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = Math.max(1.2, 2 * k);
-  rr(ctx, wx1, wy, ww, wh, 4 * k); ctx.stroke();
-  rr(ctx, wx2, wy, ww, wh, 4 * k); ctx.stroke();
-  // 屋里的垫子：按等级画出所有床位（有几只宠物就有几个小枕头）
-  const beds = Math.min(4, Math.max(lv, (pets || []).length));
-  const innerL = r.x + 16 * k, innerR = r.x + W - 16 * k;
-  const bedY = wallBot - Math.max(8, 16 * k);
-  for (let i = 0; i < beds; i++) {
-    const px = beds === 1 ? (innerL + innerR) / 2 : innerL + (innerR - innerL) * (i / (beds - 1));
-    ctx.fillStyle = i % 2 ? '#cfe8ff' : '#ffd8e6';
-    ellipse(ctx, px, bedY, Math.max(6.5, 15 * k), Math.max(3, 6 * k)); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.75)';
-    ellipse(ctx, px, bedY - Math.max(1.5, 3 * k), Math.max(3, 7 * k), Math.max(1.6, 3.4 * k)); ctx.fill();
+/* ------------------------------------------------------------
+ * 🐾 宠物区的三个小物件：🍖 宠物粮食 / 🧹 砂盆 / 🛁 浴缸
+ * 对着谁按 E 就做哪件事（喂食 / 清理便便 / 洗澡）
+ * need = 宠物现在正需要这个，头上会冒一个跳跳的小图标提醒
+ * ---------------------------------------------------------- */
+function petSpotHint(ctx, x, y, t, icon, need) {
+  if (!need) return;
+  const by = y - 46 + Math.sin(t * 3) * 3;
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  rr(ctx, x - 14, by - 14, 28, 24, 9); ctx.fill();
+  ctx.strokeStyle = '#ff9f3e'; ctx.lineWidth = 2.2;
+  rr(ctx, x - 14, by - 14, 28, 24, 9); ctx.stroke();
+  ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(icon, x, by + 3);
+}
+// 🍖 宠物粮食：一只小食盆，里面堆着口粮
+function drawPetFood(ctx, x, y, t, need) {
+  drawShadow(ctx, x, y, 20);
+  ctx.fillStyle = '#d9734f';
+  ctx.beginPath(); ctx.ellipse(x, y - 12, 21, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#c9603f';
+  rr(ctx, x - 21, y - 12, 42, 12, 6); ctx.fill();
+  ctx.fillStyle = '#a9753c';
+  ellipse(ctx, x, y - 12, 16, 6); ctx.fill();
+  ctx.fillStyle = '#c58f4c';
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2;
+    ellipse(ctx, x + Math.cos(a) * 9, y - 13 + Math.sin(a) * 3.4, 3, 2.2); ctx.fill();
   }
-  // 门边的食盆和澡盆
-  const bowlY = wallBot + Math.max(7, 12 * k);
-  ctx.fillStyle = '#f0b8c8';
-  ellipse(ctx, r.x + 20 * k, bowlY, Math.max(5, 10 * k), Math.max(2.6, 5 * k)); ctx.fill();
-  ctx.fillStyle = '#a8d8f0';
-  ellipse(ctx, r.x + W - 20 * k, bowlY, Math.max(5.5, 11 * k), Math.max(3, 6 * k)); ctx.fill();
-  ctx.font = Math.max(9, Math.round(11 * k)) + 'px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('🍖', r.x + 20 * k, bowlY + 4 * k);
-  ctx.fillText('🛁', r.x + W - 20 * k, bowlY + 4 * k);
-  // 等级徽章（挂在屋顶尖尖上面）
-  drawLvBadge(ctx, r.x + W / 2, wallTop - roofH - 12, lv, t, false);
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🍖', x + 20, y - 26 + Math.sin(t * 2) * 1.2);
+  petSpotHint(ctx, x, y, t, '🍖', need);
+}
+// 🧹 砂盆：方方的沙盆 + 一把小铲子
+function drawPetLitter(ctx, x, y, t, need) {
+  drawShadow(ctx, x, y, 24);
+  ctx.fillStyle = '#b9c3c9';
+  rr(ctx, x - 25, y - 20, 50, 20, 4); ctx.fill();
+  ctx.fillStyle = '#e7dcc0';
+  rr(ctx, x - 21, y - 18, 42, 15, 3); ctx.fill();
+  ctx.fillStyle = 'rgba(180,160,120,.55)';
+  for (let i = 0; i < 12; i++) { ellipse(ctx, x - 17 + (i * 7) % 34, y - 15 + (i % 3) * 4, 1.8, 1.2); ctx.fill(); }
+  ctx.strokeStyle = '#9aa4ab'; ctx.lineWidth = 2.5;
+  rr(ctx, x - 25, y - 20, 50, 20, 4); ctx.stroke();
+  ctx.save();
+  ctx.translate(x + 24, y - 6);
+  ctx.rotate(-0.35);
+  ctx.strokeStyle = '#c98a5a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -18); ctx.stroke();
+  ctx.fillStyle = '#aab4bb';
+  rr(ctx, -5, -26, 10, 9, 2); ctx.fill();
+  ctx.restore();
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🧹', x - 22, y - 26 + Math.sin(t * 2 + 1) * 1.2);
+  petSpotHint(ctx, x, y, t, '💩', need);
+}
+// 🛁 浴缸：白色小浴缸，上面飘着泡泡
+function drawPetBath(ctx, x, y, t, need) {
+  drawShadow(ctx, x, y, 26);
+  ctx.fillStyle = '#f2f7fa';
+  rr(ctx, x - 28, y - 26, 56, 26, 10); ctx.fill();
+  ctx.strokeStyle = '#cfe0ea'; ctx.lineWidth = 2.5;
+  rr(ctx, x - 28, y - 26, 56, 26, 10); ctx.stroke();
+  ctx.fillStyle = 'rgba(150,215,240,.9)';
+  rr(ctx, x - 23, y - 22, 46, 12, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  for (let i = 0; i < 6; i++) {
+    const ph = ((t * 0.4 + i * 0.17) % 1);
+    const bx = x - 18 + (i * 13) % 36 + Math.sin(t * 2 + i) * 2;
+    ellipse(ctx, bx, y - 18 - ph * 16, 3.2 + (1 - ph) * 2.4, 3.2 + (1 - ph) * 2.4); ctx.fill();
+  }
+  ctx.fillStyle = '#d9a066';
+  rr(ctx, x - 22, y - 2, 8, 6, 2.5); ctx.fill();
+  rr(ctx, x + 14, y - 2, 8, 6, 2.5); ctx.fill();
+  ctx.strokeStyle = '#c9ced6'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + 26, y - 30); ctx.lineTo(x + 26, y - 44); ctx.stroke();
+  ctx.fillStyle = '#4a5058';
+  rr(ctx, x + 18, y - 47, 16, 5, 2.5); ctx.fill();
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🛁', x - 24, y - 34 + Math.sin(t * 2 + 2) * 1.2);
+  petSpotHint(ctx, x, y, t, '🛁', need);
 }
 
 // 🛒 销售门面（接在商店右边）：一张带遮阳棚的柜台 ——
