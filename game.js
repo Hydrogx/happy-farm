@@ -508,6 +508,12 @@ const STR = {
     // —— 找零钱小挑战 ——
     mathTitle: '🧮 帮忙算零钱',
     mathAsk: '客人买了 {item}（{price} 金币），给了 {paid} 金币，要找他多少零钱？',
+    // —— 找零钱（新版：只给文字描述 + 数字键盘）——
+    mathDescQty: '买 {n} 个{item}，每个{item} {price} 金币，客户付了 {paid} 金币',
+    mathDescOne: '买 1 个{item}，{price} 金币，客户付了 {paid} 金币',
+    mathDescMix: '买 {a}（{pa} 金币）和 {b}（{pb} 金币），客户付了 {paid} 金币',
+    mathRevealChange: '要找给客人 {change} 金币',
+    mathRevealIncome: '这一单收入 {n} 金币 💰',
     mathHint: '客人给的钱 − 东西的价格 = 要找的零钱',
     eachFor: '每个 {n} 金币',
     paidChip: '给了 {n} 金币',
@@ -878,6 +884,12 @@ const STR = {
     logPlantCrop: 'Planted {crop} (about {sec}s to grow)',
     mathTitle: '🧮 Count the Change',
     mathAsk: 'Your customer buys {item} ({price} coins) and pays {paid} coins. How much change do you give back?',
+    // —— Change (new: plain text + number pad) ——
+    mathDescQty: 'The customer buys {n} × {item} at {price} coins each, and pays {paid} coins',
+    mathDescOne: 'The customer buys 1 × {item} for {price} coins, and pays {paid} coins',
+    mathDescMix: 'The customer buys {a} ({pa} coins) and {b} ({pb} coins), and pays {paid} coins',
+    mathRevealChange: 'Give {change} coins change',
+    mathRevealIncome: 'You earn {n} coins from this sale 💰',
     mathHint: 'Money paid − price of the item = change',
     eachFor: '{n} coins each',
     paidChip: 'pays {n} coins',
@@ -3107,72 +3119,18 @@ function coinChoices(price) {
   const base = Math.ceil((price + 5) / 10) * 10;
   return { pay: base, change: base - price };
 }
-// 生成四个选项：一个正确答案 + 三个贴近答案的错项
-function makeChoices(correct) {
-  const set = [correct];
-  const near = [1, 2, 5, 10, 3, 4, 20, 6, 8];
-  const cand = [];
-  for (let i = 0; i < near.length; i++) {
-    cand.push(correct + near[i]);
-    if (correct - near[i] > 0) cand.push(correct - near[i]);
-  }
-  cand.sort(function () { return Math.random() - 0.5; });
-  for (let i = 0; i < cand.length && set.length < 4; i++) {
-    const v = cand[i];
-    if (v > 0 && set.indexOf(v) < 0) set.push(v);
-  }
-  let extra = 1;
-  while (set.length < 4) { if (set.indexOf(correct + extra) < 0) set.push(correct + extra); extra++; }
-  set.sort(function () { return Math.random() - 0.5; });
-  return set;
-}
-
-// 把购物篮翻译成「算式 + 分步」。
-//   1 件 × n 个 ： 100 − 38 × 2 = ?   → 第一步 38×2，第二步 100−76
-//   2 件各 1 个 ： 100 − (24 + 15) = ? → 第一步 24+15，第二步 100−39
-//   1 件 × 1 个 ： 50 − 24 = ?         → 只有一步 50−24
-function buildMathSteps(items, total, paid) {
-  const steps = [];
-  if (items.length === 1 && items[0].qty > 1) {
-    const it = items[0], unit = salePriceOf(it.id);
-    steps.push({ kind: 'mul', expr: unit + ' × ' + it.qty, plain: unit + ' × ' + it.qty,
-                 answer: unit * it.qty, choices: makeChoices(unit * it.qty) });
-  } else if (items.length > 1) {
-    const a = salePriceOf(items[0].id), b = salePriceOf(items[1].id);
-    steps.push({ kind: 'add', expr: a + ' + ' + b, plain: a + ' + ' + b,
-                 answer: a + b, choices: makeChoices(a + b) });
-  }
-  const sub = { kind: 'sub', expr: paid + ' − ' + total, plain: paid + ' − ' + total,
-                answer: paid - total, choices: makeChoices(paid - total) };
-  steps.push(sub);
-  return steps;
-}
-// 完整算式的字符串（第一步的结果先留着空位）
-function mathExpressionText(m) {
-  const items = m.items || [{ id: m.item, qty: 1 }];
-  if (items.length === 1 && items[0].qty > 1) {
-    return m.paid + ' − ' + salePriceOf(items[0].id) + ' × ' + items[0].qty + ' = ?';
-  }
-  if (items.length > 1) {
-    const parts = items.map(it => salePriceOf(it.id) + (it.qty > 1 ? ' × ' + it.qty : ''));
-    return m.paid + ' − (' + parts.join(' + ') + ') = ?';
-  }
-  return m.paid + ' − ' + salePriceOf(items[0].id) + ' = ?';
-}
 function openMathChallenge(c) {
   const items = (c.items && c.items.length) ? c.items.map(it => ({ id: it.id, qty: it.qty }))
                                             : [{ id: c.want, qty: 1 }];
   const total = basketTotal(items);
   const cc = coinChoices(total);
-  const steps = buildMathSteps(items, total, cc.pay);
   G.math = {
     c: c, item: items[0].id, items: items,
     price: items.length === 1 ? salePriceOf(items[0].id) : total,
     total: total, paid: cc.pay, change: cc.change,
-    steps: steps, step: 0,
-    choices: steps[0].choices,
+    typed: '',                  // 玩家用数字键盘敲的答案
+    revealing: false,           // 答对了 → 亮算式那 2 秒
     t: MATH_TIME,
-    payLabel: t('coinUnit', { n: cc.pay }),
   };
   G.modalOpen = 'math-modal';
   renderMathChallenge();
@@ -3186,82 +3144,106 @@ function closeMathChallenge() {
   if (el) el.classList.add('hidden');
   if (G.modalOpen === 'math-modal') G.modalOpen = null;
 }
-function renderMathChallenge() {
-  const q = $('math-question'), box = $('math-choices'), info = $('math-info'), bar = $('math-bar');
-  if (!q || !box || !G.math) return;
-  const m = G.math;
-  // ① 第一行：买了什么 / 单价 / 给了多少 —— 做成小圆牌，多买几件也不会变成一大段话
-  const chips = [];
-  m.items.forEach(function (it) {
-    chips.push('<span class="math-chip"><span class="ci">' + ITEMS[it.id].icon + '</span>' +
-               nm('item', it.id) + (it.qty > 1 ? ' ×' + it.qty : '') + '</span>');
-  });
-  if (m.items.length === 1 && m.items[0].qty > 1) {
-    chips.push('<span class="math-chip">' + t('eachFor', { n: salePriceOf(m.items[0].id) }) + '</span>');
-  } else if (m.items.length > 1) {
-    chips.push('<span class="math-chip">' + m.items.map(function (it) {
-      return salePriceOf(it.id) + '💰';
-    }).join(' + ') + '</span>');
+// ============================================================
+//   🧮 找零钱：只给一段文字描述 + 一个数字键盘
+//   「买 2 个桃子，每个桃子 35 金币，客户付了 100 金币」→ 玩家自己敲出要找的零钱。
+//   敲对了才把算式 / 结果 / 这一单的收入亮出来，停 2 秒再结算。
+// ============================================================
+const MATH_REVEAL_MS = 2000;              // 答对以后算式亮 2 秒
+// 把这一单说成一句人话（不给算式）
+function mathDescText(m) {
+  const its = m.items;
+  if (its.length > 1) {
+    const a = its[0], b = its[1];
+    return t('mathDescMix', {
+      a: nm('item', a.id), b: nm('item', b.id),
+      pa: salePriceOf(a.id) * a.qty, pb: salePriceOf(b.id) * b.qty, paid: m.paid,
+    });
   }
-  chips.push('<span class="math-chip paid">' + t('paidChip', { n: m.paid }) + '</span>');
-  q.innerHTML = chips.join('');
-  // ② 完整算式 + 分步；数轴只在「算找零」这一步出现
-  const step = m.steps[m.step];
-  const last = m.step === m.steps.length - 1;
-  const stepHtml = m.steps.map(function (s, i) {
-    const cls = i < m.step ? 'done' : i === m.step ? 'active' : 'locked';
-    const shown = i < m.step ? (s.expr + ' = ' + s.answer) : (s.expr + ' = ?');
-    const label = i < m.steps.length - 1 ? t('mathStepTotal') : t('mathStepChange');
-    return '<div class="math-step ' + cls + '"><span class="st-label">' + label +
-           '</span><span class="st-expr">' + shown + '</span></div>';
-  }).join('');
-  if (info) {
-    info.innerHTML =
-      '<div class="math-expr">' + mathExpressionText(m) + '</div>' +
-      '<div class="math-steps">' + stepHtml + '</div>' +
-      (last ? numberLineHTML(m.total, m.paid) : '');
+  const it = its[0];
+  if (it.qty > 1) {
+    return t('mathDescQty', { n: it.qty, item: nm('item', it.id), price: salePriceOf(it.id), paid: m.paid });
   }
-  box.innerHTML = '';
-  m.choices.forEach(function (v) {
+  return t('mathDescOne', { item: nm('item', it.id), price: salePriceOf(it.id), paid: m.paid });
+}
+function mathRenderKeys() {
+  const pad = $('math-keypad');
+  if (!pad) return;
+  pad.innerHTML = '';
+  ['1','2','3','4','5','6','7','8','9','⌫','0','✓'].forEach(function (k) {
     const b = document.createElement('button');
-    b.className = 'math-choice';
-    b.textContent = v + ' 💰';
-    b.onclick = function () { answerMath(v); };
-    box.appendChild(b);
+    b.className = 'math-key' + (k === '✓' ? ' ok' : k === '⌫' ? ' del' : '');
+    b.textContent = k;
+    b.onclick = function () {
+      if (k === '⌫') mathBack();
+      else if (k === '✓') mathSubmit();
+      else mathKey(k);
+    };
+    pad.appendChild(b);
   });
-  if (bar) bar.style.width = '100%';
 }
-// 数轴（矮矮一条）：把「算出来的总价」和「付的钱」标在一条线上，一眼看出要往前跳多少
-function numberLineHTML(price, paid) {
-  const max = Math.max(paid, price) + 4;
-  const pPct = (price / max) * 100, dPct = (paid / max) * 100;
-  return '<div class="nl2">' +
-      '<div class="nl2-track">' +
-        '<div class="nl2-fill" style="left:' + pPct + '%;width:' + Math.max(0, dPct - pPct) + '%"></div>' +
-      '</div>' +
-      '<div class="nl2-dot price" style="left:' + pPct + '%">' + price + '</div>' +
-      '<div class="nl2-dot paid" style="left:' + dPct + '%">' + paid + '</div>' +
-      '<div class="nl2-legend">' +
-        '<span class="price">' + t('nlPrice') + ' ' + price + ' 金币</span>' +
-        '<span class="paid">' + t('nlPaid') + ' ' + paid + ' 金币</span>' +
-      '</div>' +
-    '</div>';
+function mathInputUI() {
+  const m = G.math, el = $('math-input');
+  if (el && m) el.textContent = m.typed ? m.typed : '?';
+  const ok = document.querySelector('.math-key.ok');
+  if (ok && m) ok.disabled = !m.typed || m.revealing;
 }
-// 把金额画成硬币（10 / 5 / 1）
-function coinHTML(n) {
-  let left = n, out = '';
-  const coins = [[10, '#ffd23e', '#d9a62e', '10'], [5, '#ffb84d', '#e09a2f', '5'], [1, '#e8d9b0', '#c9a86a', '1']];
-  const MAX = 6;
-  let drawn = 0;
-  for (let i = 0; i < coins.length; i++) {
-    const [val, fill, edge, label] = coins[i];
-    while (left >= val && drawn < MAX) {
-      out += '<i class="coin" style="background:' + fill + ';border-color:' + edge + '">' + label + '</i>';
-      left -= val; drawn++;
-    }
+function mathKey(d) {
+  const m = G.math;
+  if (!m || m.revealing) return;
+  if (m.typed.length >= 3) return;
+  m.typed = (m.typed === '0' ? '' : m.typed) + d;
+  sfx.click();
+  mathInputUI();
+}
+function mathBack() {
+  const m = G.math;
+  if (!m || m.revealing || !m.typed) return;
+  m.typed = m.typed.slice(0, -1);
+  sfx.click();
+  mathInputUI();
+}
+function mathSubmit() {
+  const m = G.math;
+  if (!m || m.revealing || !m.typed) return;
+  if (parseInt(m.typed, 10) !== m.change) {
+    sfx.error();
+    const pad = $('math-keypad');
+    if (pad) { pad.classList.add('shake'); setTimeout(function () { pad.classList.remove('shake'); }, 420); }
+    toast(t('mathWrong'), 1500);
+    m.typed = '';
+    mathInputUI();
+    return;
   }
-  if (left > 0) out += '<i class="coin more">+' + left + '</i>';
-  return out;
+  // 算对啦：先把算式 / 结果 / 收入亮出来，2 秒以后才真的成交
+  m.revealing = true;
+  sfx.coin(); sfx.sparkle();
+  mathRevealUI();
+  setTimeout(function () { if (G.math === m) finishMathSale(m); }, MATH_REVEAL_MS);
+}
+// 答对以后那 2 秒显示的内容：算式 + 结果 + 这一单收入多少
+function mathRevealUI() {
+  const m = G.math;
+  const rev = $('math-reveal'), pad = $('math-keypad'), inp = $('math-input');
+  if (pad) pad.classList.add('hidden');
+  if (inp) inp.classList.add('hidden');
+  if (!rev) return;
+  rev.classList.remove('hidden');
+  rev.innerHTML =
+    '<div class="mr-eq">' + m.paid + ' − ' + m.total + ' = <b>' + m.change + '</b></div>' +
+    '<div class="mr-row"><span class="mr-change">' + t('mathRevealChange', { change: m.change }) + '</span>' +
+    '<span class="mr-income">' + t('mathRevealIncome', { n: m.total }) + '</span></div>';
+}
+function renderMathChallenge() {
+  const q = $('math-question'), rev = $('math-reveal'), pad = $('math-keypad'), inp = $('math-input'), bar = $('math-bar');
+  if (!q || !G.math) return;
+  const m = G.math;
+  q.textContent = mathDescText(m);          // ★ 只给文字描述，不给算式
+  if (rev) { rev.classList.add('hidden'); rev.innerHTML = ''; }
+  if (pad) { pad.classList.remove('hidden'); mathRenderKeys(); }
+  if (inp) inp.classList.remove('hidden');
+  mathInputUI();
+  if (bar) bar.style.width = '100%';
 }
 // 客人到底要买哪些东西（成交 / 离开时都要按这个扣货）
 function basketOf(c) {
@@ -3287,36 +3269,9 @@ function takeBasket(c) {
   b.forEach(function (it) { removeItem(it.id, it.qty); });
   return true;
 }
-// 一步一步答题：第一步答对 → 进入第二步；第二步答对 → 成交
-function answerMath(v) {
-  const m = G.math;
-  if (!m) return;
+// 算式亮完 2 秒 → 真的成交
+function finishMathSale(m) {
   const c = m.c;
-  const step = m.steps[m.step];
-  if (v !== step.answer) {
-    sfx.error();
-    const box = $('math-choices');
-    if (box) {
-      box.classList.add('shake');
-      setTimeout(function () { box.classList.remove('shake'); }, 420);
-    }
-    toast(t('mathWrong'), 1500);
-    return;
-  }
-  // 这一步对了
-  sfx.coin();
-  if (m.step < m.steps.length - 1) {
-    // 还有下一步（先算总价，再算找零）
-    addLog(step.kind === 'mul' ? t('mathNiceMul', { price: salePriceOf(m.items[0].id), n: m.items[0].qty, total: step.answer })
-         : step.kind === 'add' ? t('mathNiceAdd', { pa: salePriceOf(m.items[0].id), pb: salePriceOf(m.items[1].id), total: step.answer })
-         : '');
-    m.step++;
-    m.choices = m.steps[m.step].choices;
-    renderMathChallenge();
-    toast(t('mathStep2Now'), 1400);
-    return;
-  }
-  // 全部算对：成交
   closeMathChallenge();
   if (!takeBasket(c)) { sfx.error(); say('noSuchItem', { item: nm('item', c.want) }); return; }
   const gain = m.total;                       // 和题目里的成交价完全一致
@@ -5519,7 +5474,7 @@ function update(dt) {
   }
 
   // --- 找零钱小挑战的倒计时 ---
-  if (G.math) {
+  if (G.math && !G.math.revealing) {
     G.math.t -= dt;
     const bar = $('math-bar');
     if (bar) {
@@ -5531,7 +5486,7 @@ function update(dt) {
       timeBox.textContent = Math.max(0, Math.ceil(G.math.t)) + 's';
       timeBox.classList.toggle('hurry', G.math.t <= 5);
     }
-    if (G.math.t <= 0) mathTimeout();
+    if (G.math && G.math.t <= 0) mathTimeout();
   }
 
   // --- 森林蘑菇长回来 ---
@@ -7084,7 +7039,7 @@ window.__farm = {
   CROPS, CROP_MAP, FRUIT_IDS,
   FARM_GOODS, nextDay, dailyFeedUpdate, TROUGH_OF, MUSHROOMS, OBTAINABLE, RECIPES,
   VEHICLES, VEHICLE_MAP, WALK_SPEED, useRack, mountVehicle, dismountVehicle,
-  openMathChallenge, answerMath, renderMathChallenge, coinChoices, makeChoices, spawnCustomer,
+  openMathChallenge, mathSubmit, mathKey, mathBack, finishMathSale, renderMathChallenge, coinChoices, spawnCustomer,
   salePriceOf, closeMathChallenge, mathTimeout,
   MATH_TIME, resolveCustomerSale,
   renderCook,
@@ -7111,7 +7066,7 @@ window.__farm = {
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
   countHensLaidToday, countHens, countChicks, dailyFarmUpdate, isHen, isChick,
   newZoo, newAnimal,
-  buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, buildMathSteps, mathExpressionText,
+  buildBasket, basketTotal, basketLabel, canFulfillBasket, basketOf, basketMissing, mathDescText,
   shopClothesOf, OUTFIT_CATS, RECIPES,
   renderShop, renderWardrobe, renderTank, renderBook, renderSell, customerPool, spawnCustomer,
   startFishing, reelIn, adoptPet, feedPet, cleanPet, bathePet, maxPets, outfitTierMax, shopTierMax,
