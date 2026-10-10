@@ -254,7 +254,7 @@ const VEHICLES = [
 const VEHICLE_MAP = {};
 VEHICLES.forEach(function (v) { VEHICLE_MAP[v.id] = v; });
 // 停车架：走到旁边可以「骑上 / 停下」，停下来时车停在原地
-const VEHICLE_RACK = { x: 900, y: 490, r: 86 };   // 停车架（主角家右前方的空地上）
+const VEHICLE_RACK = { x: 668, y: 480, r: 86 };   // 停车架（第一、二排之间的空地）
 // 可购买的庭院装饰（r = 占地半径，用于防重叠）
 const DECOR_SHOP = [
   { id: 'rock',      name: '大石头', icon: '🪨', price: 20,  r: 16 },
@@ -1782,7 +1782,7 @@ const ZONES = {
   stall:    { x: 1240, y: 651, r: 78 },    // 商店（玩家在这里买东西）
   counter:  { x: 1400, y: 670, r: 78 },    // 销售门面（客人从右边排队过来买东西）
   tank:     { x: 1260, y: 410, r: 140 },   // 大水族箱（第一排，占掉果园右边一整片）
-  rack:     { x: 700,  y: 480, r: 86 },    // 停车架（第二排小屋旁边的空地）
+  rack:     { x: 668,  y: 480, r: 86 },    // 停车架（第一、二排之间的空地）
   hatchery: { x: 1193, y: 840, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡棚升级一起挪）
 };
 
@@ -6087,7 +6087,7 @@ function render() {
   drawables.push({ y: ZONES.rack.y + 4, draw: () => drawBikeRack(ctx, ZONES.rack.x, ZONES.rack.y, t) });
   const parkedVeh = G.vehicles.filter(v => v !== G.vehicle);
   parkedVeh.forEach((vid, i) => {
-    const px = ZONES.rack.x - (parkedVeh.length - 1) * 27 + i * 54;
+    const px = ZONES.rack.x - (parkedVeh.length - 1) * 50 + i * 100;   // 车变大了，间距也拉开
     drawables.push({
       y: ZONES.rack.y + 4,
       draw: () => {

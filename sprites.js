@@ -396,15 +396,15 @@ function drawBikeRack(ctx, x, y, t) {
 
 // 每辆车的比例 / 座位高度（人物缩小一点坐上去，看着才像真的在骑）
 const VEH_SPEC = {
-  // vs = 车辆放大倍数｜px = 人物左右位置
-  // footLocal = 脚底应该踩在车辆的哪个高度（车辆本地坐标，会乘上 vs）
-  //   · 滑板车：踏板面 -8   · 自行车：脚踏 -12   · 摩托车：踏板/排气管 -14.7
-  // ★ 人物**不再缩小**（ps 固定 1）：骑上去和走路一样大。
-  //   车辆原来就是按「正常大小的人物」配的比例（车座 / 踏板 / 车把的高度都合适），
-  //   所以只要让人物保持原大小、脚底照样落在踏板上就行。
-  scooter:    { vs: 1.35, ps: 1, px: 2, pose: 'deck', footLocal: -8 },
-  bicycle:    { vs: 1.40, ps: 1, px: 4, pose: 'ride', footLocal: -12 },
-  motorcycle: { vs: 1.50, ps: 1, px: 2, pose: 'ride', footLocal: -14.7 },
+  // vs = 车辆放大倍数（车辆本地坐标 × vs 就是世界尺寸）
+  // px = 人物的左右位置（让手正好落在车把上：px = 车把中心x × vs − 19 × 人物缩放）
+  // ps = 人物缩放（固定 1：骑上去和走路一样大）
+  // deckLocal = 站着的车（滑板车）：**脚底**踩在这个高度
+  // seatLocal = 坐着的车：**胯部**坐在这个高度
+  // gripLocal = 车把 / 手把的高度（车辆本地坐标）—— 人物的手会被算到这个高度上，正好握住
+  scooter:    { vs: 1.69, ps: 1, px: 3.2,  pose: 'deck', deckLocal: -8,  gripLocal: -28 },
+  bicycle:    { vs: 1.75, ps: 1, px: -11.6, pose: 'ride', seatLocal: -26, gripLocal: -25 },
+  motorcycle: { vs: 1.88, ps: 1, px: 2,    pose: 'ride', seatLocal: -28, gripLocal: -31.75 },
 };
 // 画「人物 + 座驾」：mirror 由这里统一处理（人和车一起镜像，车头才不会反）
 function drawRider(ctx, x, y, o) {
@@ -424,13 +424,19 @@ function drawRider(ctx, x, y, o) {
     ctx.scale(spec.vs, spec.vs);
     drawVehicle(ctx, id, o);
     ctx.restore();
-    // py 由「脚底要落在车上的高度」反推：脚底 = py + PLAYER_FOOT_Y × riderScale
-    const footTarget = (spec.footLocal || 0) * spec.vs;
-    const py = footTarget - PLAYER_FOOT_Y * riderScale;
+    // 人物位置：
+    //   · 站着的车（滑板车）→ 脚底正好踩在踏板上：py = 踏板高度 − 脚底偏移
+    //   · 坐着的车（自行车 / 摩托车）→ 胯部正好坐在座位上：py = 座位高度
+    const py = (spec.deckLocal !== undefined)
+      ? spec.deckLocal * spec.vs - PLAYER_FOOT_Y * riderScale
+      : spec.seatLocal * spec.vs;
+    // 手把的高度（世界坐标）反推回人物自己的本地坐标 → 手就画在那儿，正好握住车把
+    const handY = (spec.gripLocal * spec.vs - py) / riderScale;
     // ★ 人物这里一定要传 dir:'right'：整组（车 + 人）在外面已经按左右镜像过了，
     //   人物自己再镜像一次就会「转回来」—— 往左骑的时候就会看到车头朝左、人（还有手）还朝右
     drawPlayer(ctx, spec.px, py, Object.assign({}, o, {
       dir: 'right', scale: riderScale, pose: spec.pose, noShadow: true,  // 阴影由车轮下面那圈负责
+      handY: handY,                                                      // 手放在车把上
     }));
   } else {
     // 站在车旁边：车停在身后，人站在地上
@@ -531,9 +537,10 @@ function drawPlayer(ctx, x, y, o) {
   ctx.strokeStyle = bodyColor; ctx.lineWidth = 6; ctx.lineCap = 'round';
   ctx.beginPath();
   if (riding || deck) {
-    // 两只手都伸向前方（+x 方向），像抓着车把
-    ctx.moveTo(8, -13); ctx.lineTo(18, -14);
-    ctx.moveTo(6, -14); ctx.lineTo(16, -16);
+    // 两只手都伸向前方（+x 方向）抓着车把：高度用 drawRider 算好的 handY（= 车把的高度）
+    const hy = (o.handY === undefined) ? -14 : o.handY;
+    ctx.moveTo(8, -13); ctx.lineTo(18, hy);
+    ctx.moveTo(6, -14); ctx.lineTo(16, hy - 3);
   } else {
     ctx.moveTo(-11, -11); ctx.lineTo(-16, -2 + swing * 0.4 - armRaise);
     ctx.moveTo(11, -11); ctx.lineTo(16, -2 - swing * 0.4 - armRaise);
@@ -541,8 +548,9 @@ function drawPlayer(ctx, x, y, o) {
   ctx.stroke();
   ctx.fillStyle = skin;
   if (riding || deck) {
-    ellipse(ctx, 19, -14.5, 3.2, 3.2); ctx.fill();
-    ellipse(ctx, 17, -16.5, 3.2, 3.2); ctx.fill();
+    const hy = (o.handY === undefined) ? -14.5 : o.handY;
+    ellipse(ctx, 19, hy, 3.2, 3.2); ctx.fill();
+    ellipse(ctx, 17, hy - 3, 3.2, 3.2); ctx.fill();
   } else {
     ellipse(ctx, -16, -2 + swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
     ellipse(ctx, 16, -2 - swing * 0.4 - armRaise, 3.2, 3.2); ctx.fill();
