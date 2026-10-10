@@ -1772,32 +1772,28 @@ function drawStall(ctx, x, y, t, sc) {
 }
 
 function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
-  // 还没解锁的水坑：画成一个干涸的土坑 + 一把锁，升级水坑才会灌满水
+  // 还没解锁的水坑：**也画成一汪蓝色的水**（只是蓝得淡一点、不晃波纹），
+  // 名牌上挂一把 🔒 提醒「升级水坑才会开放」——小朋友看地图就是三个水坑都在
   if (locked) {
-    ctx.fillStyle = '#c9b280';
-    ellipse(ctx, x, y, w / 2 + 12, h / 2 + 10); ctx.fill();
-    ctx.fillStyle = '#b8a172';
+    ctx.fillStyle = 'rgba(255,255,255,.4)';                 // 岸边浅色沙圈
+    ellipse(ctx, x, y, w / 2 + 13, h / 2 + 11); ctx.fill();
+    ctx.fillStyle = '#9fd6ef';                              // 淡水蓝
     ellipse(ctx, x, y, w / 2, h / 2); ctx.fill();
-    ctx.fillStyle = 'rgba(140,120,80,.35)';
-    ellipse(ctx, x - w * 0.1, y - h * 0.1, w / 2.6, h / 3.2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x - w / 4, y + 2); ctx.lineTo(x - w / 8, y - 3);
-    ctx.moveTo(x + w / 6, y + 4); ctx.lineTo(x + w / 4, y - 1);
-    ctx.stroke();
-    ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = 'rgba(90,140,180,.75)'; ctx.lineWidth = 2;
-    ellipse(ctx, x, y, w / 2 + 10, h / 2 + 8); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.fillStyle = '#c3e7f7';                              // 水面高光
+    ellipse(ctx, x - w * 0.12, y - h * 0.15, w / 2.8, h / 3); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
+    ellipse(ctx, x, y, w / 2 * 0.68, h / 2 * 0.68); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ellipse(ctx, x + w * 0.1, y + h * 0.12, w / 2 * 0.38, h / 2 * 0.38); ctx.stroke();
     if (label) {
       const txt = '🔒 ' + label;
       const sw = Math.max(66, txt.length * 13 + 18);
       const sy = y - h / 2 - 32 + Math.sin(t * 1.8) * 1.5;
       ctx.fillStyle = 'rgba(255,255,255,.9)';
       rr(ctx, x - sw / 2, sy, sw, 20, 6); ctx.fill();
-      ctx.strokeStyle = '#9aa8b4'; ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#5fb8e8'; ctx.lineWidth = 2.2;
       rr(ctx, x - sw / 2, sy, sw, 20, 6); ctx.stroke();
-      ctx.fillStyle = '#6a7684';
+      ctx.fillStyle = '#2a6a95';
       ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(txt, x, sy + 15);
     }
