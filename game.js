@@ -331,6 +331,19 @@ const STR = {
     bedTipBrush: '手指当小牙刷 🪥 把牙齿上的小黄点都刷掉～',
     bedTipWash: '手指当小毛巾 🧽 把脸上的小泥点都擦干净～',
     bedTipCream: '手指当面霜 🧴 把香香涂满小脸～',
+    // —— 🌞 起床第一件事：喝水 ——
+    drinkTitle: '🌞 早上好！先喝一杯水',
+    drinkHint: '按住水壶倒水：倒到绿色那一格刚刚好，太少或太多都不行哦',
+    drinkTipIdle: '按住水壶（或按住画面）开始倒水',
+    drinkTipNow: '就是这个高度！松手～',
+    drinkTipLittle: '还差一点点，再倒一会儿',
+    drinkTipMuch: '哎呀，倒太多啦！倒掉一些重来吧',
+    drinkTipOk: '刚刚好！咕嘟咕嘟喝掉吧',
+    drinkDump: '🚰 倒掉重来',
+    drinkDone: '🥛 喝完啦',
+    drinkLog: '🌞 早上先喝了一杯水，今天也要加油！',
+    drinkTooMuch: '💧 倒太多啦，倒掉重来',
+    drinkJustRight: '💧 刚刚好！',
     bedTipAllDone: '真棒！三件事都做完啦，点「去睡觉」吧 😴',
     bedPercent: '（{n}%）',
     bedNice: '好棒！',
@@ -693,6 +706,19 @@ const STR = {
     bedTipBrush: 'Use your finger as a toothbrush 🪥 — wipe off all the yellow spots!',
     bedTipWash: 'Use your finger as a towel 🧽 — wipe the little smudges away!',
     bedTipCream: 'Use your finger as cream 🧴 — spread it all over the face!',
+    // —— 🌞 Morning: drink water ——
+    drinkTitle: '🌞 Good morning! Drink a glass of water first',
+    drinkHint: 'Press and hold the kettle to pour — stop when the water is in the green band',
+    drinkTipIdle: 'Press and hold the kettle (or anywhere) to pour',
+    drinkTipNow: 'Right there — let go!',
+    drinkTipLittle: 'A little more…',
+    drinkTipMuch: 'Too much water! Pour some out and try again',
+    drinkTipOk: 'Just right! Bottoms up',
+    drinkDump: '🚰 Pour it out',
+    drinkDone: '🥛 All done',
+    drinkLog: '🌞 Drank a glass of water first thing — off to a great day!',
+    drinkTooMuch: '💧 Too much water — pour it out and try again',
+    drinkJustRight: '💧 Just right!',
     bedTipAllDone: 'All done! Now tap “Go to sleep” 😴',
     bedPercent: ' ({n}%)',
     bedNice: 'Great!',
@@ -1768,6 +1794,8 @@ const G = {
   cam: { x: 0, y: 0 },
   sleepFade: 0,
   sleepDawn: false,
+  // 🌞 起床第一件事：喝水（按住水壶倒水，倒到绿色那一格刚刚好）
+  drink: { pending: false, active: false, level: 0, pouring: false, pour: 0, ok: false, spilled: false },
   // 🌙 睡前任务：到了晚上先做刷牙 / 洗脸 / 涂脸，做完才能点「去睡觉」
   bed: { active: false, step: 0, done: [false, false, false] },
 };
@@ -2914,6 +2942,7 @@ function loadGame(name) {
     // 清掉临时状态
     G.customers = []; G.particles = []; G.fishing = null;
     G.sleepFade = 0; G.sleepDawn = false; G.bed = { active: false, step: 0, done: [false, false, false] };
+    G.drink = { pending: false, active: false, level: 0, pouring: false, pour: 0, ok: false, spilled: false };
     G.customerTimer = rand(20, 40); G.visitorTimer = rand(8, 20);
     renderInventory(); renderHUD();
     return true;
@@ -2951,6 +2980,7 @@ function resetGame() {
   G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
   HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
+  G.drink = { pending: false, active: false, level: 0, pouring: false, pour: 0, ok: false, spilled: false };
   G.bed = { active: false, step: 0, done: [false, false, false] };
   G.customerTimer = 18; G.visitorTimer = 12; G.ambientT = 6; G.saveT = 0;
   applyLevels();          // ★ 先把等级写进地图（围栏/水坑/水族箱尺寸）
@@ -5274,6 +5304,19 @@ function update(dt) {
       if (G.sleepFade <= 0) G.sleepDawn = false;
     }
   }
+  // 🌞 起床第一件事：天亮的白光散掉以后，先喝一杯水
+  if (G.drink.pending && !G.modalOpen && G.sleepFade <= 0 && G.started) openDrink();
+  // 按住水壶的时候：壶抬起来 + 往杯子里倒水
+  if (G.drink.active) {
+    const d = G.drink;
+    const want = (d.pouring && !d.ok && !d.spilled && G.modalOpen === 'drink-modal') ? 1 : 0;
+    d.pour += (want - d.pour) * Math.min(1, dt * 7);
+    if (want && d.level < 1) {
+      d.level = Math.min(1, d.level + DRINK_RATE * dt);
+      drinkSyncUI();
+    }
+    drinkRender();
+  }
 
   // --- 玩家移动 ---
   p.moving = false;
@@ -5949,6 +5992,247 @@ if (bedCanvas) {
   window.addEventListener('pointerup', endBrush);
 }
 
+// ============================================================
+//   🌞 起床第一件事：喝水
+// ------------------------------------------------------------
+// 新的一天开始时弹出：画面左边一个水壶、右边一个玻璃杯。
+//   · **按住水壶**（按住画面任意地方都行）→ 壶抬起来倾斜，往杯子里倒水，水位慢慢涨；
+//   · **松手**就停下 —— 水太少不行，太多也不行，得倒进杯子里那条**绿色格子**里；
+//   · 倒太多按「🚰 倒掉重来」重新倒，倒进绿格才能点「🥛 喝完啦」。
+// ============================================================
+const DRINK_CUP = { x: 232, top: 110, bot: 218, wTop: 88, wBot: 70 };   // 玻璃杯
+const DRINK_TARGET = { min: 0.45, max: 0.85 };    // 刚刚好的水位区间
+const DRINK_RATE = 0.34;                          // 按住时每秒涨多少（1 = 一整杯）
+const DRINK_KETTLE = { x: 140, y: 220 };          // 水壶（底部中心，平常坐在桌上）
+const DRINK_LIFT = 62, DRINK_TILT = -0.5;         // 倒水时抬起来多高 / 往前倾多少
+const drinkCanvas = $('drink-canvas');
+const dctx = drinkCanvas ? drinkCanvas.getContext('2d') : null;
+const DRINK_W = drinkCanvas ? drinkCanvas.width : 330;
+const DRINK_H = drinkCanvas ? drinkCanvas.height : 250;
+
+// 水位 0~1 → 杯子里的 y
+function drinkLevelY(lv) {
+  const cu = DRINK_CUP;
+  const innerTop = cu.top + 8, innerBot = cu.bot - 6;
+  return innerBot - (innerBot - innerTop) * Math.max(0, Math.min(1, lv));
+}
+function drinkCupShape(c) {
+  const cu = DRINK_CUP;
+  c.beginPath();
+  c.moveTo(cu.x - cu.wTop / 2, cu.top);
+  c.lineTo(cu.x + cu.wTop / 2, cu.top);
+  c.lineTo(cu.x + cu.wBot / 2, cu.bot);
+  c.quadraticCurveTo(cu.x, cu.bot + 9, cu.x - cu.wBot / 2, cu.bot);
+  c.closePath();
+}
+// 水壶：按住的时候抬起来 + 往前倾（d.pour 是 0~1 的过渡值）
+function drinkKettle(c, t, d) {
+  const k = DRINK_KETTLE, p = d.pour || 0;
+  c.save();
+  c.translate(k.x, k.y - DRINK_LIFT * p);
+  c.rotate(DRINK_TILT * p);
+  // 壶身
+  c.fillStyle = '#8fd0f0';
+  rr(c, -38, -70, 76, 70, 14); c.fill();
+  c.fillStyle = '#b6e3f7';
+  rr(c, -30, -62, 26, 40, 12); c.fill();
+  // 壶里的水（晃一晃）
+  c.save();
+  rr(c, -38, -70, 76, 70, 14); c.clip();
+  c.fillStyle = 'rgba(110,195,238,.9)';
+  const lv = 34 + Math.sin(t * 3) * 1.5 + p * 12;
+  c.fillRect(-40, -lv, 80, 80);
+  c.restore();
+  // 壶盖 + 壶嘴 + 把手
+  c.fillStyle = '#6cb8e0';
+  rr(c, -28, -80, 56, 13, 6); c.fill();
+  c.fillStyle = '#4fa8d8';
+  ellipse(c, 0, -83, 9, 5); c.fill();
+  c.strokeStyle = '#6cb8e0'; c.lineWidth = 11; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(26, -54); c.lineTo(52, -38); c.stroke();
+  c.strokeStyle = '#8fd0f0'; c.lineWidth = 8;
+  c.beginPath(); c.arc(-44, -42, 16, Math.PI * 0.35, Math.PI * 1.45); c.stroke();
+  c.restore();
+}
+// 从壶嘴倒进杯子里的那股水
+function drinkStream(c, t, d) {
+  const k = DRINK_KETTLE, p = d.pour || 0;
+  const rot = DRINK_TILT * p, cos = Math.cos(rot), sin = Math.sin(rot);
+  const lx = 56, ly = -36;                                   // 壶嘴尖（壶的本地坐标）
+  const sx = k.x + lx * cos - ly * sin;
+  const sy = k.y - DRINK_LIFT * p + lx * sin + ly * cos;
+  const tx = DRINK_CUP.x - 18, ty = DRINK_CUP.top + 30;      // 落进杯子里
+  const g = c.createLinearGradient(sx, sy, tx, ty);
+  g.addColorStop(0, 'rgba(150,215,245,.85)');
+  g.addColorStop(1, 'rgba(105,185,235,.95)');
+  c.strokeStyle = g; c.lineWidth = 7 * p; c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(sx, sy);
+  c.quadraticCurveTo((sx + tx) / 2, (sy + ty) / 2 - 10, tx, ty);
+  c.stroke();
+  // 溅起来的小水花
+  for (let i = 0; i < 4; i++) {
+    const ph = ((t * 2 + i * 0.25) % 1);
+    c.fillStyle = 'rgba(190,230,250,' + (0.75 - ph * 0.6).toFixed(2) + ')';
+    const r = 2.8 - ph * 1.5;
+    ellipse(c, tx + Math.sin(i * 2.1 + t * 6) * (7 + ph * 17), ty - ph * 20 - 2, r, r); c.fill();
+  }
+}
+// 玻璃杯 + 里面的水 + 绿色目标格
+function drinkGlass(c, t, d) {
+  const cu = DRINK_CUP;
+  const yMax = drinkLevelY(DRINK_TARGET.max), yMin = drinkLevelY(DRINK_TARGET.min);
+  c.save();
+  drinkCupShape(c); c.clip();
+  c.fillStyle = 'rgba(255,255,255,.72)';
+  c.fillRect(cu.x - cu.wTop, cu.top - 20, cu.wTop * 2, cu.bot - cu.top + 40);
+  // 绿色目标格（要倒进这里）
+  c.fillStyle = 'rgba(120,230,150,.42)';
+  c.fillRect(cu.x - cu.wTop, yMax, cu.wTop * 2, yMin - yMax);
+  // 水
+  const wy = drinkLevelY(d.level);
+  if (d.level > 0.002) {
+    const wg = c.createLinearGradient(0, wy, 0, cu.bot);
+    wg.addColorStop(0, 'rgba(125,205,242,.93)');
+    wg.addColorStop(1, 'rgba(72,165,222,.96)');
+    c.fillStyle = wg;
+    c.fillRect(cu.x - cu.wTop, wy, cu.wTop * 2, cu.bot - wy + 14);
+    c.fillStyle = 'rgba(255,255,255,.8)';
+    c.fillRect(cu.x - cu.wTop, wy, cu.wTop * 2, 3);
+  }
+  c.restore();
+  // 玻璃杯的描边 + 高光
+  c.strokeStyle = '#9fc9dd'; c.lineWidth = 4;
+  drinkCupShape(c); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 3;
+  c.beginPath();
+  c.moveTo(cu.x - cu.wTop / 2 + 13, cu.top + 16);
+  c.lineTo(cu.x - cu.wBot / 2 + 15, cu.bot - 18);
+  c.stroke();
+  // 目标格的上下虚线
+  c.setLineDash([6, 5]); c.strokeStyle = '#4fb83a'; c.lineWidth = 2.5;
+  [yMax, yMin].forEach(function (yy) {
+    c.beginPath(); c.moveTo(cu.x - cu.wTop / 2 - 9, yy); c.lineTo(cu.x + cu.wTop / 2 + 9, yy); c.stroke();
+  });
+  c.setLineDash([]);
+  // 正好倒进绿格：杯子闪一圈绿光 + 冒小星星
+  if (!d.ok && d.level >= DRINK_TARGET.min && d.level <= DRINK_TARGET.max) {
+    const pulse = 0.5 + Math.sin(t * 7) * 0.5;
+    c.strokeStyle = 'rgba(90,220,130,' + (0.45 + pulse * 0.5).toFixed(2) + ')';
+    c.lineWidth = 5;
+    drinkCupShape(c); c.stroke();
+    c.font = '16px sans-serif'; c.textAlign = 'center';
+    c.fillText('✨', cu.x - 46, yMax - 10 - pulse * 4);
+  }
+  if (d.ok) {
+    c.font = '20px sans-serif'; c.textAlign = 'center';
+    for (let i = 0; i < 5; i++) {
+      const a = t * 1.6 + i * 1.26;
+      c.fillText('✨', cu.x + Math.cos(a) * 56, 120 + Math.sin(a) * 34);
+    }
+  }
+}
+function drinkRender() {
+  if (!dctx) return;
+  const c = dctx, d = G.drink, t = G.t || 0;
+  const bg = c.createLinearGradient(0, 0, 0, DRINK_H);
+  bg.addColorStop(0, '#eaf7ff'); bg.addColorStop(1, '#dceefb');
+  c.fillStyle = bg; c.fillRect(0, 0, DRINK_W, DRINK_H);
+  // 早上的太阳
+  c.fillStyle = 'rgba(255,236,170,.6)'; ellipse(c, 40, 42, 28, 28); c.fill();
+  c.fillStyle = 'rgba(255,208,90,.95)'; ellipse(c, 40, 42, 19, 19); c.fill();
+  c.font = '20px sans-serif'; c.textAlign = 'center';
+  c.fillText('🌞', 40, 50);
+  // 桌子
+  c.fillStyle = '#e2c79a'; rr(c, 14, 222, 302, 16, 7); c.fill();
+  c.fillStyle = 'rgba(180,150,105,.4)'; rr(c, 14, 222, 302, 5, 3); c.fill();
+  drinkKettle(c, t, d);
+  if (d.pour > 0.3 && !d.ok && !d.spilled && d.level < 1) drinkStream(c, t, d);
+  drinkGlass(c, t, d);
+}
+// 提示 / 进度条 / 按钮
+function drinkSyncUI() {
+  const d = G.drink;
+  const fill = $('drink-bar-fill'), okb = $('drink-ok'), dump = $('drink-dump'), tip = $('drink-tip');
+  if (fill) fill.style.width = Math.round(d.level * 100) + '%';
+  if (okb) okb.disabled = !d.ok;
+  if (dump) dump.classList.toggle('hidden', !d.spilled);
+  if (!tip) return;
+  let key = 'drinkTipIdle';
+  if (d.ok) key = 'drinkTipOk';
+  else if (d.spilled) key = 'drinkTipMuch';
+  else if (d.pouring && d.level >= DRINK_TARGET.min && d.level <= DRINK_TARGET.max) key = 'drinkTipNow';
+  else if (d.level > 0.02) key = 'drinkTipLittle';
+  if (key !== d.tipKey) { d.tipKey = key; tip.textContent = t(key); }
+}
+function openDrink() {
+  const d = G.drink;
+  d.active = true; d.level = 0; d.pouring = false; d.pour = 0;
+  d.ok = false; d.spilled = false; d.tipKey = '';
+  const band = $('drink-band');
+  if (band) {
+    band.style.left = (DRINK_TARGET.min * 100) + '%';
+    band.style.width = ((DRINK_TARGET.max - DRINK_TARGET.min) * 100) + '%';
+  }
+  drinkSyncUI(); drinkRender();
+  sfx.open();
+  openModal('drink-modal');
+}
+// 松手：看看倒得够不够
+function drinkCheck() {
+  const d = G.drink;
+  if (!d.active || d.ok) return;
+  if (d.level > DRINK_TARGET.max) {
+    d.spilled = true; sfx.error();
+    say('drinkTooMuch', null, 2000);
+  } else if (d.level >= DRINK_TARGET.min) {
+    d.ok = true; d.spilled = false;
+    sfx.sparkle(); sfx.pickup();
+    say('drinkJustRight', null, 2000);
+  } else if (d.level > 0.02) {
+    sfx.click();
+  }
+  drinkSyncUI();
+}
+function drinkDump() {
+  const d = G.drink;
+  d.level = 0; d.pouring = false; d.spilled = false; d.ok = false; d.tipKey = '';
+  sfx.water();
+  drinkSyncUI(); drinkRender();
+}
+function drinkFinish() {
+  const d = G.drink;
+  if (!d.ok) return;
+  d.active = false; d.pending = false; d.pouring = false; d.pour = 0;
+  sfx.happy(); sfx.sparkle();
+  addLog(t('drinkLog'), '🌞');
+  say('drinkDone', null, 2600, false, { icon: '🥛' });
+  closeModal('drink-modal');
+  saveGame(true);
+}
+if (drinkCanvas) {
+  const startPour = (e) => {
+    if (e) e.preventDefault();
+    const d = G.drink;
+    if (!d.active || d.ok || d.spilled) return;
+    d.pouring = true;
+    drinkSyncUI();
+  };
+  const stopPour = () => {
+    const d = G.drink;
+    if (!d.active || !d.pouring) return;
+    d.pouring = false;
+    drinkCheck();
+  };
+  drinkCanvas.addEventListener('pointerdown', startPour);
+  drinkCanvas.addEventListener('pointerleave', stopPour);
+  window.addEventListener('pointerup', stopPour);
+  window.addEventListener('pointercancel', stopPour);
+  const dumpBtn = $('drink-dump'), okBtn = $('drink-ok');
+  if (dumpBtn) dumpBtn.addEventListener('click', drinkDump);
+  if (okBtn) okBtn.addEventListener('click', drinkFinish);
+}
+
 function startSleep() {
   G.sleepFade = 0.01;
   G.sleepDawn = false;
@@ -5958,6 +6242,7 @@ function startSleep() {
 function nextDay() {
   G.day++;
   G.timeMin = DAY_START;
+  G.drink.pending = true;                     // 新的一天：起床第一件事先喝水
   G.bed.active = false; G.bed.step = 0; G.bed.done = [false, false, false];
   G.customers = [];                       // 客人都回家睡觉了，第二天再来
   // 新一天天气
@@ -6819,6 +7104,7 @@ window.__farm = {
   renderMinimap, miniCanvas, MINI_K, miniRect,
   drawPlayer, drawRider, drawVehicle, drawPet, drawChicken, drawSheep, drawCow, drawShadow, drawBikeRack, VEH_SPEC, PLAYER_FOOT_Y,
   openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, bedInShape, BED_GRID, BED_FACE,
+  openDrink, drinkCheck, drinkDump, drinkFinish, drinkRender, drinkSyncUI, drinkLevelY, DRINK_TARGET, DRINK_RATE, DRINK_CUP, DRINK_KETTLE,
   __bedCells: () => bedCells.map(c => ({ x: Math.round(c.x), y: Math.round(c.y), done: c.done })), DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
   tankRect, pointInSea, SEA_POLY, decorUnderBuilding,
   newPet, petNeed, petName, renderUpgradeModal, openUpgrade, openUpgradePanel, showUpgradeList, showUpgradeDetail, renderUpgradeList, renderClosetAvatar, tankSize, penRect, penHome, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE, PET_SPOTS, petSpotLabel, withPet,

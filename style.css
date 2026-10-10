@@ -520,6 +520,25 @@ body.touch #top-left { left: auto; right: 12px; }
 .upg-item.maxed .upg-item-go { color: #4fb83a; }
 @media (max-width: 620px) { .upg-grid { grid-template-columns: 1fr; } }
 
+/* ---------- 🌞 起床第一件事：喝水 ---------- */
+.drink-card {
+  max-width: 460px; gap: 7px; padding: 14px 20px 16px;
+  max-height: 94%;
+  border-color: #8ad4f0; background: linear-gradient(180deg, #f2fbff, #fffdf4);
+}
+.drink-card h2 { color: #1f7fa8; font-size: 25px; }
+#drink-canvas {
+  display: block; width: 330px; height: 250px;
+  border-radius: 18px; background: #eaf7ff;
+  border: 4px solid #cfe9ff; touch-action: none; cursor: pointer;
+}
+.drink-bar { position: relative; overflow: hidden; }
+#drink-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+  background: linear-gradient(90deg, #8fd0f0, #4fb0e0); transition: width .08s linear; }
+#drink-band { position: absolute; top: 0; bottom: 0;
+  background: rgba(90,220,130,.42); border-left: 2px dashed #4fb83a; border-right: 2px dashed #4fb83a; }
+#drink-dump.hidden { display: none; }
+
 /* ---------- 找零钱小挑战（紧凑版：复数商品也不用滚动） ---------- */
 .math-card {
   max-width: 660px; gap: 6px;

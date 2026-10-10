@@ -223,6 +223,23 @@
         </div>
       </div>
 
+      <!-- ============ 🌞 起床第一件事：喝水 ============ -->
+      <div id="drink-modal" class="modal hidden">
+        <div class="modal-card drink-card">
+          <div class="modal-head">
+            <h2 data-i18n="drinkTitle">🌞 早上好！先喝一杯水</h2>
+          </div>
+          <p class="subtitle" data-i18n="drinkHint">按住水壶倒水：倒到绿色那一格刚刚好，太少或太多都不行哦</p>
+          <canvas id="drink-canvas" width="330" height="250"></canvas>
+          <p id="drink-tip" class="bed-tip"></p>
+          <div class="bed-bar drink-bar"><div id="drink-bar-fill"></div><div id="drink-band"></div></div>
+          <div class="btn-row">
+            <button id="drink-dump" class="tab-btn hidden" data-i18n="drinkDump">🚰 倒掉重来</button>
+            <button id="drink-ok" class="big-btn" disabled data-i18n="drinkDone">🥛 喝完啦</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ 睡前任务（刷牙 / 洗脸 / 涂脸） ============ -->
       <div id="bed-modal" class="modal hidden">
         <div class="modal-card bed-card">
