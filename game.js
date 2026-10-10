@@ -5681,15 +5681,19 @@ const BED_STEPS = [
   { key: 'wash',  icon: '🧽', nameKey: 'bedStepWash',  tipKey: 'bedTipWash'  },
   { key: 'cream', icon: '🧴', nameKey: 'bedStepCream', tipKey: 'bedTipCream' },
 ];
-const BED_COLS = 8, BED_ROWS = 6;      // 把画面切成 8×6 小格，抹过哪一格就干净一格
-const BED_BRUSH = 52;                  // 手指（画笔）半径
+// 每一步用多少「小格」、手指多粗：刷牙的牙齿大、格子粗一点；洗脸 / 涂脸的脸小，格子细一点
+const BED_GRID = [
+  { cols: 8,  rows: 6, bw: 52 },   // 刷牙
+  { cols: 11, rows: 8, bw: 40 },   // 洗脸
+  { cols: 11, rows: 8, bw: 40 },   // 涂脸
+];
 const bedCanvas = $('bed-canvas');
 const bctx = bedCanvas ? bedCanvas.getContext('2d') : null;
 const BED_W = bedCanvas ? bedCanvas.width : 330;
 const BED_H = bedCanvas ? bedCanvas.height : 250;
-const BED_CW = BED_W / BED_COLS, BED_CH = BED_H / BED_ROWS;
-const BED_FACE = { x: BED_W / 2, y: 128, r: 92 };        // 洗脸 / 涂脸的小脸
-const BED_TOOTH = { x: BED_W / 2, y: 126, rx: 92, ry: 96 }; // 刷牙的大牙齿
+const BED_FACE = { x: BED_W / 2, y: 128, r: 92, hairTop: -20, safeGap: 14 };  // 小脸（hairTop = 头发盖到哪儿；safeGap = 再往下留一点，脏点才不会压到头发边）
+const BED_TOOTH = { x: BED_W / 2, y: 126, rx: 92, ry: 96 };      // 刷牙的大牙齿
+let bedCellW = BED_W / BED_GRID[0].cols, bedCellH = BED_H / BED_GRID[0].rows, bedBrushR = BED_GRID[0].bw;
 let bedCells = [], bedBrush = null, bedDragging = false, bedRubMs = 0, bedAdvanceTimer = null;
 
 // 这一格在不在「要清洁的图形」里面（牙齿 / 小脸）
@@ -5699,7 +5703,11 @@ function bedInShape(step, x, y) {
     return dx * dx + dy * dy <= 1;
   }
   const dx = (x - BED_FACE.x) / BED_FACE.r, dy = (y - BED_FACE.y) / BED_FACE.r;
-  return dx * dx + dy * dy <= 1;
+  if (dx * dx + dy * dy > 1) return false;
+  // ★ 洗脸 / 涂脸只做「脸」：额头上面那一块是被头发盖住的，不算 ——
+  //   不然手指会洗到 / 涂到头发上（头发是已经画好的弧线，位置在 BED_FACE.hairTop 以上）。
+  //   再往下留 safeGap：脏点本身是个小圆，圆心太靠上还是会压到头发边
+  return (y - BED_FACE.y) >= BED_FACE.hairTop + BED_FACE.safeGap;
 }
 function bedProgress() {
   if (!bedCells.length) return 0;
@@ -5713,10 +5721,14 @@ function bedAllDone() { return G.bed.done[0] && G.bed.done[1] && G.bed.done[2]; 
 function bedInitStep(step) {
   if (!bctx) return;
   G.bed.step = step;
+  const grid = BED_GRID[step] || BED_GRID[0];
+  bedCellW = BED_W / grid.cols;
+  bedCellH = BED_H / grid.rows;
+  bedBrushR = grid.bw;
   bedCells = [];
-  for (let r = 0; r < BED_ROWS; r++) {
-    for (let c = 0; c < BED_COLS; c++) {
-      const x = (c + 0.5) * BED_CW, y = (r + 0.5) * BED_CH;
+  for (let r = 0; r < grid.rows; r++) {
+    for (let c = 0; c < grid.cols; c++) {
+      const x = (c + 0.5) * bedCellW, y = (r + 0.5) * bedCellH;
       if (!bedInShape(step, x, y)) continue;
       bedCells.push({ x, y, seed: ((r * 7 + c * 13) % 11) / 11, done: false });
     }
@@ -5737,7 +5749,7 @@ function bedScrub(clientX, clientY) {
   let hit = 0;
   for (const c of bedCells) {
     if (c.done) continue;
-    if (Math.hypot(c.x - x, c.y - y) < BED_BRUSH) { c.done = true; hit++; }
+    if (Math.hypot(c.x - x, c.y - y) < bedBrushR) { c.done = true; hit++; }
   }
   if (hit) {
     const now = Date.now();
@@ -5836,7 +5848,7 @@ function bedRender() {
     const show = step === 2 ? c.done : !c.done;
     if (!show) continue;
     const s = c.seed;
-    const rx = BED_CW * (0.33 + s * 0.15), ry = BED_CH * (0.30 + s * 0.15);
+    const rx = bedCellW * (0.33 + s * 0.15), ry = bedCellH * (0.30 + s * 0.15);
     const ox = (s - 0.5) * 9, oy = ((s * 7) % 1 - 0.5) * 9;
     if (step === 2) {
       bctx.fillStyle = 'rgba(255,255,255,.94)';
@@ -5855,9 +5867,9 @@ function bedRender() {
   // 手指（画成牙刷 / 毛巾 / 面霜）
   if (bedBrush) {
     bctx.strokeStyle = 'rgba(255,184,77,.9)'; bctx.lineWidth = 3;
-    bctx.beginPath(); bctx.arc(bedBrush.x, bedBrush.y, BED_BRUSH, 0, Math.PI * 2); bctx.stroke();
+    bctx.beginPath(); bctx.arc(bedBrush.x, bedBrush.y, bedBrushR, 0, Math.PI * 2); bctx.stroke();
     bctx.fillStyle = 'rgba(255,255,255,.5)';
-    bctx.beginPath(); bctx.arc(bedBrush.x, bedBrush.y, BED_BRUSH, 0, Math.PI * 2); bctx.fill();
+    bctx.beginPath(); bctx.arc(bedBrush.x, bedBrush.y, bedBrushR, 0, Math.PI * 2); bctx.fill();
     bctx.font = '32px sans-serif'; bctx.textAlign = 'center';
     bctx.fillText(BED_STEPS[step].icon, bedBrush.x, bedBrush.y + 11);
   }
@@ -6806,7 +6818,8 @@ window.__farm = {
   FARM_RECTS, farmRect, QUEUE_SLOTS, MAX_BUYERS, MAX_LV, WORLD_W, WORLD_H, PEN_HOME, TROUGH_OFF, DECOR_SHOP, DECOR_R,
   renderMinimap, miniCanvas, MINI_K, miniRect,
   drawPlayer, drawRider, drawVehicle, drawPet, drawChicken, drawSheep, drawCow, drawShadow, drawBikeRack, VEH_SPEC, PLAYER_FOOT_Y,
-  openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
+  openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, bedInShape, BED_GRID, BED_FACE,
+  __bedCells: () => bedCells.map(c => ({ x: Math.round(c.x), y: Math.round(c.y), done: c.done })), DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
   tankRect, pointInSea, SEA_POLY, decorUnderBuilding,
   newPet, petNeed, petName, renderUpgradeModal, openUpgrade, openUpgradePanel, showUpgradeList, showUpgradeDetail, renderUpgradeList, renderClosetAvatar, tankSize, penRect, penHome, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE, PET_SPOTS, petSpotLabel, withPet,
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
