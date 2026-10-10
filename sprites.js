@@ -424,8 +424,10 @@ function drawRider(ctx, x, y, o) {
     // py 由「脚底要落在车上的高度」反推：脚底 = py + PLAYER_FOOT_Y × riderScale
     const footTarget = (spec.footLocal || 0) * spec.vs;
     const py = footTarget - PLAYER_FOOT_Y * riderScale;
+    // ★ 人物这里一定要传 dir:'right'：整组（车 + 人）在外面已经按左右镜像过了，
+    //   人物自己再镜像一次就会「转回来」—— 往左骑的时候就会看到车头朝左、人（还有手）还朝右
     drawPlayer(ctx, spec.px, py, Object.assign({}, o, {
-      scale: riderScale, pose: spec.pose, noShadow: true,   // 阴影由车轮下面那圈负责
+      dir: 'right', scale: riderScale, pose: spec.pose, noShadow: true,  // 阴影由车轮下面那圈负责
     }));
   } else {
     // 站在车旁边：车停在身后，人站在地上
@@ -433,7 +435,7 @@ function drawRider(ctx, x, y, o) {
     ctx.scale(spec.vs, spec.vs);
     drawVehicle(ctx, id, Object.assign({}, o, { moving: false }));
     ctx.restore();
-    drawPlayer(ctx, 14, -ground, Object.assign({}, o, { pose: 'veh' }));
+    drawPlayer(ctx, 14, -ground, Object.assign({}, o, { dir: 'right', pose: 'veh' }));
   }
   ctx.restore();
 }
