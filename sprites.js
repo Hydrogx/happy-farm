@@ -1771,7 +1771,7 @@ function drawStall(ctx, x, y, t, sc) {
   ctx.fillText('🛒', x + 45, y - 53);
 }
 
-function drawPond(ctx, x, y, w, h, t, label, locked, needLv) {
+function drawPond(ctx, x, y, w, h, t, label, locked, needLv, deep) {
   // 还没解锁的水坑：画成一个干涸的土坑 + 一把锁，升级水坑才会灌满水
   if (locked) {
     ctx.fillStyle = '#c9b280';
@@ -1803,11 +1803,12 @@ function drawPond(ctx, x, y, w, h, t, label, locked, needLv) {
     }
     return;
   }
-  ctx.fillStyle = '#c9b280';
-  ellipse(ctx, x, y, w / 2 + 12, h / 2 + 10); ctx.fill();
-  ctx.fillStyle = '#5fb8e8';
+  // deep = 大海里的「蓝洞」：比周围的海水更深、更蓝
+  ctx.fillStyle = deep ? 'rgba(255,255,255,.35)' : '#c9b280';
+  ellipse(ctx, x, y, w / 2 + 14, h / 2 + 12); ctx.fill();
+  ctx.fillStyle = deep ? '#0d4a94' : '#5fb8e8';
   ellipse(ctx, x, y, w / 2, h / 2); ctx.fill();
-  ctx.fillStyle = '#7ccbf0';
+  ctx.fillStyle = deep ? '#1a63b4' : '#7ccbf0';
   ellipse(ctx, x - w * 0.12, y - h * 0.15, w / 2.8, h / 3); ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
   for (let i = 0; i < 3; i++) {
@@ -1978,59 +1979,108 @@ function drawPetAction(ctx, x, y, t, anim) {
 
 // 🐾 宠物房间：一间小屋子，里面有食盆、澡盆和垫子；升级后屋子变大、床变多
 function drawPetRoom(ctx, x, y, t, lv, pets, rect) {
-  const r = rect || { x: x - 85, y: y - 105, w: 170, h: 105 };
+  const r = rect || { x: x - 48, y: y - 60, w: 96, h: 60 };
   const W = r.w, H = r.h;
+  // 宠物房比主角家小，里面的门 / 窗 / 招牌 / 小枕头都跟着房间一起缩（k = 相对老尺寸的比例）
+  const k = W / 170;
   const wallTop = r.y, wallBot = r.y + H;
+  const roofH = 34 * k, over = 10 * k;
   drawShadow(ctx, r.x + W / 2, wallBot + 4, W / 2);
   // 墙
   ctx.fillStyle = '#ffe6c8';
-  rr(ctx, r.x, wallTop, W, H, 8); ctx.fill();
-  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = 2.5;
-  rr(ctx, r.x, wallTop, W, H, 8); ctx.stroke();
+  rr(ctx, r.x, wallTop, W, H, 8 * k + 2); ctx.fill();
+  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = Math.max(1.6, 2.5 * k);
+  rr(ctx, r.x, wallTop, W, H, 8 * k + 2); ctx.stroke();
   // 屋顶
   ctx.fillStyle = '#f0a058';
   ctx.beginPath();
-  ctx.moveTo(r.x - 10, wallTop + 4);
-  ctx.lineTo(r.x + W / 2, wallTop - 34);
-  ctx.lineTo(r.x + W + 10, wallTop + 4);
+  ctx.moveTo(r.x - over, wallTop + 4 * k);
+  ctx.lineTo(r.x + W / 2, wallTop - roofH);
+  ctx.lineTo(r.x + W + over, wallTop + 4 * k);
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#d8863e';
-  rr(ctx, r.x - 10, wallTop, W + 20, 7, 3.5); ctx.fill();
+  rr(ctx, r.x - over, wallTop, W + over * 2, Math.max(4, 7 * k), 3.5 * k); ctx.fill();
   // 门（下方中间）
+  const dw = Math.max(16, 30 * k), dh = Math.max(18, 34 * k);
   ctx.fillStyle = '#b5723a';
-  rr(ctx, r.x + W / 2 - 15, wallBot - 34, 30, 34, 5); ctx.fill();
+  rr(ctx, r.x + W / 2 - dw / 2, wallBot - dh, dw, dh, 5 * k + 1); ctx.fill();
   ctx.fillStyle = '#ffd23e';
-  ellipse(ctx, r.x + W / 2 + 9, wallBot - 17, 2, 2); ctx.fill();
+  ellipse(ctx, r.x + W / 2 + dw * 0.3, wallBot - dh / 2, Math.max(1.4, 2 * k), Math.max(1.4, 2 * k)); ctx.fill();
   // 招牌
-  ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('🐾', r.x + W / 2, wallTop + 26);
+  ctx.font = Math.max(10, Math.round(15 * k)) + 'px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🐾', r.x + W / 2, wallTop + Math.max(14, 26 * k));
   // 窗户
+  const ww = Math.max(15, 26 * k), wh = Math.max(12, 22 * k), wy = wallTop + Math.max(7, 14 * k);
+  const wx1 = r.x + 12 * k, wx2 = r.x + W - 12 * k - ww;
   ctx.fillStyle = 'rgba(180,225,245,.9)';
-  rr(ctx, r.x + 12, wallTop + 14, 26, 22, 4); ctx.fill();
-  rr(ctx, r.x + W - 38, wallTop + 14, 26, 22, 4); ctx.fill();
-  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = 2;
-  rr(ctx, r.x + 12, wallTop + 14, 26, 22, 4); ctx.stroke();
-  rr(ctx, r.x + W - 38, wallTop + 14, 26, 22, 4); ctx.stroke();
+  rr(ctx, wx1, wy, ww, wh, 4 * k); ctx.fill();
+  rr(ctx, wx2, wy, ww, wh, 4 * k); ctx.fill();
+  ctx.strokeStyle = '#e0b878'; ctx.lineWidth = Math.max(1.2, 2 * k);
+  rr(ctx, wx1, wy, ww, wh, 4 * k); ctx.stroke();
+  rr(ctx, wx2, wy, ww, wh, 4 * k); ctx.stroke();
   // 屋里的垫子：按等级画出所有床位（有几只宠物就有几个小枕头）
   const beds = Math.min(4, Math.max(lv, (pets || []).length));
-  const innerL = r.x + 16, innerR = r.x + W - 16;
+  const innerL = r.x + 16 * k, innerR = r.x + W - 16 * k;
+  const bedY = wallBot - Math.max(8, 16 * k);
   for (let i = 0; i < beds; i++) {
     const px = beds === 1 ? (innerL + innerR) / 2 : innerL + (innerR - innerL) * (i / (beds - 1));
     ctx.fillStyle = i % 2 ? '#cfe8ff' : '#ffd8e6';
-    ellipse(ctx, px, wallBot - 16, 15, 6); ctx.fill();
+    ellipse(ctx, px, bedY, Math.max(6.5, 15 * k), Math.max(3, 6 * k)); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.75)';
-    ellipse(ctx, px, wallBot - 19, 7, 3.4); ctx.fill();
+    ellipse(ctx, px, bedY - Math.max(1.5, 3 * k), Math.max(3, 7 * k), Math.max(1.6, 3.4 * k)); ctx.fill();
   }
   // 门边的食盆和澡盆
+  const bowlY = wallBot + Math.max(7, 12 * k);
   ctx.fillStyle = '#f0b8c8';
-  ellipse(ctx, r.x + 20, wallBot + 12, 10, 5); ctx.fill();
+  ellipse(ctx, r.x + 20 * k, bowlY, Math.max(5, 10 * k), Math.max(2.6, 5 * k)); ctx.fill();
   ctx.fillStyle = '#a8d8f0';
-  ellipse(ctx, r.x + W - 20, wallBot + 12, 11, 6); ctx.fill();
-  ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('🍖', r.x + 20, wallBot + 16);
-  ctx.fillText('🛁', r.x + W - 20, wallBot + 16);
-  // 等级徽章
-  drawLvBadge(ctx, r.x + W / 2, wallTop - 44, lv, t, false);
+  ellipse(ctx, r.x + W - 20 * k, bowlY, Math.max(5.5, 11 * k), Math.max(3, 6 * k)); ctx.fill();
+  ctx.font = Math.max(9, Math.round(11 * k)) + 'px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('🍖', r.x + 20 * k, bowlY + 4 * k);
+  ctx.fillText('🛁', r.x + W - 20 * k, bowlY + 4 * k);
+  // 等级徽章（挂在屋顶尖尖上面）
+  drawLvBadge(ctx, r.x + W / 2, wallTop - roofH - 12, lv, t, false);
+}
+
+// 🛒 销售门面（接在商店右边）：一张带遮阳棚的柜台 ——
+// 小朋友把收来的东西拿到这里卖给客人，客人从**右边**排队过来
+function drawSalesCounter(ctx, x, y, t) {
+  const W = 118;
+  drawShadow(ctx, x, y + 10, W / 2);
+  // 柜台（木箱 + 台面）
+  ctx.fillStyle = '#c98a5a';
+  rr(ctx, x - W / 2, y - 34, W, 42, 6); ctx.fill();
+  ctx.fillStyle = '#e0b878';
+  rr(ctx, x - W / 2 - 6, y - 40, W + 12, 10, 4); ctx.fill();
+  ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
+  rr(ctx, x - W / 2 - 6, y - 40, W + 12, 10, 4); ctx.stroke();
+  // 台面上的小秤和钱箱
+  ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('⚖️', x - 26, y - 26 + Math.sin(t * 2) * 1.2);
+  ctx.fillText('💰', x + 28, y - 26 + Math.sin(t * 2 + 1) * 1.2);
+  // 条纹遮阳棚
+  for (let i = 0; i < 6; i++) {
+    ctx.fillStyle = i % 2 ? '#ff9f43' : '#fff';
+    const sx = x - W / 2 - 4 + i * ((W + 8) / 6);
+    ctx.beginPath();
+    ctx.moveTo(sx, y - 74); ctx.lineTo(sx + (W + 8) / 6, y - 74);
+    ctx.lineTo(sx + (W + 8) / 6 - 3, y - 54 + Math.sin(t * 3 + i) * 1.5);
+    ctx.lineTo(sx + 3, y - 54 + Math.sin(t * 3 + i + 1) * 1.5);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = '#8a5a2e';
+  rr(ctx, x - W / 2 - 8, y - 78, 6, 48, 2); ctx.fill();
+  rr(ctx, x + W / 2 + 2, y - 78, 6, 48, 2); ctx.fill();
+  // 招牌：销售门面 + 右边排队的箭头
+  ctx.fillStyle = '#fff3d6';
+  rr(ctx, x - 40, y - 104, 80, 22, 6); ctx.fill();
+  ctx.strokeStyle = '#d9a62e'; ctx.lineWidth = 2;
+  rr(ctx, x - 40, y - 104, 80, 22, 6); ctx.stroke();
+  ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7a4a12';
+  ctx.fillText('💰', x - 22, y - 87);
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('➡', x + 24, y - 87 + Math.sin(t * 4) * 2);
 }
 
 function drawBin(ctx, x, y, t) {
@@ -2216,21 +2266,26 @@ function drawAquarium(ctx, x, y, t, fish, size) {
   ctx.quadraticCurveTo(x, y - 30, x + W / 2 - 6, y - 18);
   ctx.lineTo(x + W / 2 - 6, y - 12); ctx.lineTo(x - W / 2 + 6, y - 12);
   ctx.closePath(); ctx.fill();
-  // 水草（箱子大了，水草也更多更高）
+  // 水草（箱子越大水草越多，沿着箱底均匀铺开）
+  const grassN = Math.max(5, Math.round(W / 78));
   ctx.strokeStyle = '#3f9e63'; ctx.lineWidth = 5; ctx.lineCap = 'round';
-  for (let i = -2; i <= 2; i++) {
-    const bx = x + i * 46, sway = Math.sin(t * 1.6 + i) * 6;
-    const hgt = 62 + (i % 2 ? 14 : 0);
+  for (let i = 0; i < grassN; i++) {
+    const k = grassN === 1 ? 0 : (i / (grassN - 1) - 0.5);
+    const bx = x + k * (W - 90), sway = Math.sin(t * 1.6 + i) * 6;
+    const hgt = (58 + (i % 2 ? 14 : 0)) * Math.min(1.5, Math.max(0.7, H / 140));
     ctx.beginPath();
     ctx.moveTo(bx, y - 22);
     ctx.quadraticCurveTo(bx + sway, y - 22 - hgt * 0.55, bx + sway * 1.4, y - 22 - hgt);
     ctx.stroke();
   }
-  // 小石头
+  // 小石头（也按箱子宽度摆开）
+  const stoneN = Math.max(4, Math.round(W / 95));
   ctx.fillStyle = '#b9c3c9';
-  [[-100, -20, 9, 5], [-40, -19, 7, 4], [30, -20, 10, 5], [96, -19, 8, 4]].forEach(function (r) {
-    ellipse(ctx, x + r[0], y + r[1], r[2], r[3]); ctx.fill();
-  });
+  for (let i = 0; i < stoneN; i++) {
+    const k = stoneN === 1 ? 0 : (i / (stoneN - 1) - 0.5);
+    const R = 7 + (i % 3) * 1.5;
+    ellipse(ctx, x + k * (W - 120), y - 19 + (i % 2 ? 1 : 0), R, R * 0.55); ctx.fill();
+  }
   // 气泡
   ctx.fillStyle = 'rgba(255,255,255,.55)';
   for (let i = 0; i < 12; i++) {
@@ -2256,7 +2311,9 @@ function drawAquarium(ctx, x, y, t, fish, size) {
     const fx = cxm + Math.cos(a) * SW;
     const fy = cym + Math.sin(a * 1.5 + i) * SH;
     const vx = -Math.sin(a);                   // 水平速度方向 = -sin(a)
-    const size = (26 + Math.min(22, (it.price || 20) / 16)) * (SEA_ZOOM[id] || 1.3);
+    // 水族箱越大，里面的鱼也越大一点（不然大缸里的鱼会显得很小很远）
+    const sizeK = Math.min(1.55, Math.max(1, W / 340));
+    const size = (26 + Math.min(22, (it.price || 20) / 16)) * (SEA_ZOOM[id] || 1.3) * sizeK;
     ctx.save();
     ctx.translate(fx, fy);
     if (vx < 0) ctx.scale(-1, 1);              // 朝游动方向
@@ -2659,9 +2716,105 @@ function drawCloud(ctx, x, y, s, alpha) {
 /* ------------------------------------------------------------
  * 森林（农场右上角的树林）：地面 + 大树 + 蜂巢 + 林间小物
  * ---------------------------------------------------------- */
+/* ------------------------------------------------------------
+ * 留给小朋友摆装饰的空地（浅色草坪 + 暖色点线边）：
+ * 房子排成四排，中间特意留出这几块地方，买好装饰走过去按 E 就能放下
+ * ---------------------------------------------------------- */
+function drawDecorPatches(ctx, t) {
+  if (typeof DECOR_PATCHES === 'undefined' || !DECOR_PATCHES) return;
+  for (const p of DECOR_PATCHES) {
+    const g = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+    g.addColorStop(0, 'rgba(226,246,178,.55)');
+    g.addColorStop(1, 'rgba(198,236,158,.40)');
+    ctx.fillStyle = g;
+    rr(ctx, p.x, p.y, p.w, p.h, 40); ctx.fill();
+    ctx.save();
+    ctx.setLineDash([3, 9]);
+    ctx.lineCap = 'round';
+    ctx.lineDashOffset = -(t * 7) % 12;
+    ctx.strokeStyle = 'rgba(255,246,205,.85)';
+    ctx.lineWidth = 3;
+    rr(ctx, p.x + 5, p.y + 5, p.w - 10, p.h - 10, 36); ctx.stroke();
+    ctx.restore();
+    // 四个角上点几朵小花，一眼看出是「留给装饰的草地」
+    const flowers = [[0.16, 0.13], [0.84, 0.15], [0.18, 0.87], [0.82, 0.86]];
+    for (let i = 0; i < flowers.length; i++) {
+      const fx = p.x + p.w * flowers[i][0], fy = p.y + p.h * flowers[i][1];
+      const bob = Math.sin(t * 1.6 + i * 1.7) * 1.2;
+      ctx.fillStyle = ['#ffb3c9', '#ffe08a', '#c8a8f0', '#fff'][i % 4];
+      for (let k = 0; k < 5; k++) {
+        const a = k / 5 * Math.PI * 2;
+        ellipse(ctx, fx + Math.cos(a) * 3.4, fy + bob + Math.sin(a) * 3.4, 2.4, 2.4); ctx.fill();
+      }
+      ctx.fillStyle = '#ffd23e';
+      ellipse(ctx, fx, fy + bob, 1.8, 1.8); ctx.fill();
+    }
+  }
+}
+
+/* ------------------------------------------------------------
+ * 右下角的大海：从大海水蓝洞连到地图的右下角，看起来是通到外面的海
+ * 岸线是 SEA_POLY 里那串点（game.js），这里负责画沙滩、海水、浪花
+ * ---------------------------------------------------------- */
+function seaOutline(ctx, count, dx, dy) {
+  if (typeof SEA_POLY === 'undefined' || !SEA_POLY) return false;
+  dx = dx || 0; dy = dy || 0;
+  ctx.beginPath();
+  ctx.moveTo(SEA_POLY[0].x + dx, SEA_POLY[0].y + dy);
+  const n = count || SEA_POLY.length;
+  for (let i = 1; i < n; i++) ctx.lineTo(SEA_POLY[i].x + dx, SEA_POLY[i].y + dy);
+  if (n >= SEA_POLY.length) ctx.closePath();
+  return true;
+}
+function drawSea(ctx, t) {
+  if (typeof SEA_POLY === 'undefined' || !SEA_POLY) return;
+  const coast = SEA_POLY.length - 1;          // 最后两个点是地图角，不算岸线
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // ① 沙滩（沿着岸线铺一条沙色带，一半会被海水盖住）
+  ctx.strokeStyle = '#f0dfb4'; ctx.lineWidth = 40;
+  if (seaOutline(ctx, coast)) ctx.stroke();
+  // ② 海水
+  const g = ctx.createLinearGradient(1500, 1040, 1880, 1460);
+  g.addColorStop(0, '#8adcf7');
+  g.addColorStop(0.35, '#4fb2ea');
+  g.addColorStop(1, '#1668b8');
+  ctx.fillStyle = g;
+  seaOutline(ctx); ctx.fill();
+  // ③ 靠岸的浅水带
+  ctx.strokeStyle = 'rgba(190,240,255,.75)'; ctx.lineWidth = 30;
+  if (seaOutline(ctx, coast)) ctx.stroke();
+  // ④ 一道道滚上来的浪花
+  for (let i = 0; i < 2; i++) {
+    const ph = (t * 0.55 + i * 0.5) % 1;
+    ctx.strokeStyle = 'rgba(255,255,255,' + (0.85 - ph * 0.7) + ')';
+    ctx.lineWidth = 5 + i;
+    if (seaOutline(ctx, coast, -ph * 26, -ph * 26)) ctx.stroke();
+  }
+  // ⑤ 海面上的小闪光和波纹
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  for (let i = 0; i < 26; i++) {
+    const px = 1500 + ((i * 137) % 420);
+    const py = 1080 + ((i * 211) % 370);
+    if (typeof pointInSea === 'function' && !pointInSea(px, py)) continue;
+    const tw = 0.5 + 0.5 * Math.sin(t * 2 + i);
+    ellipse(ctx, px, py, 3 + tw * 3, 1.4 + tw * 1.2); ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 2;
+  for (let i = 0; i < 9; i++) {
+    const px = 1520 + ((i * 173) % 380);
+    const py = 1120 + ((i * 149) % 320) + Math.sin(t * 0.8 + i) * 4;
+    if (typeof pointInSea === 'function' && !pointInSea(px, py)) continue;
+    ctx.beginPath();
+    ctx.moveTo(px - 16, py); ctx.quadraticCurveTo(px, py - 5, px + 16, py);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawForestGround(ctx, t) {
   // 森林范围（和 game.js 里的 FOREST 保持一致，这里写成常量避免依赖加载顺序）
-  const F = { x: 30, y: 400, w: 400, h: 250 };
+  const F = { x: 30, y: 500, w: 400, h: 830 };
   if (typeof FOREST !== 'undefined' && FOREST) { F.x = FOREST.x; F.y = FOREST.y; F.w = FOREST.w; F.h = FOREST.h; }
   const x0 = F.x, y0 = F.y, w = F.w, h = F.h;
   // 林间草地：颜色更深一点的绿

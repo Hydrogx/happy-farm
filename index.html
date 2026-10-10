@@ -234,6 +234,27 @@
         </div>
       </div>
 
+      <!-- ============ 睡前任务（刷牙 / 洗脸 / 涂脸） ============ -->
+      <div id="bed-modal" class="modal hidden">
+        <div class="modal-card bed-card">
+          <div class="modal-head">
+            <h2 data-i18n="bedTitle">🌙 睡觉时间到啦</h2>
+          </div>
+          <p class="subtitle" data-i18n="bedHint">睡觉前先做完三件事，做完才能去睡觉哦</p>
+          <div id="bed-steps" class="bed-steps"></div>
+          <div class="bed-stage">
+            <canvas id="bed-canvas" width="330" height="250"></canvas>
+            <div id="bed-flash" class="bed-flash hidden"></div>
+          </div>
+          <p id="bed-tip" class="bed-tip"></p>
+          <div class="bed-bar"><div id="bed-bar-fill"></div></div>
+          <div class="btn-row">
+            <button id="bed-again" class="tab-btn" data-i18n="bedAgain">🔄 再洗一次</button>
+            <button id="bed-sleep" class="big-btn" disabled data-i18n="bedSleep">😴 去睡觉</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ 卖货箱 ============ -->
       <div id="sell-modal" class="modal hidden">
         <div class="modal-card">
@@ -293,9 +314,17 @@
         </div>
       </div>
 
-      <!-- 图鉴 & 帮助按钮 -->
-      <button id="btn-book" title="动物图鉴">📖</button>
-      <button id="btn-help" title="帮助" data-i18n-title="helpTitle">❓</button>
+      <!-- 右上角：图鉴 / 帮助 + 小地图 -->
+      <div id="top-right">
+        <div class="top-btn-row">
+          <button id="btn-book" title="动物图鉴" data-i18n-title="bookTitle">📖</button>
+          <button id="btn-help" title="帮助" data-i18n-title="helpTitle">❓</button>
+        </div>
+        <div id="minimap-box">
+          <div id="minimap-head" data-i18n="minimapTitle">🗺️ 农场地图</div>
+          <canvas id="minimap" width="176" height="134"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 

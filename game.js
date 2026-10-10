@@ -6,7 +6,17 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const VIEW_W = canvas.width, VIEW_H = canvas.height;
-const WORLD_W = 1600, WORLD_H = 1000;
+// 农场地图：四排建筑的布局（每栋建筑下面还要留出升级预留区 + 门口木牌）
+// 第一排：果园 | 大水族箱（右边一整片都给它）
+// 第二排：森林 | 宠物家 | 衣柜 | 厨房 | 主角家 | 卖货箱 | 商店 | 销售门面（右边排队）
+// 第三排：森林 | 农田 | 鸡棚 | 小水坑
+// 第四排：森林 | 中水坑 | 羊棚 | 牛棚 | 大海水蓝洞（连着右下角的大海）
+const WORLD_W = 1920, WORLD_H = 1460;
+// 主角出生点：第一排「主角家」大门口的正前方
+const PLAYER_SPAWN = { x: 960, y: 745 };
+const SAVE_V = 3;               // 存档格式版本（2/3 = 两版四排布局，老存档都要搬家）
+// 观赏动物散步的范围（地图中间那一大片空地）
+const ZOO_AREA = { x: WORLD_W / 2, y: 800, r: 560 };
 const DAY_START = 8 * 60, DAY_END = 20 * 60;   // 游戏内分钟
 const DAY_LENGTH = 240;                        // 现实秒 / 天
 const CAMERA_ZOOM = 1.2;                       // 画面整体放大一点（人物/动物/文字在手机上更清楚）
@@ -148,15 +158,15 @@ const FRUIT_IDS = ['apple', 'orange', 'pear', 'peach', 'strawberry',
 
 
 // ---------------- 钓鱼：5 种大小的水波纹，每种 3 种渔获 ----------------
-// 三个不同位置的水坑：小水坑 / 中水坑 / 大水坑，每个水坑 5 种渔获
+// 三个不同位置的水坑（排在第三、四排）：小水坑 / 中水坑 / 大海水蓝洞，每个水坑 5 种渔获
 const PONDS = [
-  { id: 'small',  name: '小水坑', nameEn: 'Small Puddle', x: 1250, y: 600, w: 132, h: 76,
+  { id: 'small',  name: '小水坑', nameEn: 'Small Puddle', x: 1630, y: 890, w: 152, h: 88,
     rip: { lv: 1, r: 12, color: '#cdeeff', w: 34, name: '小水波', nameEn: 'Small ripple' },
     pool: ['fish', 'shrimp', 'shell', 'goldfish', 'crab'] },
-  { id: 'medium', name: '中水坑', nameEn: 'Medium Pond',  x: 1420, y: 706, w: 186, h: 104,
+  { id: 'medium', name: '中水坑', nameEn: 'Medium Pond',  x: 650, y: 1180, w: 212, h: 124,
     rip: { lv: 3, r: 24, color: '#63c6f7', w: 20, name: '中水波', nameEn: 'Medium ripple' },
     pool: ['squid', 'puffer', 'octopus', 'lobster', 'seaturtle'] },
-  { id: 'large',  name: '大水坑', nameEn: 'Large Pond',   x: 1300, y: 884, w: 286, h: 142,
+  { id: 'large',  name: '大海水蓝洞', nameEn: 'Big Blue Hole', x: 1710, y: 1180, w: 300, h: 172,
     rip: { lv: 5, r: 44, color: '#9a7cf0', w: 7,  name: '大水波', nameEn: 'Big ripple' },
     pool: ['croc', 'seal', 'dolphin', 'shark', 'whale'] },
 ];
@@ -166,31 +176,31 @@ const SEA_ALL = PONDS.reduce(function (a, p) { return a.concat(p.pool); }, []);
 function pondLabel(p) { return lang === 'en' ? p.nameEn : p.name; }
 
 // ---------------- 森林 & 蜂巢 ----------------
-// 森林在农场的右上角（摊位与小水坑之间那片树林），里面有一个蜂巢可以拿蜂蜜
-// 森林放在果树区的左下方（左半边那一大片空地），范围比以前大
-const FOREST = { x: 30, y: 400, w: 400, h: 250 };
-const HIVE = { x: 390, y: 524, r: 96, honey: 1, honeyT: 0, max: 2 };
+// 森林排在最左边一列，占满第二、三、四排（一条竖直的林带）：
+// 右边依次是水族箱/农田/羊棚这些，走进去就能采蜂蜜和蘑菇
+const FOREST = { x: 30, y: 500, w: 400, h: 830 };
+const HIVE = { x: 330, y: 704, r: 96, honey: 1, honeyT: 0, max: 2 };
 const HONEY_EVERY = 55;          // 秒：蜂巢重新酿出蜂蜜
 // 小工具（提前定义，下面的数据表初始化就要用）
 function dist(x1, y1, x2, y2) { return Math.hypot(x1 - x2, y1 - y2); }
 function rand(a, b) { return a + Math.random() * (b - a); }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 const FOREST_TREES = [           // 森林里的大树（蜂巢就挂在那棵树上）
-  { x: 390, y: 600, kind: 'big', phase: 0.4 },
-  { x: 120, y: 560, kind: 'pine', phase: 1.2 },
-  { x: 378, y: 470, kind: 'pine', phase: 2.1 },
-  { x: 140, y: 462, kind: 'pine', phase: 3.4 },
-  { x: 300, y: 588, kind: 'pine', phase: 4.2 },
+  { x: 330, y: 780, kind: 'big', phase: 0.4 },
+  { x: 140, y: 610, kind: 'pine', phase: 1.2 },
+  { x: 150, y: 940, kind: 'pine', phase: 2.1 },
+  { x: 330, y: 1080, kind: 'pine', phase: 3.4 },
+  { x: 165, y: 1250, kind: 'pine', phase: 4.2 },
 ];
 const FOREST_DECOR = [];         // 树桩 / 灌木（纯装饰）
-[['stump', 330, 470], ['stump', 60, 636], ['bush', 240, 610], ['bush', 100, 452],
- ['bush', 400, 520]]
+[['stump', 300, 560], ['stump', 80, 720], ['bush', 250, 860], ['bush', 90, 1060],
+ ['bush', 380, 1160]]
   .forEach(function (d) { FOREST_DECOR.push({ kind: d[0], x: d[1], y: d[2], phase: rand(0, 6) }); });
 
 // 森林里的蘑菇：走过去按 E 就能采；采完过一会儿（或睡一觉）会自己长回来
 const MUSHROOMS = [];
 const MUSHROOM_REGROW = 40;      // 采完多少秒长回来
-const MUSHROOM_POS = [[70, 500], [250, 520], [360, 640], [180, 632], [90, 578], [330, 612], [205, 452]];
+const MUSHROOM_POS = [[80, 560], [250, 660], [110, 830], [350, 900], [200, 1010], [120, 1190], [330, 1290]];
 function freshMushroom() {
   MUSHROOMS.length = 0;
   MUSHROOM_POS.forEach(function (p) {
@@ -244,7 +254,7 @@ const VEHICLES = [
 const VEHICLE_MAP = {};
 VEHICLES.forEach(function (v) { VEHICLE_MAP[v.id] = v; });
 // 停车架：走到旁边可以「骑上 / 停下」，停下来时车停在原地
-const VEHICLE_RACK = { x: 545, y: 520, r: 86 };
+const VEHICLE_RACK = { x: 900, y: 490, r: 86 };   // 停车架（主角家右前方的空地上）
 // 可购买的庭院装饰（r = 占地半径，用于防重叠）
 const DECOR_SHOP = [
   { id: 'rock',      name: '大石头', icon: '🪨', price: 20,  r: 16 },
@@ -314,6 +324,20 @@ const STR = {
     btnWardrobeDone: '换好啦',
     sellTitle: '📦 卖货箱', sellSubtitle: '点一点，把东西换成金币！', btnCloseBin: '关上门',
     logTitle: '📜 牧场日志',
+    minimapTitle: '🗺️ 农场地图',
+    bedTitle: '🌙 睡觉时间到啦',
+    bedHint: '睡觉前先做完三件事，做完才能去睡觉哦',
+    bedStepBrush: '刷牙', bedStepWash: '洗脸', bedStepCream: '涂脸',
+    bedTipBrush: '手指当小牙刷 🪥 把牙齿上的小黄点都刷掉～',
+    bedTipWash: '手指当小毛巾 🧽 把脸上的小泥点都擦干净～',
+    bedTipCream: '手指当面霜 🧴 把香香涂满小脸～',
+    bedTipAllDone: '真棒！三件事都做完啦，点「去睡觉」吧 😴',
+    bedPercent: '（{n}%）',
+    bedNice: '好棒！',
+    bedSleep: '😴 去睡觉',
+    bedAgain: '🔄 再洗一次',
+    bedLogNight: '🌙 天黑啦，睡觉前先刷牙洗脸',
+
     // —— 状态栏 ——
     hudDay: '📅 第 {n} 天', weather: { sunny: '☀️ 晴天', cloudy: '⛅ 多云', rain: '🌧️ 下雨' },
     // —— 交互提示 ——
@@ -344,6 +368,7 @@ const STR = {
     decorCancel: '先不放了，收起来咯',
     placedDecor: '{decor}放好啦，真好看 🎉',
     inWater: '不能放在水里哦 💧',
+    noRoomHere: '这里放不下，去那块空着的草地上试试～',
     tooCrowded: '这里太挤啦，换个地方吧',
     wearPetHat: '小{pet}戴上啦，好开心！',
     equipDone: '换上 {name}！',
@@ -656,6 +681,20 @@ const STR = {
     btnWardrobeDone: 'Done',
     sellTitle: '📦 Shipping Bin', sellSubtitle: 'Tap an item to turn it into coins!', btnCloseBin: 'Close',
     logTitle: '📜 Farm Log',
+    minimapTitle: '🗺️ Farm Map',
+    bedTitle: '🌙 Bedtime!',
+    bedHint: 'Do three things first — then you can go to sleep',
+    bedStepBrush: 'Brush teeth', bedStepWash: 'Wash face', bedStepCream: 'Face cream',
+    bedTipBrush: 'Use your finger as a toothbrush 🪥 — wipe off all the yellow spots!',
+    bedTipWash: 'Use your finger as a towel 🧽 — wipe the little smudges away!',
+    bedTipCream: 'Use your finger as cream 🧴 — spread it all over the face!',
+    bedTipAllDone: 'All done! Now tap “Go to sleep” 😴',
+    bedPercent: ' ({n}%)',
+    bedNice: 'Great!',
+    bedSleep: '😴 Go to sleep',
+    bedAgain: '🔄 Again',
+    bedLogNight: '🌙 It is dark — brush your teeth and wash your face first',
+
     hudDay: '📅 Day {n}', weather: { sunny: '☀️ Sunny', cloudy: '⛅ Cloudy', rain: '🌧️ Rainy' },
     prPickup: 'Pick up {item}', prShear: '✂️ Shear wool', prMilk: '🥛 Milk the cow',
     prPetChicken: '🐔 Pet the chick', prPetChick: '🐤 Pet the chick', prPetHen: '🐔 Pet the hen',
@@ -683,6 +722,7 @@ const STR = {
     decorCancel: 'Put it away for now',
     placedDecor: '{decor} looks lovely there! 🎉',
     inWater: 'Can\'t put that in the water 💧',
+    noRoomHere: 'No room here — try an open patch of grass',
     tooCrowded: 'Too crowded here — try another spot',
     wearPetHat: 'Your {pet} loves the new hat!',
     equipDone: 'Wearing {name}!',
@@ -1587,9 +1627,9 @@ const PET_SCALE = 1.3;           // 人物整体再放大一点
 const ANIMAL_SCALE = 1.3;        // 动物整体再放大一点
 // 食槽（放在各自棚舍里，走到旁边按 E 放饲料）
 const TROUGHS = [
-  { id: 'chicken', type: 'chicken', x: 268, y: 760, r: 72, feed: 8, unfed: 0 },
-  { id: 'sheep',   type: 'sheep',   x: 556, y: 852, r: 72, feed: 8, unfed: 0 },
-  { id: 'cow',     type: 'cow',     x: 876, y: 846, r: 74, feed: 8, unfed: 0 },
+  { id: 'chicken', type: 'chicken', x: 1125, y: 872,  r: 72, feed: 8, unfed: 0 },
+  { id: 'sheep',   type: 'sheep',   x: 976,  y: 1172, r: 72, feed: 8, unfed: 0 },
+  { id: 'cow',     type: 'cow',     x: 1331, y: 1171, r: 74, feed: 8, unfed: 0 },
 ];
 const TROUGH_OF = {};
 TROUGHS.forEach(function (tr) { TROUGH_OF[tr.type] = tr; });
@@ -1680,7 +1720,7 @@ const G = {
   weather: 'sunny',           // sunny | cloudy | rain
   inventory: { seed_carrot: 2, feed: 3 },
   player: {
-    x: 420, y: 500, dir: 'down', gender: 'boy',
+    x: PLAYER_SPAWN.x, y: PLAYER_SPAWN.y, dir: 'down', gender: 'boy',
     moving: false, walkPhase: 0, actionT: 0,
     // 一开始只有「破帽子 + 破衣服 + 破裤子」，鞋子是光脚，裙子不穿
     outfit: { hat: 'ragged', hair: 'none', shirt: 'ragged', dress: 'none', pants: 'ragged', shoes: 'none' },
@@ -1718,27 +1758,30 @@ const G = {
   cam: { x: 0, y: 0 },
   sleepFade: 0,
   sleepDawn: false,
+  // 🌙 睡前任务：到了晚上先做刷牙 / 洗脸 / 涂脸，做完才能点「去睡觉」
+  bed: { active: false, step: 0, done: [false, false, false] },
 };
 
-// 场景交互点（房子区搬到商店旁边，果树在房子左侧）
+// 场景交互点（按四排布局排好）
 const ZONES = {
-  house:    { x: 1020, y: 220 },
-  kitchen:  { x: 1120, y: 400, r: 55 },
-  wardrobe: { x: 930,  y: 370, r: 55 },
-  bin:      { x: 1020, y: 490, r: 55 },
-  stall:    { x: 1295, y: 300, r: 78 },
-  tank:     { x: 740,  y: 522, r: 132 },  // 水族箱（升级后会变大，这里给出 3 级都够用的交互半径）
-  rack:     { x: 545, y: 520, r: 86 },    // 停车架（骑上 / 停下交通工具）
-  hatchery: { x: 250, y: 730, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡巢升级一起挪）
-  petroom:  { x: 780, y: 290, r: 92 },    // 宠物房间（门口）
+  house:    { x: 900,  y: 640 },           // 主角家（第二排正中间）
+  wardrobe: { x: 680,  y: 660, r: 55 },    // 衣柜
+  kitchen:  { x: 790,  y: 660, r: 55 },    // 厨房
+  petroom:  { x: 540,  y: 682, r: 74 },    // 宠物家（第二排最左的小屋）
+  bin:      { x: 1090, y: 660, r: 55 },    // 卖货箱
+  stall:    { x: 1240, y: 651, r: 78 },    // 商店（玩家在这里买东西）
+  counter:  { x: 1400, y: 670, r: 78 },    // 销售门面（客人从右边排队过来买东西）
+  tank:     { x: 1260, y: 410, r: 140 },   // 大水族箱（第一排，占掉果园右边一整片）
+  rack:     { x: 700,  y: 480, r: 86 },    // 停车架（第二排小屋旁边的空地）
+  hatchery: { x: 1193, y: 840, r: 74 },    // 鸡棚里的孵蛋器（跟着鸡棚升级一起挪）
 };
 
 // 动物棚舍区域（每种动物一个独立围栏）
 // 这里的值会被 applyLevels() 按当前等级覆写，所以只当「1 级的默认值」看
 const PENS = {
-  chicken: { x: 120, y: 700, w: 200, h: 145, home: { x: 220, y: 800, r: 70 } },
-  sheep:   { x: 500, y: 730, w: 210, h: 145, home: { x: 605, y: 830, r: 72 } },
-  cow:     { x: 880, y: 720, w: 220, h: 150, home: { x: 990, y: 825, r: 75 } },
+  chicken: { x: 1055, y: 810,  w: 200, h: 145, home: { x: 1155, y: 890,  r: 70 } },
+  sheep:   { x: 930,  y: 1110, w: 210, h: 145, home: { x: 1035, y: 1180, r: 72 } },
+  cow:     { x: 1285, y: 1105, w: 220, h: 150, home: { x: 1395, y: 1180, r: 75 } },
 };
 
 // ============================================================
@@ -1754,32 +1797,34 @@ const MAX_LV = 3;
 
 // 每个设施的占地（按等级）。同一个设施三个等级的矩形**都在这里定死**，
 // 这样「升级以后变大」不会把邻居挤到水里或者压到别的建筑上。
+// 排布约定：每个设施的围栏都绕着同一条中轴线向两边长，底边向下长；
+// 因此「正下方的那块木牌（升级牌子）」永远落在围栏外面，不会挡住动物。
 const PEN_RECTS = {
   chicken: [
-    { x: 120, y: 700, w: 200, h: 145 },
-    { x: 110, y: 685, w: 270, h: 180 },
-    { x: 100, y: 670, w: 340, h: 215 },
+    { x: 1055, y: 810, w: 200, h: 145 },
+    { x: 1020, y: 795, w: 270, h: 180 },
+    { x: 985,  y: 780, w: 340, h: 215 },
   ],
   sheep: [
-    { x: 500, y: 750, w: 210, h: 145 },
-    { x: 490, y: 755, w: 290, h: 180 },
-    { x: 480, y: 755, w: 370, h: 210 },
+    { x: 930, y: 1110, w: 210, h: 145 },
+    { x: 890, y: 1095, w: 290, h: 180 },
+    { x: 850, y: 1080, w: 370, h: 210 },
   ],
   cow: [
-    { x: 880, y: 720, w: 220, h: 150 },
-    { x: 870, y: 705, w: 275, h: 185 },
-    { x: 860, y: 690, w: 290, h: 215 },
+    { x: 1285, y: 1105, w: 220, h: 150 },
+    { x: 1258, y: 1090, w: 275, h: 185 },
+    { x: 1250, y: 1075, w: 290, h: 215 },
   ],
 };
 const PEN_HOME = {
   chicken: [
-    { x: 220, y: 800, r: 70 }, { x: 245, y: 810, r: 82 }, { x: 270, y: 820, r: 95 },
+    { x: 1155, y: 890, r: 70 }, { x: 1155, y: 905, r: 82 }, { x: 1155, y: 920, r: 95 },
   ],
   sheep: [
-    { x: 605, y: 835, r: 72 }, { x: 630, y: 850, r: 86 }, { x: 655, y: 860, r: 98 },
+    { x: 1035, y: 1180, r: 72 }, { x: 1035, y: 1195, r: 86 }, { x: 1035, y: 1210, r: 98 },
   ],
   cow: [
-    { x: 990, y: 825, r: 75 }, { x: 1005, y: 835, r: 87 }, { x: 1005, y: 845, r: 99 },
+    { x: 1395, y: 1180, r: 75 }, { x: 1395, y: 1195, r: 87 }, { x: 1395, y: 1215, r: 99 },
   ],
 };
 // 食槽跟着围栏一起挪（相对围栏左上角的偏移固定）
@@ -1787,40 +1832,90 @@ const TROUGH_OFF = {
   chicken: { x: 70, y: 62 }, sheep: { x: 46, y: 62 }, cow: { x: 46, y: 66 },
 };
 
-// 果树园：同样是三个等级三块地，13 个树坑按「先进先出」的顺序填充
+// 果树园：同样是三个等级三块地（第一排最左），13 个树坑按「先进先出」的顺序填充
+// 每次扩建都从中心向外长，下面留出木牌的位置
 const ORCHARD_RECTS = [
-  { x: 80, y: 100, w: 320, h: 210 },
-  { x: 70, y: 95,  w: 450, h: 240 },
-  { x: 60, y: 90,  w: 550, h: 275 },
+  { x: 150, y: 150, w: 330, h: 220 },
+  { x: 110, y: 140, w: 440, h: 250 },
+  { x: 60,  y: 130, w: 550, h: 275 },
 ];
 // 树坑顺序经过设计：前 2 个落在 1 级地里、前 6 个落在 2 级地里，全部 13 个落在 3 级地里
+// （横竖都是等距的，果树不会挤在一起）
 const ORCHARD_SLOTS = [
-  { x: 150, y: 200 }, { x: 290, y: 200 },
-  { x: 150, y: 290 }, { x: 290, y: 290 }, { x: 430, y: 200 }, { x: 430, y: 290 },
-  { x: 100, y: 140 }, { x: 100, y: 340 }, { x: 240, y: 140 }, { x: 380, y: 140 },
-  { x: 520, y: 140 }, { x: 560, y: 230 }, { x: 560, y: 320 },
+  { x: 230, y: 185 }, { x: 340, y: 185 },
+  { x: 450, y: 185 }, { x: 230, y: 285 }, { x: 340, y: 285 }, { x: 450, y: 285 },
+  { x: 120, y: 185 }, { x: 120, y: 285 }, { x: 560, y: 185 }, { x: 560, y: 285 },
+  { x: 120, y: 380 }, { x: 340, y: 380 }, { x: 560, y: 380 },
 ];
 
 // 水坑：解锁等级 + 三个等级的尺寸（越大鱼越多、越值钱）
 const POND_SPEC = [
-  { id: 'small',  unlockLv: 1, x: 1330, y: 486,
+  { id: 'small',  unlockLv: 1, x: 1630, y: 890,
     sizes: [{ w: 112, h: 64 }, { w: 132, h: 76 }, { w: 152, h: 88 }] },
-  { id: 'medium', unlockLv: 2, x: 1430, y: 640,
+  { id: 'medium', unlockLv: 2, x: 650, y: 1180,
     sizes: [{ w: 130, h: 76 }, { w: 170, h: 100 }, { w: 212, h: 124 }] },
-  { id: 'large',  unlockLv: 3, x: 1330, y: 850,
+  { id: 'large',  unlockLv: 3, x: 1710, y: 1180,
     sizes: [{ w: 180, h: 104 }, { w: 240, h: 140 }, { w: 300, h: 172 }] },
 ];
 
-// 水族箱：三个等级的体积（画出来的玻璃箱尺寸）
-const TANK_SIZE = [{ w: 200, h: 104 }, { w: 250, h: 122 }, { w: 300, h: 138 }];
+// 水族箱：三个等级的体积。第一排右边一整片都留给它，所以能做得很大
+const TANK_SIZE = [{ w: 320, h: 130 }, { w: 570, h: 190 }, { w: 860, h: 250 }];
+// 水族箱占的地（玻璃箱 + 木架），用来画「下次扩建到这里」的虚线框、算小地图和碰撞
+function tankRect(lv) {
+  const ts = TANK_SIZE[Math.max(0, Math.min(MAX_LV, lv || 1)) - 1];
+  return { x: ZONES.tank.x - ts.w / 2, y: ZONES.tank.y - ts.h - 14, w: ts.w, h: ts.h + 18 };
+}
 // 商店摊位：升级后摊子变大、货架变多
 const STALL_SCALE = [1, 1.2, 1.45];
 
-// 宠物房间：三个等级的占地（房门在下方中间）
+// 宠物房间：三个等级的占地（房门在下方中间，第一排最右）
+// ★ 宠物房是给宠物住的小屋，做得**比主角家小一圈**（主角家连屋顶约 144×160，
+//   宠物房最大 124×82 + 小屋顶），所以第一排右边空出来的草地正好用来摆装饰
 const PETROOM_RECTS = [
-  { x: 700, y: 190, w: 170, h: 105 },
-  { x: 680, y: 165, w: 220, h: 140 },
-  { x: 655, y: 140, w: 270, h: 175 },
+  { x: 492, y: 630, w: 96,  h: 60 },
+  { x: 485, y: 618, w: 110, h: 72 },
+  { x: 478, y: 608, w: 124, h: 82 },
+];
+
+// 农田（4×3 共 12 块地）：现在只有 1 级大小，四周按 3 级的大小**预留出升级区域**（白色虚线框）
+const FARM_RECTS = [
+  { x: 580, y: 810, w: 240, h: 150 },
+  { x: 550, y: 795, w: 300, h: 185 },
+  { x: 520, y: 780, w: 360, h: 220 },
+];
+function farmRect() { return FARM_RECTS[0]; }
+
+// 销售门面右侧的排队位：客人从右边过来，按先来后到依次往前站
+const QUEUE_SLOTS = [
+  { x: 1545, y: 700 }, { x: 1645, y: 700 }, { x: 1745, y: 700 }, { x: 1845, y: 700 },
+];
+const MAX_BUYERS = 3;              // 同时最多来 3 位买东西的客人（可能排成一队）
+
+// 右下角的大海：从大海水蓝洞一路连到地图的右下角，看起来是通到外面的海里。
+// 岸线是一条波浪线，海水都画在这条线右下的一侧。
+const SEA_POLY = [
+  { x: 1466, y: 1460 }, { x: 1492, y: 1358 }, { x: 1540, y: 1300 },
+  { x: 1548, y: 1226 }, { x: 1578, y: 1156 }, { x: 1652, y: 1096 },
+  { x: 1768, y: 1066 }, { x: 1920, y: 1056 },
+  { x: 1920, y: 1460 },
+];
+// 某个点是不是在海里（射线法）
+function pointInSea(x, y) {
+  let inside = false;
+  for (let i = 0, j = SEA_POLY.length - 1; i < SEA_POLY.length; j = i++) {
+    const xi = SEA_POLY[i].x, yi = SEA_POLY[i].y, xj = SEA_POLY[j].x, yj = SEA_POLY[j].y;
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+// 特意空出来给小朋友摆装饰的空地（浅色草坪，买好装饰走过去按 E 就能放下）。
+// 这些地方不盖房子、不种地，摆大风车 / 小喷泉 / 长椅都放得下。
+const DECOR_PATCHES = [
+  { x: 1355, y: 800, w: 155, h: 195 },   // 第三排：鸡棚和小水坑中间
+  { x: 1740, y: 790, w: 150, h: 205 },   // 第三排：最右边
+  { x: 445,  y: 1080, w: 95,  h: 170 },  // 第四排：森林和中水坑之间
+  { x: 55,   y: 1330, w: 345, h: 110 },  // 森林下面（地图左下角）
 ];
 
 // 十个设施的等级表：费用 / 容量 / 说明
@@ -1874,7 +1969,7 @@ const FACILITIES = {
     cap: [5, 10, 15],
     capText: [['小水坑 · 能钓到 5 种', 'Small puddle · 5 species'],
               ['+ 中水坑 · 能钓到 10 种', '+ medium pond · 10 species'],
-              ['+ 大水坑 · 能钓到 15 种', '+ large pond · 15 species']],
+              ['+ 大海水蓝洞 · 能钓到 15 种', '+ Big Blue Hole · 15 species']],
     growText: ['水坑变大 →', 'Bigger ponds →'],
   },
   tank: {
@@ -1947,20 +2042,31 @@ function upgradeShort(f) { return isMaxLv(f) ? 0 : Math.max(0, upgradeCost(f) - 
 
 // 每栋建筑**正下方**都有一块「升级木板」（十个设施完全统一）。
 // 画木板和判断交互都用这一份坐标，保证「看到的牌子」就是「能按 E 的牌子」。
+// ★ 木牌一律放在**建筑外面**：围栏的底边再往下、玻璃箱/灶台/衣柜的下方，
+//   所以牌子不会落进动物活动的范围里，升级扩建之后也不会被圈进围栏。
+function maxPenRect(type) { return PEN_RECTS[type][MAX_LV - 1]; }
 function boardSpots() {
-  const pr = petRoomRect(), orr = orchardRect();
-  const lp = PONDS[2];                       // 三个水坑共用一个升级板（放在大水坑下面）
+  const pr = PETROOM_RECTS[MAX_LV - 1];            // 宠物房间按 3 级的大小留位
+  const orr = ORCHARD_RECTS[MAX_LV - 1];           // 果园按 3 级的大小留位
+  // 三个水坑共用一个升级板：放在大海水蓝洞**最大时**的下方，升级后也不会被水淹到
+  const lp = POND_SPEC.find(s => s.id === 'large');
+  const lpSz = lp.sizes[MAX_LV - 1];
+  const pen = (type) => {
+    const r = maxPenRect(type);
+    return { x: r.x + r.w / 2, y: r.y + r.h + 30 };   // 围栏正下方，栅栏外面
+  };
+  const cb = pen('chicken'), sb = pen('sheep'), wb = pen('cow');
   return [
-    ['coop',     PENS.chicken.x + PENS.chicken.w - 50, PENS.chicken.y + 102, '🐔'],
-    ['sheep',    PENS.sheep.x + PENS.sheep.w - 55,     PENS.sheep.y + 102,   '🐑'],
-    ['cow',      PENS.cow.x + PENS.cow.w - 55,         PENS.cow.y + 108,     '🐄'],
-    ['orchard',  orr.x + orr.w * 0.75,                 orr.y + orr.h + 16,   '🍎'],
-    ['pond',     lp.x,                                 lp.y + lp.h / 2 + 30, '💧'],
-    ['tank',     ZONES.tank.x,                         ZONES.tank.y + 42,    '🐠'],
-    ['kitchen',  ZONES.kitchen.x,                      ZONES.kitchen.y + 46, '🍳'],
-    ['wardrobe', ZONES.wardrobe.x + 8,                 ZONES.wardrobe.y + 50, '👗'],
-    ['shop',     ZONES.stall.x,                        ZONES.stall.y + 100,  '🛒'],
-    ['petroom',  pr.x + pr.w / 2,                      pr.y + pr.h + 26,     '🐾'],
+    ['coop',     cb.x, cb.y, '🐔'],
+    ['sheep',    sb.x, sb.y, '🐑'],
+    ['cow',      wb.x, wb.y, '🐄'],
+    ['orchard',  orr.x + orr.w * 0.75, orr.y + orr.h + 30, '🍎'],
+    ['pond',     lp.x, lp.y + lpSz.h / 2 + 34, '💧'],
+    ['tank',     ZONES.tank.x, ZONES.tank.y + 44, '🐠'],
+    ['kitchen',  ZONES.kitchen.x, ZONES.kitchen.y + 48, '🍳'],
+    ['wardrobe', ZONES.wardrobe.x + 8, ZONES.wardrobe.y + 52, '👗'],
+    ['shop',     ZONES.stall.x, ZONES.stall.y + 78, '🛒'],
+    ['petroom',  pr.x + pr.w / 2, pr.y + pr.h + 30, '🐾'],
   ];
 }
 
@@ -2002,8 +2108,9 @@ function applyLevels() {
   if (ct) { ct.x = PENS.chicken.x + off.chicken.x; ct.y = PENS.chicken.y + off.chicken.y; }
   if (st) { st.x = PENS.sheep.x + off.sheep.x;     st.y = PENS.sheep.y + off.sheep.y; }
   if (wt) { wt.x = PENS.cow.x + off.cow.x;         wt.y = PENS.cow.y + off.cow.y; }
-  // 孵蛋器放在鸡巢里（跟着围栏走）
-  ZONES.hatchery.x = PENS.chicken.x + 130;
+  // 孵蛋器放在鸡棚里（跟着围栏走）：摆在围栏靠右的位置，
+  // 和左边靠门口的那个食槽拉开一点距离，走过去按 E 不会互相抢
+  ZONES.hatchery.x = PENS.chicken.x + PENS.chicken.w - 62;
   ZONES.hatchery.y = PENS.chicken.y + 30;
   // ② 水坑的尺寸
   const pl = lvOf('pond') - 1;
@@ -2287,10 +2394,12 @@ function coinBurst(x, y, amount) {
 
 // ---------------- 世界初始化 ----------------
 function initWorld() {
-  // 农田 4x3
+  // 农田 4x3（摆在农田栅栏「农田」区域的正中间，第三排）
+  const fr = farmRect();
+  const fcx = fr.x + fr.w / 2, fcy = fr.y + fr.h / 2;
   for (let r = 0; r < 3; r++)
     for (let c = 0; c < 4; c++)
-      G.plots.push({ x: 520 + c * 46, y: 620 + r * 46, state: 'grass', crop: null, stage: 0, watered: false, timer: 0 });
+      G.plots.push({ x: fcx - 69 + c * 46, y: fcy - 46 + r * 46, state: 'grass', crop: null, stage: 0, watered: false, timer: 0 });
   // 果树园：一开始只有 2 棵（苹果 + 橘子），其它树苗要去商店买
   G.trees = [];
   addOrchardTree('apple');
@@ -2304,22 +2413,34 @@ function initWorld() {
   ];
   G.incubating = [];
   // 装饰（避开建筑/田地/池塘/棚舍/果树园/森林）——用的是「3 级时最大」的范围，
-  // 这样以后升级扩建时，草和花不会长到新围栏里面去
+  // 这样以后升级扩建时，草和花不会长到新围栏里面去；木牌下面也跟着避开
   const avoid = [
-    { x: 1180, y: 90, w: 300, h: 460 },   // 房子区（近商店）
-    { x: 460, y: 560, w: 290, h: 190 },   // 田地
-    { x: 1230, y: 400, w: 330, h: 140 },  // 小水坑
-    { x: 1300, y: 560, w: 260, h: 160 },  // 中水坑
-    { x: 1150, y: 750, w: 350, h: 200 },  // 大水坑
-    { x: 1190, y: 180, w: 250, h: 190 },  // 摊位
-    { x: 80,  y: 650, w: 380, h: 245 },   // 鸡巢（3 级最大范围）
-    { x: 450, y: 690, w: 420, h: 285 },   // 羊棚
-    { x: 840, y: 670, w: 330, h: 245 },   // 牛棚
-    { x: ORCHARD_RECTS[2].x, y: ORCHARD_RECTS[2].y, w: ORCHARD_RECTS[2].w, h: ORCHARD_RECTS[2].h }, // 果树园
-    { x: 600, y: 370, w: 400, h: 210 },   // 水族箱（水族箱在 790,560，玻璃箱往上延伸）
-    { x: 640, y: 130, w: 300, h: 200 },   // 宠物房间（3 级最大范围）
-    { x: FOREST.x, y: FOREST.y, w: FOREST.w, h: FOREST.h },   // 森林
+    // —— 第一排 ——
+    { x: 60,  y: 130, w: 550, h: 305 },   // 果树园（含下方木牌）
+    { x: 810, y: 140, w: 900, h: 340 },   // 大水族箱（3 级最大范围，含下方木牌）
+    // —— 第二排 ——
+    { x: FOREST.x, y: FOREST.y, w: FOREST.w, h: FOREST.h },   // 森林（第二、三、四排最左）
+    { x: 462, y: 570, w: 156, h: 175 },   // 宠物家（小屋，含下方木牌）
+    { x: 650, y: 620, w: 180, h: 105 },   // 衣柜 + 厨房（连木牌）
+    { x: 878, y: 525, w: 165, h: 185 },   // 主角家
+    { x: 1062, y: 632, w: 56, h: 54 },    // 卖货箱
+    { x: 1160, y: 530, w: 160, h: 240 },  // 商店摊位（含下方木牌）
+    { x: 1325, y: 555, w: 150, h: 130 },  // 销售门面
+    { x: 1490, y: 660, w: 400, h: 80 },   // 客人排队的队伍
+    // —— 第三排 ——
+    { x: FARM_RECTS[2].x, y: FARM_RECTS[2].y, w: FARM_RECTS[2].w, h: FARM_RECTS[2].h }, // 农田（含升级预留区）
+    { x: 985,  y: 780, w: 340, h: 275 },  // 鸡棚（含下方木牌）
+    { x: 1540, y: 830, w: 180, h: 130 },  // 小水坑
+    // —— 第四排 ——
+    { x: 530,  y: 1110, w: 240, h: 150 }, // 中水坑
+    { x: 850,  y: 1080, w: 370, h: 250 }, // 羊棚
+    { x: 1250, y: 1075, w: 290, h: 250 }, // 牛棚
+    { x: 1555, y: 1090, w: 310, h: 230 }, // 大海水蓝洞（含下方木牌）
+    // —— 右下角的大海（整片都不长草） ——
+    { x: 1420, y: 1030, w: 500, h: 430 },
   ];
+  // 留给装饰的空地上也不要长杂草，干干净净等小朋友来摆东西
+  for (const p of DECOR_PATCHES) avoid.push({ x: p.x + 8, y: p.y + 8, w: p.w - 16, h: p.h - 16 });
   const okSpot = (x, y) => !avoid.some(a => x > a.x - 20 && x < a.x + a.w + 20 && y > a.y - 20 && y < a.y + a.h + 20);
   for (let i = 0; i < 60; i++) {
     const x = rand(30, WORLD_W - 30), y = rand(120, WORLD_H - 30);
@@ -2555,24 +2676,25 @@ migrateOldSave();
 })();
 
 // 取某一档的存档数据（不传就用当前这一档）
+// ★ 这里**不能把版本号写死**：v1 是很早的老存档、v2 是现在的，
+//   以后再加版本也要能读出来（真正的兼容处理都在 loadGame 里按 d.v 做）。
 function readSave(name) {
+  const parse = function (raw) {
+    if (!raw) return null;
+    try {
+      const d = JSON.parse(raw);
+      if (!d || typeof d !== 'object') return null;
+      if (!(Number(d.v) >= 1)) return null;      // 完全没有版本号的不是存档
+      return d;
+    } catch (e) { return null; }
+  };
   let pid = playerPid;
   if (name !== undefined) { const p = profileFor(name); pid = p ? p.pid : -1; }
   if (pid < 0) {
     // 还没有任何档案时的兜底：尝试旧的单存档键
-    try {
-      const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(OLD_SAVE_KEY);
-      if (!raw) return null;
-      const d = JSON.parse(raw);
-      return (d && d.v === 1) ? d : null;
-    } catch (e) { return null; }
+    return parse(localStorage.getItem(SAVE_KEY)) || parse(localStorage.getItem(OLD_SAVE_KEY));
   }
-  try {
-    const raw = localStorage.getItem(slotKey(pid));
-    if (!raw) return null;
-    const d = JSON.parse(raw);
-    return (d && d.v === 1) ? d : null;
-  } catch (e) { return null; }
+  return parse(localStorage.getItem(slotKey(pid)));
 }
 function hasSave() { return readSave() !== null; }
 // 开始界面上的存档列表（按最近保存排序）
@@ -2613,7 +2735,7 @@ function saveGame(silent = true) {
     setLastProfile(playerName);
   }
   const data = {
-    v: 1,
+    v: SAVE_V,
     profile: { name: playerName },
     coins: G.coins, day: G.day, timeMin: G.timeMin, weather: G.weather,
     inventory: G.inventory, owned: G.owned, petHatsOwned: G.petHatsOwned,
@@ -2714,6 +2836,11 @@ function loadGame(name) {
         };
       }
     }
+    // 老存档（v1）是在旧地图上存的，坐标已经对不上新布局了：
+    // 把主角直接送回「主角家」门口（动物在下面也各自送回棚舍）
+    if (Number(d.v || 1) < SAVE_V) {
+      G.player.x = PLAYER_SPAWN.x; G.player.y = PLAYER_SPAWN.y; G.player.dir = 'down';
+    }
     // 宠物：新存档是数组；老存档只有一只，搬进来
     G.pets = [];
     const petSrc = Array.isArray(d.pets) ? d.pets : (d.pet ? [d.pet] : []);
@@ -2728,9 +2855,11 @@ function loadGame(name) {
     if (!G.pets.length) G.pets.push(newPet(chosenPet, G.player.x - 40, G.player.y + 30));
     // 动物（老存档里的鸡都是成年母鸡；小鸡记录生长天数）
     if (Array.isArray(d.animals) && d.animals.length) {
+      const oldMap = Number(d.v || 1) < SAVE_V;   // 老地图的坐标不能用了 → 直接放回自己的棚舍
       G.animals = d.animals.filter(a => a && PENS[a.type]).map(a => {
-        const na = newAnimal(a.type, Number.isFinite(a.x) ? a.x : PENS[a.type].home.x,
-                                      Number.isFinite(a.y) ? a.y : PENS[a.type].home.y,
+        const useHome = oldMap || !Number.isFinite(a.x) || !Number.isFinite(a.y);
+        const na = newAnimal(a.type, useHome ? PENS[a.type].home.x + rand(-24, 24) : a.x,
+                                      useHome ? PENS[a.type].home.y + rand(-16, 16) : a.y,
                                       a.stage === 'chick' ? 'chick' : 'hen');
         if (typeof a.wool === 'number') na.wool = a.wool;
         na.milkReady = a.milkReady !== false;
@@ -2799,8 +2928,12 @@ function loadGame(name) {
       : [];
     // 动物园的观赏动物
     if (Array.isArray(d.zoo)) {
-      G.zoo = d.zoo.filter(z => z && ZOO_MAP[z.type] && Number.isFinite(z.x) && Number.isFinite(z.y))
-                   .map(z => newZoo(z.type, z.x, z.y));
+      const oldMap = Number(d.v || 1) < SAVE_V;
+      G.zoo = d.zoo.filter(z => z && ZOO_MAP[z.type] && (oldMap || (Number.isFinite(z.x) && Number.isFinite(z.y))))
+                   .map(z => {
+                     if (oldMap) { const sp = zooRandomSpot(ZOO_AREA); return newZoo(z.type, sp.x, sp.y); }
+                     return newZoo(z.type, z.x, z.y);
+                   });
     }
     // 水族箱（只收鱼类/海洋生物，最多 20）
     G.tank = Array.isArray(d.tank) ? d.tank.filter(id => SEA_SET[id]).slice(0, maxTank()) : [];
@@ -2817,7 +2950,8 @@ function loadGame(name) {
     if (typeof d.muted === 'boolean') setMuted(d.muted);
     // 清掉临时状态
     G.customers = []; G.particles = []; G.fishing = null;
-    G.sleepFade = 0; G.sleepDawn = false; G.customerTimer = rand(20, 40); G.visitorTimer = rand(8, 20);
+    G.sleepFade = 0; G.sleepDawn = false; G.bed = { active: false, step: 0, done: [false, false, false] };
+    G.customerTimer = rand(20, 40); G.visitorTimer = rand(8, 20);
     renderInventory(); renderHUD();
     return true;
   } catch (e) { return false; }
@@ -2842,11 +2976,11 @@ function resetGame() {
   G.vehicles = []; G.vehicle = null;
   // 十个设施全部从 1 级开始
   G.levels = { coop: 1, sheep: 1, cow: 1, orchard: 1, pond: 1, tank: 1, kitchen: 1, wardrobe: 1, shop: 1, petroom: 1 };
-  G.player.x = 420; G.player.y = 500; G.player.dir = 'down';
+  G.player.x = PLAYER_SPAWN.x; G.player.y = PLAYER_SPAWN.y; G.player.dir = 'down';
   G.player.gender = chosenGender;
   G.player.outfit = { hat: 'ragged', hair: 'none', shirt: 'ragged', dress: 'none', pants: 'ragged', shoes: 'none' };
   // 一只初始宠物
-  G.pets = [newPet(chosenPet, 380, 530)];
+  G.pets = [newPet(chosenPet, PLAYER_SPAWN.x - 50, PLAYER_SPAWN.y + 20)];
   G.groundItems = []; G.customers = []; G.particles = [];
   G.plots = []; G.trees = []; G.decor = []; G.animals = []; G.incubating = [];
   TROUGHS.forEach(tr => { tr.feed = 8; tr.unfed = 0; });
@@ -2854,6 +2988,7 @@ function resetGame() {
   G.decorations = []; G.placing = null; G.zoo = []; G.seaCaught = {}; G.tank = [];
   HIVE.honey = 1; HIVE.honeyT = 0;
   G.fishing = null; G.sleepFade = 0; G.sleepDawn = false;
+  G.bed = { active: false, step: 0, done: [false, false, false] };
   G.customerTimer = 18; G.visitorTimer = 12; G.ambientT = 6; G.saveT = 0;
   applyLevels();          // ★ 先把等级写进地图（围栏/水坑/水族箱尺寸）
   initWorld();
@@ -2871,8 +3006,32 @@ function newZoo(type, x, y) {
     home: { x, y, r: 230 },
   };
 }
-// 随机找一个能站的位置（不落水、不出界）
+// 农场里「不该站上去」的大块区域（按各设施 3 级的最大范围算）。
+// 观赏动物散步时会绕开这些地方：不会站在房子、围栏、水族箱或者农田上面。
+function solidRects() {
+  const pr = PETROOM_RECTS[MAX_LV - 1], orr = ORCHARD_RECTS[MAX_LV - 1];
+  const ts = TANK_SIZE[MAX_LV - 1], k = STALL_SCALE[MAX_LV - 1], fr = FARM_RECTS[MAX_LV - 1];
+  const h = ZONES.house;
+  return [
+    { x: h.x - 12, y: h.y - 104, w: 144, h: 160 },                                  // 主角家
+    { x: ZONES.wardrobe.x - 20, y: ZONES.wardrobe.y - 34, w: 40, h: 52 },           // 衣柜
+    { x: ZONES.kitchen.x - 22, y: ZONES.kitchen.y - 22, w: 44, h: 40 },             // 厨房
+    { x: ZONES.bin.x - 22, y: ZONES.bin.y - 22, w: 44, h: 42 },                     // 卖货箱
+    { x: ZONES.counter.x - 68, y: ZONES.counter.y - 108, w: 136, h: 124 },         // 销售门面
+    { x: pr.x - 8, y: pr.y - 32, w: pr.w + 16, h: pr.h + 44 },                       // 宠物房间（小房子）
+    { x: orr.x, y: orr.y, w: orr.w, h: orr.h },                                     // 果树园
+    { x: ZONES.tank.x - ts.w / 2 - 10, y: ZONES.tank.y - ts.h - 18, w: ts.w + 20, h: ts.h + 36 }, // 大水族箱
+    { x: ZONES.stall.x - 47 * k, y: ZONES.stall.y + 20 - 92 * k, w: 94 * k, h: 116 * k },         // 商店摊位
+    { x: fr.x, y: fr.y, w: fr.w, h: fr.h },                                         // 农田
+    { x: PENS.chicken.x, y: PENS.chicken.y, w: PENS.chicken.w, h: PENS.chicken.h }, // 鸡棚
+    { x: PENS.sheep.x, y: PENS.sheep.y, w: PENS.sheep.w, h: PENS.sheep.h },         // 羊棚
+    { x: PENS.cow.x, y: PENS.cow.y, w: PENS.cow.w, h: PENS.cow.h },                 // 牛棚
+  ];
+}
+
+// 随机找一个能站的位置（不落水、不出界、不站到建筑上）
 function zooRandomSpot(home) {
+  const solids = solidRects();
   for (let i = 0; i < 12; i++) {
     const x = Math.max(40, Math.min(WORLD_W - 40, home.x + rand(-home.r, home.r)));
     const y = Math.max(150, Math.min(WORLD_H - 30, home.y + rand(-home.r, home.r)));
@@ -2881,7 +3040,10 @@ function zooRandomSpot(home) {
       const ex = (x - pc.x) / (pc.w / 2 + 40), ey = (y - pc.y) / (pc.h / 2 + 40);
       if (ex * ex + ey * ey <= 1) { wet = true; break; }
     }
-    if (!wet) return { x, y };
+    if (wet) continue;
+    if (pointInSea(x, y)) continue;
+    if (solids.some(r => x > r.x - 26 && x < r.x + r.w + 26 && y > r.y - 26 && y < r.y + r.h + 26)) continue;
+    return { x, y };
   }
   return { x: home.x, y: home.y };
 }
@@ -3246,13 +3408,27 @@ function setPet(type) {
 }
 
 // ---------------- 庭院装饰：放置 ----------------
+// 装饰只能摆在**空草地**上：水里、房子 / 围栏 / 农田 / 水族箱上面、大树底下都放不下，
+// 这样装饰不会插进建筑里，农场也一直是「房子成排、中间留白」的样子。
 function canPlaceAt(id, x, y) {
   const d = DECOR_SHOP.find(v => v.id === id);
   if (!d) return 'tooCrowded';
+  // ① 水里 / 干土坑里 / 大海里放不下
   for (const pc of PONDS) {
     const ex = (x - pc.x) / (pc.w / 2 + 20), ey = (y - pc.y) / (pc.h / 2 + 20);
     if (ex * ex + ey * ey < 1) return 'inWater';
   }
+  if (pointInSea(x, y) || pointInSea(x - d.r, y) || pointInSea(x + d.r, y) ||
+      pointInSea(x, y - d.r) || pointInSea(x, y + d.r)) return 'inWater';
+  // ② 建筑、围栏、农田、水族箱、摊位上面放不下
+  const pad = d.r * 0.75;
+  for (const s of solidRects()) {
+    if (x > s.x - pad && x < s.x + s.w + pad && y > s.y - pad && y < s.y + s.h + pad) return 'noRoomHere';
+  }
+  // ③ 森林里的大树和蜂巢旁边留出来（树底下还要长蘑菇呢）
+  for (const ft of FOREST_TREES) if (dist(x, y, ft.x, ft.y) < 48 + d.r) return 'noRoomHere';
+  if (dist(x, y, HIVE.x, HIVE.y) < 40 + d.r) return 'noRoomHere';
+  // ④ 别和已经摆好的装饰挤在一起
   for (const dd of G.decorations) {
     const need = (d.r + (DECOR_R[dd.id] || 20)) * 0.75;
     if (dist(x, y, dd.x, dd.y) < need) return 'tooCrowded';
@@ -3374,7 +3550,7 @@ function applyLang() {
   const lh = $('log-head'); if (lh) lh.textContent = t('logTitle');
   const lb = $('btn-lang');
   if (lb) { lb.textContent = lang === 'en' ? 'EN' : '\u4e2d'; lb.title = t('switchLang'); }
-  const btns = { 'btn-help': 'helpTitle', 'save-box': 'saveTitle2',
+  const btns = { 'btn-help': 'helpTitle', 'btn-book': 'bookTitle', 'save-box': 'saveTitle2',
                  'btn-music': 'musicTitle', 'btn-mute': 'muteTitle' };
   for (const id in btns) { const b = $(id); if (b) b.title = t(btns[id]); }
   document.title = t('title');
@@ -3387,6 +3563,7 @@ function applyLang() {
   else if (G.modalOpen === 'book-modal') renderBook();
   else if (G.modalOpen === 'tank-modal') renderTank();
   else if (G.modalOpen === 'math-modal') renderMathChallenge();
+  else if (G.modalOpen === 'bed-modal') bedSyncUI();
 }
 function setLang(l) {
   lang = (l === 'en') ? 'en' : 'zh';
@@ -3477,12 +3654,14 @@ function renderInventory() {
   // 物品栏排布：格子大小 / 行数按「种类数量」自动算。
   // 目标：整体高度不超过屏高的 12%（≈72px、最多 3 行），单格尽量大但不小于 22px，
   // 这样手机上图标看得清，也不会挡住上面和中间的提示。
+  // 第 3 行只在东西特别多（比如鱼和果子都攒齐了）时才用得上。
   const gap = 5;
-  const maxW = VIEW_W - 40;                        // 左右各留 20
+  // 物品栏现在排在「左下角牧场日志」的右边，宽度按容器实测（日志一挪就不用改这里）
+  const maxW = Math.max(200, (bar.clientWidth || (VIEW_W - 40)) - 12);
   const maxH = VIEW_H * 0.12;                      // 物品栏总高度上限
   const n = ids.length || 1;
   let slot = 44, rows = 1;
-  for (var r2 = 1; r2 <= 2; r2++) {                // 最多两行（三行会占到提示位置）
+  for (var r2 = 1; r2 <= 3; r2++) {                // 最多三行（再多就压到交互提示了）
     const per = Math.ceil(n / r2);
     const sByW = Math.floor((maxW - gap * (per - 1)) / per);
     const sByH = Math.floor((maxH - gap * (r2 - 1)) / r2);
@@ -3524,6 +3703,24 @@ $('btn-mute').addEventListener('click', () => { setMuted(!muted); sfx.click(); n
 $('btn-music').addEventListener('click', () => { sfx.click(); setMusic(!musicOn); note(musicOn ? 'logMusicOn' : 'logMusicOff'); });
 // 点右上角的 💾 或按 S 随时手动存档（S 也能往下走，所以只在没在走路时存）
 $('save-box').addEventListener('click', () => { manualSave(); });
+
+const bedAgainBtn = $('bed-again');
+if (bedAgainBtn) bedAgainBtn.addEventListener('click', () => {
+  if (!G.bed || !G.bed.active) return;
+  sfx.click();
+  G.bed.done[G.bed.step] = false;
+  bedInitStep(G.bed.step);
+});
+const bedSleepBtn = $('bed-sleep');
+if (bedSleepBtn) bedSleepBtn.addEventListener('click', () => {
+  if (!G.bed || !bedAllDone()) { sfx.error(); return; }   // 三件事没做完不给睡
+  sfx.click();
+  G.bed.active = false;
+  bedDragging = false;
+  closeModal('bed-modal');
+  startSleep();
+});
+
 // 正在输入名字的时候不要触发游戏快捷键
 function playerTyping() {
   const el = document.activeElement;
@@ -4058,7 +4255,7 @@ function renderShop() {
       mkCard(iconBox('zoo', z.type), nm('zoo', z.type), z.price, () => {
         if (G.zoo.length >= MAX_ZOO) { sfx.error(); say('tooManyZoo'); return; }
         G.coins -= z.price;
-        const spot = zooRandomSpot({ x: WORLD_W / 2, y: 520, r: 420 });
+        const spot = zooRandomSpot(ZOO_AREA);
         G.zoo.push(newZoo(z.type, spot.x, spot.y));
         sfx.buy(); sfx.zooVoice(z.v, z.p, 300);
         spawnParticles(spot.x, spot.y - 20, '💖', 5);
@@ -4534,7 +4731,7 @@ function nearestInteract() {
     ['wardrobe', 'wardrobe', t('prWardrobe')],
     ['bin', 'sell', t('prSell')],
     ['stall', 'shop', t('prShop')],
-    ['tank', 'tank', t('prTank')],
+    ['counter', 'shop', t('prShop')],
     ['petroom', 'petroom', t('prPetRoom')],
     ['rack', 'rack', G.vehicle
         ? t('prPark', { v: nm('vehicle', G.vehicle) })
@@ -4548,10 +4745,21 @@ function nearestInteract() {
     const d = dist(p.x, p.y, z.x, z.y);
     if (d < z.r && d < bestD) { bestD = d; best = { kind, label }; }
   }
+  // 6.1 水族箱特别大：不是站在正中间那一小圈，而是**贴着它前面一整条边**都能按 E
+  {
+    const z = ZONES.tank;
+    const half = tankSize().w / 2 + 26;
+    const dx = Math.max(0, Math.abs(p.x - z.x) - half);
+    const dy = Math.max(0, Math.abs(p.y - (z.y + 26)) - 52);
+    const d = Math.hypot(dx, dy);
+    if (d < bestD) { bestD = d; best = { kind: 'tank', label: t('prTank') }; }
+  }
   // 6.2 十块「升级木板」：站在木板前面按 E 就能看现状 + 升级
+  //     （只有「确实离木板更近」时才抢走别的交互：站在厨房/水族箱前面先做饭、看鱼，
+  //      再往前走一步踩到木板上，才是升级）
   for (const [f, sx, sy] of boardSpots()) {
     const d = dist(p.x, p.y, sx, sy);
-    if (d < bestD + 24 && d < 64) {
+    if (d < 60 && d < bestD + 8) {
       bestD = Math.min(bestD, d);
       best = { kind: 'upgrade', fac: f, label: t('prUpgrade', { fac: facName(f) }) };
     }
@@ -4869,9 +5077,11 @@ function spawnCustomer() {
     shoes: Math.random() < 0.3 ? 'none' : pick(shoeKeys),       // 鞋子
     hairStyle: pick(HAIR_STYLES),                               // 发型
     hairColor: pick(HAIR_COLORS),                               // 发色
-    x: WORLD_W + 30, y: ZONES.stall.y + rand(-20, 40),
+    x: WORLD_W + 30, y: QUEUE_SLOTS[0].y + rand(-14, 14),
     dir: 'left', moving: true, walkPhase: 0, phase: rand(0, 6), t: 0,
     kind: 'buyer',
+    seq: (G.customerSeq = (G.customerSeq || 0) + 1),   // 先来后到，用来排队
+    qSlot: 0,                                          // 站在队伍的第几个位置
     items: items, want: want, state: 'come', waitT: 25, happy: false,
     pet: null,
   };
@@ -4940,6 +5150,25 @@ function spotLookAt(spot) {
 }
 // 别走进水里（干土坑也不踩）
 function pushOutOfPonds(x, y) {
+  // 右下角的大海：走进海里就往回推（往最近的岸边推）
+  if (pointInSea(x, y)) {
+    let bestD = Infinity, bx = x, by = y;
+    const coastEdges = SEA_POLY.length - 2;      // 只往「岸线」那几条边上推，不往地图边界推
+    for (let i = 0; i < coastEdges; i++) {
+      const a = SEA_POLY[i], b = SEA_POLY[i + 1];
+      const vx = b.x - a.x, vy = b.y - a.y;
+      const len2 = vx * vx + vy * vy || 1;
+      let tt = ((x - a.x) * vx + (y - a.y) * vy) / len2;
+      tt = Math.max(0, Math.min(1, tt));
+      const px = a.x + vx * tt, py = a.y + vy * tt;
+      const d = Math.hypot(x - px, y - py);
+      if (d < bestD) { bestD = d; bx = px; by = py; }
+    }
+    // 朝「岸上」推：从玩家指向最近的岸点，再越过岸点一点点
+    const ang = Math.atan2(by - y, bx - x);
+    x = bx + Math.cos(ang) * 24;
+    y = by + Math.sin(ang) * 24;
+  }
   for (const pc of PONDS) {
     const ex = (x - pc.x) / (pc.w / 2 + 14), ey = (y - pc.y) / (pc.h / 2 + 14);
     const d = ex * ex + ey * ey;
@@ -4998,7 +5227,7 @@ function spawnVisitor() {
     pants: pick(Object.keys(OUTFITS.pants)),
     shoes: Math.random() < 0.3 ? 'none' : pick(shoeKeys),
     hairStyle: pick(HAIR_STYLES), hairColor: pick(HAIR_COLORS),
-    x: WORLD_W + 30, y: rand(200, 880),
+    x: WORLD_W + 30, y: rand(200, WORLD_H - 200),
     dir: 'left', moving: true, walkPhase: 0, phase: rand(0, 6), t: 0,
     theme: pick(['zoo', 'zoo', 'tank']),      // 想看动物 / 想看水族馆
     state: 'walk', lookT: 0, target: null, targetSpot: null,
@@ -5078,9 +5307,9 @@ function update(dt) {
   const p = G.player;
 
   // 时间流逝
-  if (G.started && G.sleepFade <= 0) {
+  if (G.started && G.sleepFade <= 0 && !G.bed.active) {
     G.timeMin += dt * (DAY_END - DAY_START) / DAY_LENGTH;
-    if (G.timeMin >= DAY_END) startSleep();
+    if (G.timeMin >= DAY_END) openBedtime();     // 天黑啦 → 先做睡前任务
   }
   // 睡觉过场：用独立阶段标记区分「渐黑」和「渐亮」，
   // 不能只靠 sleepFade 的值做判断，否则淡出时会被夹回 1.0 反复换天
@@ -5118,7 +5347,11 @@ function update(dt) {
   }
   if (p.actionT > 0) p.actionT -= dt;
 
-  // 水坑不能踩水：走到水边会被轻轻推回岸上（三个水坑都要判定）
+  // 水坑 / 大海不能踩水：走到水边会被轻轻推回岸上
+  if (pointInSea(p.x, p.y)) {
+    const back = pushOutOfPonds(p.x, p.y);
+    p.x = back.x; p.y = back.y;
+  }
   for (const pc of PONDS) {
     const ex = (p.x - pc.x) / (pc.w / 2 + 8);
     const ey = (p.y - pc.y) / (pc.h / 2 + 8);
@@ -5326,12 +5559,17 @@ function update(dt) {
   }
 
   // --- 客人 ---
-  // 买东西的客人：最多同时 2 位
+  // 买东西的客人：最多同时来 MAX_BUYERS 位，在销售门面右边排成一队
   G.customerTimer -= dt;
-  if (G.customerTimer <= 0 && G.customers.filter(c => c.kind !== 'visitor').length < 2) {
+  if (G.customerTimer <= 0 && G.customers.filter(c => c.kind !== 'visitor').length < MAX_BUYERS) {
     G.customerTimer = rand(35, 65);
     spawnCustomer();
   }
+  // 排队顺序：还在等 / 还在走过来的客人按先来后到，依次站到 1、2、3… 号位
+  // （前面的客人买完走了，后面的会自动往前挪一格）
+  const queued = G.customers.filter(c => c.kind === 'buyer' && (c.state === 'come' || c.state === 'wait'));
+  queued.sort((a, b) => (a.seq || 0) - (b.seq || 0));
+  queued.forEach((c, i) => { c.qSlot = Math.min(i, QUEUE_SLOTS.length - 1); });
   // 🎫 来参观的客人：农场越热闹，来的越勤、同时能接待的越多
   G.visitorTimer -= dt;
   if (G.visitorTimer <= 0) {
@@ -5345,30 +5583,34 @@ function update(dt) {
     // 参观的客人走自己的一条逻辑（逛农场、看动物、付观赏费）
     if (c.kind === 'visitor') { updateVisitor(c, dt); continue; }
     c.t += dt;
-    // 客人站在摊位正前方（下方），与商店触发区保持距离
-    const targetX = c.state === 'come' ? ZONES.stall.x - 110 : WORLD_W + 40;   // 站在摊位左前方（右边留给升级木板）
-    const targetY = c.state === 'come' ? ZONES.stall.y + 125 : c.y;
-    if (c.state === 'come' || c.state === 'leave') {
-      const d = dist(c.x, c.y, targetX, targetY);
+    if (c.state === 'leave') {
+      // 买完 / 等不到就走了：往右边走出农场
+      const tx = WORLD_W + 40;
+      if (Math.abs(c.x - tx) < 20) { G.customers.splice(i, 1); continue; }
+      c.x += 95 * dt;
+      c.dir = 'right'; c.moving = true; c.walkPhase += dt * 10;
+    } else {
+      // 客人站在「销售门面」右边的队伍里（come = 正在走过来，wait = 站好了）
+      const slot = QUEUE_SLOTS[Math.min(c.qSlot || 0, QUEUE_SLOTS.length - 1)];
+      const d = dist(c.x, c.y, slot.x, slot.y);
       if (d > 8) {
-        const a = Math.atan2(targetY - c.y, targetX - c.x);
+        const a = Math.atan2(slot.y - c.y, slot.x - c.x);
         c.x += Math.cos(a) * 95 * dt;
         c.y += Math.sin(a) * 95 * dt;
         c.dir = Math.cos(a) < 0 ? 'left' : 'right';
         c.moving = true; c.walkPhase += dt * 10;
-      } else if (c.state === 'come') {
-        c.state = 'wait'; c.moving = false;
       } else {
-        G.customers.splice(i, 1);
-        continue;
+        c.moving = false;
+        if (c.state === 'come') { c.state = 'wait'; c.dir = 'left'; }   // 站好了，脸朝着柜台
       }
-    } else if (c.state === 'wait') {
-      c.waitT -= dt;
-      if (c.waitT <= 0) {
-        c.state = 'leave';
-        spawnParticles(c.x, c.y - 30, '💦', 3);
-        sfx.sad();
-        say('customerGone', { name: custName(c) });
+      if (c.state === 'wait') {
+        c.waitT -= dt;
+        if (c.waitT <= 0) {
+          c.state = 'leave';
+          spawnParticles(c.x, c.y - 30, '💦', 3);
+          sfx.sad();
+          say('customerGone', { name: custName(c) });
+        }
       }
     }
     // 客人的宠物跟着客人走
@@ -5469,6 +5711,272 @@ function update(dt) {
   renderHUD();
 }
 
+// ============================================================
+//   🌙 睡前任务：刷牙 → 洗脸 → 涂脸（给小小朋友的点击 / 涂抹小游戏）
+// ------------------------------------------------------------
+// 到了晚上 8 点不再直接睡，先弹出这个小游戏：
+//   · 刷牙：手指当牙刷，把牙齿上的小黄点刷掉
+//   · 洗脸：手指当毛巾，把脸上的小泥点擦掉
+//   · 涂脸：手指当面霜，把香香涂满小脸
+// 三件事都做到 100%，下面的「去睡觉」按钮才会亮起来 —— 点它才真的睡觉。
+// 玩法就是「按一按、抹一抹」，不用认字也能玩。
+// ============================================================
+const BED_STEPS = [
+  { key: 'brush', icon: '🪥', nameKey: 'bedStepBrush', tipKey: 'bedTipBrush' },
+  { key: 'wash',  icon: '🧽', nameKey: 'bedStepWash',  tipKey: 'bedTipWash'  },
+  { key: 'cream', icon: '🧴', nameKey: 'bedStepCream', tipKey: 'bedTipCream' },
+];
+const BED_COLS = 8, BED_ROWS = 6;      // 把画面切成 8×6 小格，抹过哪一格就干净一格
+const BED_BRUSH = 52;                  // 手指（画笔）半径
+const bedCanvas = $('bed-canvas');
+const bctx = bedCanvas ? bedCanvas.getContext('2d') : null;
+const BED_W = bedCanvas ? bedCanvas.width : 330;
+const BED_H = bedCanvas ? bedCanvas.height : 250;
+const BED_CW = BED_W / BED_COLS, BED_CH = BED_H / BED_ROWS;
+const BED_FACE = { x: BED_W / 2, y: 128, r: 92 };        // 洗脸 / 涂脸的小脸
+const BED_TOOTH = { x: BED_W / 2, y: 126, rx: 92, ry: 96 }; // 刷牙的大牙齿
+let bedCells = [], bedBrush = null, bedDragging = false, bedRubMs = 0, bedAdvanceTimer = null;
+
+// 这一格在不在「要清洁的图形」里面（牙齿 / 小脸）
+function bedInShape(step, x, y) {
+  if (step === 0) {
+    const dx = (x - BED_TOOTH.x) / BED_TOOTH.rx, dy = (y - BED_TOOTH.y) / BED_TOOTH.ry;
+    return dx * dx + dy * dy <= 1;
+  }
+  const dx = (x - BED_FACE.x) / BED_FACE.r, dy = (y - BED_FACE.y) / BED_FACE.r;
+  return dx * dx + dy * dy <= 1;
+}
+function bedProgress() {
+  if (!bedCells.length) return 0;
+  let n = 0;
+  for (const c of bedCells) if (c.done) n++;
+  return n / bedCells.length;
+}
+function bedAllDone() { return G.bed.done[0] && G.bed.done[1] && G.bed.done[2]; }
+
+// 开始某一步（重置这一格的进度）
+function bedInitStep(step) {
+  if (!bctx) return;
+  G.bed.step = step;
+  bedCells = [];
+  for (let r = 0; r < BED_ROWS; r++) {
+    for (let c = 0; c < BED_COLS; c++) {
+      const x = (c + 0.5) * BED_CW, y = (r + 0.5) * BED_CH;
+      if (!bedInShape(step, x, y)) continue;
+      bedCells.push({ x, y, seed: ((r * 7 + c * 13) % 11) / 11, done: false });
+    }
+  }
+  bedBrush = null;
+  bedRender();
+  bedSyncUI();
+}
+
+// 手指抹过的地方：把附近的小格标记成「干净了 / 涂好了」
+function bedScrub(clientX, clientY) {
+  if (!bedCanvas || !G.bed.active) return;
+  const rect = bedCanvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const x = (clientX - rect.left) / rect.width * BED_W;
+  const y = (clientY - rect.top) / rect.height * BED_H;
+  bedBrush = { x, y };
+  let hit = 0;
+  for (const c of bedCells) {
+    if (c.done) continue;
+    if (Math.hypot(c.x - x, c.y - y) < BED_BRUSH) { c.done = true; hit++; }
+  }
+  if (hit) {
+    const now = Date.now();
+    if (now - bedRubMs > 170 && typeof sfx.water === 'function') { sfx.water(); bedRubMs = now; }
+  }
+  bedRender();
+  bedSyncUI();
+  if (hit && bedProgress() >= 1) bedStepDone();
+}
+
+// 一步做完：撒花 + 等一下自动进入下一步
+function bedStepDone() {
+  const i = G.bed.step;
+  if (G.bed.done[i]) return;
+  G.bed.done[i] = true;
+  sfx.success(); sfx.sparkle();
+  const flash = $('bed-flash');
+  if (flash) {
+    flash.textContent = '✅ ' + t('bedNice');
+    flash.classList.remove('hidden');
+    setTimeout(() => { const f = $('bed-flash'); if (f && G.bed.done[i]) f.classList.add('hidden'); }, 950);
+  }
+  bedRender();
+  bedSyncUI();
+  clearTimeout(bedAdvanceTimer);
+  bedAdvanceTimer = setTimeout(function () {
+    if (!G.bed.active) return;
+    const f = $('bed-flash'); if (f) f.classList.add('hidden');
+    if (i < BED_STEPS.length - 1) bedInitStep(i + 1);
+    else bedSyncUI();          // 三步都做完 → 让「去睡觉」亮起来
+  }, 1000);
+}
+
+// ---------------- 小游戏的画面 ----------------
+function bedDrawTooth() {
+  const cx = BED_TOOTH.x, cy = BED_TOOTH.y;
+  bctx.fillStyle = '#fff';
+  bctx.strokeStyle = '#cfe3f2'; bctx.lineWidth = 3;
+  bctx.beginPath();
+  bctx.moveTo(cx - 84, cy - 22);
+  bctx.bezierCurveTo(cx - 96, cy - 106, cx + 96, cy - 106, cx + 84, cy - 22);
+  bctx.bezierCurveTo(cx + 78, cy + 26, cx + 56, cy + 30, cx + 46, cy + 80);
+  bctx.bezierCurveTo(cx + 38, cy + 112, cx + 8, cy + 104, cx + 2, cy + 62);
+  bctx.bezierCurveTo(cx - 4, cy + 104, cx - 38, cy + 112, cx - 46, cy + 80);
+  bctx.bezierCurveTo(cx - 56, cy + 30, cx - 78, cy + 26, cx - 84, cy - 22);
+  bctx.closePath();
+  bctx.fill(); bctx.stroke();
+  // 牙齿上的高光
+  bctx.fillStyle = 'rgba(205,232,255,.8)';
+  ellipse(bctx, cx - 36, cy - 48, 15, 26); bctx.fill();
+  ellipse(bctx, cx - 8, cy - 66, 8, 12); bctx.fill();
+}
+function bedDrawFace() {
+  const cx = BED_FACE.x, cy = BED_FACE.y, r = BED_FACE.r;
+  // 耳朵
+  bctx.fillStyle = '#ffd9b8';
+  ellipse(bctx, cx - r, cy + 8, 13, 17); bctx.fill();
+  ellipse(bctx, cx + r, cy + 8, 13, 17); bctx.fill();
+  // 脸
+  bctx.fillStyle = '#ffe3c8';
+  bctx.beginPath(); bctx.arc(cx, cy, r, 0, Math.PI * 2); bctx.fill();
+  bctx.strokeStyle = '#e8b088'; bctx.lineWidth = 2.5; bctx.stroke();
+  // 头发
+  bctx.fillStyle = '#7a4a2a';
+  bctx.beginPath();
+  bctx.arc(cx, cy - 8, r + 3, Math.PI * 1.04, Math.PI * 1.96);
+  bctx.closePath(); bctx.fill();
+  // 眼睛
+  bctx.fillStyle = '#4a3222';
+  ellipse(bctx, cx - 30, cy - 6, 7, 9); bctx.fill();
+  ellipse(bctx, cx + 30, cy - 6, 7, 9); bctx.fill();
+  bctx.fillStyle = '#fff';
+  ellipse(bctx, cx - 32, cy - 9, 2.6, 3); bctx.fill();
+  ellipse(bctx, cx + 28, cy - 9, 2.6, 3); bctx.fill();
+  // 腮红
+  bctx.fillStyle = 'rgba(255,160,170,.45)';
+  ellipse(bctx, cx - 56, cy + 22, 15, 9); bctx.fill();
+  ellipse(bctx, cx + 56, cy + 22, 15, 9); bctx.fill();
+  // 笑嘴
+  bctx.strokeStyle = '#d1705a'; bctx.lineWidth = 3; bctx.lineCap = 'round';
+  bctx.beginPath(); bctx.arc(cx, cy + 24, 20, 0.15 * Math.PI, 0.85 * Math.PI); bctx.stroke();
+}
+function bedRender() {
+  if (!bctx || !G.bed) return;
+  const step = G.bed.step;
+  // 背景
+  const g = bctx.createLinearGradient(0, 0, 0, BED_H);
+  if (step === 2) { g.addColorStop(0, '#fff4f8'); g.addColorStop(1, '#ffe7f0'); }
+  else { g.addColorStop(0, '#f0f9ff'); g.addColorStop(1, '#e2f1fd'); }
+  bctx.fillStyle = g;
+  bctx.fillRect(0, 0, BED_W, BED_H);
+  // 底图
+  if (step === 0) bedDrawTooth(); else bedDrawFace();
+  // 小黄点 / 小泥点 / 面霜
+  for (const c of bedCells) {
+    const show = step === 2 ? c.done : !c.done;
+    if (!show) continue;
+    const s = c.seed;
+    const rx = BED_CW * (0.33 + s * 0.15), ry = BED_CH * (0.30 + s * 0.15);
+    const ox = (s - 0.5) * 9, oy = ((s * 7) % 1 - 0.5) * 9;
+    if (step === 2) {
+      bctx.fillStyle = 'rgba(255,255,255,.94)';
+      ellipse(bctx, c.x + ox, c.y + oy, rx, ry); bctx.fill();
+      bctx.fillStyle = 'rgba(255,214,232,.9)';
+      ellipse(bctx, c.x + ox - rx * 0.3, c.y + oy - ry * 0.3, rx * 0.42, ry * 0.42); bctx.fill();
+    } else {
+      bctx.fillStyle = ['#c9a24a', '#b98a3a', '#d8c070'][Math.floor(s * 3) % 3];
+      bctx.globalAlpha = 0.85;
+      ellipse(bctx, c.x + ox, c.y + oy, rx, ry); bctx.fill();
+      bctx.globalAlpha = 1;
+      bctx.fillStyle = 'rgba(120,92,32,.45)';
+      ellipse(bctx, c.x + ox + 2, c.y + oy - 2, rx * 0.3, ry * 0.3); bctx.fill();
+    }
+  }
+  // 手指（画成牙刷 / 毛巾 / 面霜）
+  if (bedBrush) {
+    bctx.strokeStyle = 'rgba(255,184,77,.9)'; bctx.lineWidth = 3;
+    bctx.beginPath(); bctx.arc(bedBrush.x, bedBrush.y, BED_BRUSH, 0, Math.PI * 2); bctx.stroke();
+    bctx.fillStyle = 'rgba(255,255,255,.5)';
+    bctx.beginPath(); bctx.arc(bedBrush.x, bedBrush.y, BED_BRUSH, 0, Math.PI * 2); bctx.fill();
+    bctx.font = '32px sans-serif'; bctx.textAlign = 'center';
+    bctx.fillText(BED_STEPS[step].icon, bedBrush.x, bedBrush.y + 11);
+  }
+}
+
+// ---------------- 弹窗上的字 / 进度条 / 按钮 ----------------
+function bedSyncUI() {
+  const stepsEl = $('bed-steps');
+  if (stepsEl) {
+    stepsEl.innerHTML = '';
+    for (let i = 0; i < BED_STEPS.length; i++) {
+      const s = BED_STEPS[i];
+      const el = document.createElement('div');
+      el.className = 'bed-step' + (G.bed.done[i] ? ' done' : (i === G.bed.step ? ' active' : ''));
+      el.textContent = (G.bed.done[i] ? '✅ ' : (i + 1) + '. ') + s.icon + ' ' + t(s.nameKey);
+      stepsEl.appendChild(el);
+    }
+  }
+  const p = Math.round(bedProgress() * 100);
+  const fill = $('bed-bar-fill');
+  if (fill) fill.style.width = p + '%';
+  const all = bedAllDone();
+  const tip = $('bed-tip');
+  if (tip) {
+    tip.textContent = all ? t('bedTipAllDone')
+                          : t(BED_STEPS[G.bed.step].tipKey) + ' ' + t('bedPercent', { n: p });
+  }
+  const btn = $('bed-sleep');
+  if (btn) {
+    btn.disabled = !all;
+    btn.classList.toggle('ready', all);
+  }
+}
+
+// 天黑啦 → 弹出睡前任务（做完才能睡）
+function openBedtime() {
+  if (G.bed.active) return;
+  G.timeMin = DAY_END;
+  G.bed.active = true;
+  G.bed.step = 0;
+  G.bed.done = [false, false, false];
+  if (G.fishing) G.fishing = null;          // 天黑了先收杆
+  if (G.placing) G.placing = null;
+  if (G.math) closeMathChallenge();         // 天黑了不算客人等超时，明天再说
+  G.player.moving = false;
+  if (G.modalOpen && G.modalOpen !== 'bed-modal') closeModal(G.modalOpen);
+  bedInitStep(0);
+  openModal('bed-modal');
+  sfx.night();
+  say('bedLogNight', null, 2600);
+}
+
+// 手指在画面上按一按、抹一抹（放到 bedCanvas 定义之后，避免 const 还没初始化）
+// 🌙 睡前任务：在画面上按一按、抹一抹；三件事都做完才能「去睡觉」
+if (bedCanvas) {
+  bedCanvas.addEventListener('pointerdown', (e) => {
+    if (!G.bed || !G.bed.active) return;
+    e.preventDefault();
+    bedDragging = true;
+    if (bedCanvas.setPointerCapture) { try { bedCanvas.setPointerCapture(e.pointerId); } catch (err) {} }
+    bedScrub(e.clientX, e.clientY);
+  });
+  bedCanvas.addEventListener('pointermove', (e) => {
+    if (!bedDragging || !G.bed || !G.bed.active) return;
+    e.preventDefault();
+    bedScrub(e.clientX, e.clientY);
+  });
+  const endBrush = () => { bedDragging = false; bedBrush = null; if (G.bed && G.bed.active) bedRender(); };
+  bedCanvas.addEventListener('pointerup', endBrush);
+  bedCanvas.addEventListener('pointercancel', endBrush);
+  bedCanvas.addEventListener('pointerleave', endBrush);
+  window.addEventListener('pointerup', endBrush);
+}
+
 function startSleep() {
   G.sleepFade = 0.01;
   G.sleepDawn = false;
@@ -5478,6 +5986,7 @@ function startSleep() {
 function nextDay() {
   G.day++;
   G.timeMin = DAY_START;
+  G.bed.active = false; G.bed.step = 0; G.bed.done = [false, false, false];
   // 新一天天气
   const r = Math.random();
   G.weather = r < 0.55 ? 'sunny' : r < 0.8 ? 'cloudy' : 'rain';
@@ -5528,8 +6037,12 @@ function render() {
     drawCloud(ctx, (t * 10 + 1400) % (WORLD_W + 240) - 120, 80, 1.1, .95);
   }
 
+  // 右下角的大海（在草地之后、所有实体之前）
+  drawSea(ctx, t);
   // 森林地面（在草地格子和天空之后、所有实体之前）
   drawForestGround(ctx, t);
+  // 留给装饰的空地（浅色草坪）
+  drawDecorPatches(ctx, t);
 
   // 装饰（草/花）
   for (const d of G.decor) {
@@ -5539,13 +6052,16 @@ function render() {
 
   // 田块
   for (const pl of G.plots) drawPlot(ctx, pl.x, pl.y, pl, t);
-  // 田地小栅栏
+  // 农田：小栅栏（第三排）＋「以后会扩到这里」的虚线预留区
+  const fRect = farmRect();
   ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  ctx.strokeRect(496, 596, 232, 140);
+  ctx.strokeRect(fRect.x, fRect.y, fRect.w, fRect.h);
   ctx.strokeStyle = '#a57c4a'; ctx.lineWidth = 2;
-  for (let fx = 496; fx <= 728; fx += 24) {
-    ctx.beginPath(); ctx.moveTo(fx, 592); ctx.lineTo(fx, 600); ctx.stroke();
+  for (let fx = fRect.x; fx <= fRect.x + fRect.w; fx += 24) {
+    ctx.beginPath(); ctx.moveTo(fx, fRect.y - 4); ctx.lineTo(fx, fRect.y + 4); ctx.stroke();
   }
+  // 农田没有等级，直接把 3 级的大范围画出来当「预留升级区」
+  drawExpandOutline(ctx, FARM_RECTS[MAX_LV - 1], t, TXT('expandArea'));
 
   // 果树园：栅栏 + 「下次扩建到这里」的虚线预留区
   const oRect = orchardRect();
@@ -5563,11 +6079,12 @@ function render() {
   if (lvOf('sheep') < MAX_LV)   drawExpandOutline(ctx, PEN_RECTS.sheep[lvOf('sheep')], t, TXT('expandArea'));
   if (lvOf('cow') < MAX_LV)     drawExpandOutline(ctx, PEN_RECTS.cow[lvOf('cow')], t, TXT('expandArea'));
   if (lvOf('petroom') < MAX_LV) drawExpandOutline(ctx, PETROOM_RECTS[lvOf('petroom')], t, TXT('expandArea'));
+  if (lvOf('tank') < MAX_LV)    drawExpandOutline(ctx, tankRect(lvOf('tank') + 1), t, TXT('expandArea'));
 
-  // 池塘（没解锁的画成干土坑 + 🔒）
+  // 池塘（没解锁的画成干土坑 + 🔒）；大海水蓝洞在大海里，画成更深的蓝洞
   for (const pond of PONDS) {
     drawPond(ctx, pond.x, pond.y, pond.w, pond.h, t, pondLabel(pond),
-             !!pond.locked, pond.unlockLv);
+             !!pond.locked, pond.unlockLv, pond.id === 'large');
   }
 
   // 动物棚舍：后半栅栏（画在动物后面）
@@ -5597,6 +6114,8 @@ function render() {
     y: ZONES.stall.y + 8,
     draw: () => drawLvBadge(ctx, ZONES.stall.x + 46, ZONES.stall.y - 62, lvOf('shop'), t, canUpgradeFacility('shop')),
   });
+  // 🛒 销售门面：接在商店右边，客人从它右侧排队来买东西
+  drawables.push({ y: ZONES.counter.y + 10, draw: () => drawSalesCounter(ctx, ZONES.counter.x, ZONES.counter.y, t) });
   drawables.push({ y: ZONES.kitchen.y + 12, draw: () => drawKitchenProp(ctx, ZONES.kitchen.x, ZONES.kitchen.y, t) });
   drawables.push({ y: ZONES.wardrobe.y + 14, draw: () => drawWardrobeProp(ctx, ZONES.wardrobe.x, ZONES.wardrobe.y, t) });
   drawables.push({ y: ZONES.bin.y + 16, draw: () => drawBin(ctx, ZONES.bin.x, ZONES.bin.y, t) });
@@ -5909,8 +6428,94 @@ function render() {
     ctx.fillStyle = 'rgba(60,80,120,.12)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   }
+
+  renderMinimap();   // 右上角的小地图（画在另一块 DOM 画布上，不受上面的变换影响）
 }
 function p_y() { return G.player.y; }
+
+// ---------------- 右上角的小地图 ----------------
+// 把整张农场按比例缩到一块小画布上：森林 / 果园 / 农田 / 棚舍 / 水坑 / 房子一眼看清。
+// 白框 = 现在画面能看到的地方，红点 = 主角，橙点 = 买东西的客人，绿点 = 参观客人。
+const miniCanvas = $('minimap');
+const mctx = miniCanvas ? miniCanvas.getContext('2d') : null;
+const MINI_W = miniCanvas ? miniCanvas.width : 0;
+const MINI_H = miniCanvas ? miniCanvas.height : 0;
+const MINI_K = MINI_W ? MINI_W / WORLD_W : 0;    // 世界坐标 → 小地图坐标
+
+function miniRect(x, y, w, h, fill, stroke) {
+  const rx = x * MINI_K, ry = y * MINI_K;
+  const rw = Math.max(2, w * MINI_K), rh = Math.max(2, h * MINI_K);
+  mctx.fillStyle = fill; mctx.fillRect(rx, ry, rw, rh);
+  if (stroke) { mctx.strokeStyle = stroke; mctx.lineWidth = 1; mctx.strokeRect(rx, ry, rw, rh); }
+}
+function miniDot(x, y, r, fill, stroke) {
+  mctx.beginPath();
+  mctx.arc(x * MINI_K, y * MINI_K, r, 0, Math.PI * 2);
+  mctx.fillStyle = fill; mctx.fill();
+  if (stroke) { mctx.strokeStyle = stroke; mctx.lineWidth = 1.2; mctx.stroke(); }
+}
+
+function renderMinimap() {
+  if (!mctx) return;
+  // 草地底
+  mctx.fillStyle = '#a9e5a0';
+  mctx.fillRect(0, 0, MINI_W, MINI_H);
+  // 右下角的大海
+  if (typeof SEA_POLY !== 'undefined' && SEA_POLY) {
+    mctx.beginPath();
+    mctx.moveTo(SEA_POLY[0].x * MINI_K, SEA_POLY[0].y * MINI_K);
+    for (let i = 1; i < SEA_POLY.length; i++) mctx.lineTo(SEA_POLY[i].x * MINI_K, SEA_POLY[i].y * MINI_K);
+    mctx.closePath();
+    mctx.fillStyle = '#3aa0e0';
+    mctx.fill();
+  }
+  // 森林（最左边那一大条）
+  miniRect(FOREST.x, FOREST.y, FOREST.w, FOREST.h, '#63b268');
+  // 果园（第一排最左）
+  const orr = orchardRect();
+  miniRect(orr.x, orr.y, orr.w, orr.h, '#d3ea96', '#9cc45e');
+  // 农田（第三排）
+  const fr = farmRect();
+  miniRect(fr.x, fr.y, fr.w, fr.h, '#c39a63', '#9a7440');
+  // 三个棚舍的围栏
+  for (const t of ['chicken', 'sheep', 'cow']) {
+    const p = PENS[t];
+    miniRect(p.x, p.y, p.w, p.h, '#f7e6c2', '#b98a52');
+  }
+  // 水坑（还没解锁的画成干土坑的颜色）
+  for (const p of PONDS) {
+    const spec = POND_SPEC.find(s => s.id === p.id);
+    if (!spec) continue;
+    const sz = spec.sizes[lvOf('pond') - 1];
+    mctx.beginPath();
+    mctx.ellipse(spec.x * MINI_K, spec.y * MINI_K,
+                 Math.max(2, sz.w / 2 * MINI_K), Math.max(2, sz.h / 2 * MINI_K), 0, 0, Math.PI * 2);
+    mctx.fillStyle = p.locked ? '#c9b280' : '#63c6f7';
+    mctx.fill();
+  }
+  // 房子：主角家 / 衣柜 / 厨房 / 宠物房 / 卖货箱 / 水族箱 / 商店 / 销售门面
+  const hz = ZONES.house;
+  miniRect(hz.x - 12, hz.y - 104, 144, 160, '#ff8f6a');
+  miniRect(ZONES.wardrobe.x - 14, ZONES.wardrobe.y - 30, 28, 44, '#d9a066');
+  miniRect(ZONES.kitchen.x - 17, ZONES.kitchen.y - 20, 34, 32, '#c9d2dc');
+  const pr = petRoomRect();
+  miniRect(pr.x, pr.y, pr.w, pr.h, '#f0a058');
+  miniRect(ZONES.bin.x - 16, ZONES.bin.y - 14, 32, 30, '#9a6a3a');
+  const ts = tankSize();
+  miniRect(ZONES.tank.x - ts.w / 2, ZONES.tank.y - ts.h - 14, ts.w, ts.h + 16, '#8fd0f0');
+  const sk = STALL_SCALE[lvOf('shop') - 1];
+  miniRect(ZONES.stall.x - 47 * sk, ZONES.stall.y + 20 - 90 * sk, 94 * sk, 110 * sk, '#ffb84d');
+  miniRect(ZONES.counter.x - 62, ZONES.counter.y - 96, 124, 106, '#ffe08a', '#d9a62e');
+  // 动物（小白点） / 客人（橙点） / 参观客人（绿点）
+  for (const a of G.animals) miniDot(a.x, a.y, 1.7, '#fff', '#8a6a2a');
+  for (const c of G.customers) miniDot(c.x, c.y, 1.9, c.kind === 'visitor' ? '#4fb83a' : '#ff9f43', '#fff');
+  // 现在画面能看到的地方
+  const camW = VIEW_W / CAMERA_ZOOM, camH = VIEW_H / CAMERA_ZOOM;
+  mctx.strokeStyle = 'rgba(255,255,255,.92)'; mctx.lineWidth = 1.5;
+  mctx.strokeRect(G.cam.x * MINI_K, G.cam.y * MINI_K, camW * MINI_K, camH * MINI_K);
+  // 主角（红点 + 白圈，画在最上面）
+  miniDot(G.player.x, G.player.y, 3.4, '#ff4e4e', '#fff');
+}
 
 // ---------------- 主循环 ----------------
 let lastT = 0;
@@ -6215,7 +6820,7 @@ window.__farm = {
   MATH_TIME, resolveCustomerSale,
   renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
-  listProfiles, deleteProfile, render, nearestInteract, doInteract,
+  listProfiles, deleteProfile, render, nearestInteract, doInteract, readSave, hasSave, profileFor,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
   emojiCache, emojiAnimUrl, emojiPngUrl, emojiWebpUrl, emojiSrcFor, emojiDrawable,
@@ -6226,6 +6831,10 @@ window.__farm = {
   maxSheep, maxCows, maxOtherAnimals, maxOrchard, maxTank, maxRecipes, maxPets,
   FACILITIES, FACILITY_ORDER, doUpgrade, applyLevels, lvOf, isMaxLv, upgradeCost,
   addOrchardTree, orchardRect, ORCHARD_SLOTS, ORCHARD_RECTS, PEN_RECTS, POND_SPEC, PETROOM_RECTS,
+  FARM_RECTS, farmRect, QUEUE_SLOTS, MAX_BUYERS, MAX_LV, WORLD_W, WORLD_H, PEN_HOME, TROUGH_OFF, DECOR_SHOP, DECOR_R,
+  renderMinimap, miniCanvas, MINI_K, miniRect,
+  openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
+  tankRect, pointInSea, SEA_POLY,
   newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
   countHensLaidToday, countHens, countChicks, dailyFarmUpdate, isHen, isChick,
