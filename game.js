@@ -3599,7 +3599,8 @@ function addLog(text) {
 function renderLog() {
   const box = $('log-list');
   if (!box) return;
-  const items = G.log.slice(-5);
+  // 日志框比以前高一截：多渲染几条，写满了由 CSS 把最旧的挤出去（最新的贴在底部）
+  const items = G.log.slice(-10);
   box.innerHTML = '';
   items.forEach((e, i) => {
     const d = document.createElement('div');
@@ -6841,7 +6842,7 @@ window.__farm = {
   MATH_TIME, resolveCustomerSale,
   renderCook,
   startFarm, startNewGame, saveGame, loadGame, manualSave, resetGame,
-  listProfiles, deleteProfile, render, nearestInteract, doInteract, readSave, hasSave, profileFor,
+  listProfiles, deleteProfile, render, nearestInteract, doInteract, readSave, hasSave, profileFor, addLog, renderLog,
   addItem, putEggInHatchery, dailyChickenUpdate, isChick, isHen,
   renderInventory, renderHUD, renderProfiles, applyLang, setLang,
   emojiCache, emojiAnimUrl, emojiPngUrl, emojiWebpUrl, emojiSrcFor, emojiDrawable,

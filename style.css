@@ -106,7 +106,7 @@ canvas {
 /* ---------- 物品栏 ---------- */
 /* 左下角是牧场日志，物品栏放在日志右边那块空地上居中 */
 #inventory {
-  position: absolute; bottom: 10px; left: 284px; right: 12px; transform: none;
+  position: absolute; bottom: 10px; left: 424px; right: 12px; transform: none;
   display: flex; gap: var(--inv-gap, 6px); pointer-events: none;
   /* 宽度必须给满：否则 flex 收缩成一条窄带，格子会被挤到很多行。
      高度交给 renderInventory() 算（最多两行），所以这里不限制行数。 */
@@ -134,12 +134,13 @@ canvas {
 
 /* ---------- 交互提示 ---------- */
 #prompt {
-  position: absolute; left: 50%; transform: translateX(-50%);
+  /* 日志变宽以后，提示条改到「日志右边那块地方」居中，两边不会撞车 */
+  position: absolute; left: 686px; transform: translateX(-50%);
   bottom: 152px;                 /* 抬到物品栏 + 左下角日志上面 */
   background: #fffbe8; border: 3px solid #7ac74f;
   border-radius: 999px; padding: 7px 20px;
   font-size: 21px; font-weight: bold; color: #3f7a1e;
-  max-width: 94%; text-align: center;
+  max-width: 540px; text-align: center;
   box-shadow: 0 3px 0 #5da335;
   animation: bounce .8s infinite alternate ease-in-out;
   pointer-events: none; white-space: nowrap;
@@ -344,34 +345,42 @@ canvas {
 .shop-item .owned-tag { color: #4fb83a; }
 
 /* ---------- 牧场日志（左下角） ---------- */
+/* 比以前更宽更高：长句子会自己换行（不再省略号截断），最多大约 7 行；
+   内容底部对齐 —— 写满了先把最旧的挤出去，最新的一条永远看得见 */
 #log-box {
   position: absolute; left: 12px; bottom: 12px; top: auto; z-index: 25;
-  width: 260px; max-height: 128px;
+  width: 400px; max-height: 196px;
   background: rgba(255, 252, 240, .82);
   border: 3px solid #ffd88a; border-radius: 14px;
   padding: 5px 10px 7px; pointer-events: none;
   box-shadow: 0 3px 10px rgba(0,0,0,.12);
+  display: flex; flex-direction: column;
 }
 #log-box.hidden-log { display: none; }
 .log-head {
+  flex: 0 0 auto;
   font-size: 15px; font-weight: bold; color: #b08a3a;
   border-bottom: 1px dashed #ffd88a; padding-bottom: 2px; margin-bottom: 3px;
 }
+#log-list {
+  flex: 1 1 auto; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
 .log-line {
-  font-size: 16px; color: #6a5a3a; line-height: 1.45;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 16px; color: #6a5a3a; line-height: 1.4;
+  white-space: normal; overflow-wrap: anywhere;   /* 太长就换行，不再截断 */
   opacity: .62;
 }
 .log-line.newest { opacity: 1; font-weight: bold; color: #4a7a2a; }
 /* 触摸版：左下角是摇杆，日志就留在左上角（那里正好空着） */
 body.touch #log-box {
   top: calc(62px * var(--ui-scale) + 14px); bottom: auto;
-  width: 280px; max-height: 112px;
+  width: 300px; max-height: 130px;
 }
 body.touch .log-line { font-size: 15px; }
 /* 触摸版：物品栏也回到原来的居中位置（下方要留给摇杆和动作键） */
 body.touch #inventory { left: 50%; right: auto; transform: translateX(-50%); width: 100%; max-width: 78%; }
-body.touch #prompt { bottom: 128px; }
+body.touch #prompt { left: 50%; max-width: 94%; bottom: 128px; }
 
 /* 语言切换按钮 */
 #btn-lang {
