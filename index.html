@@ -22,6 +22,7 @@
         </div>
         <div class="hud-right">
           <div class="hud-box" id="weather-box">☀️ 晴天</div>
+          <button id="btn-upgrade" class="hud-box" data-i18n-title="upgradeTitle" title="升级设施">🔨 升级</button>
           <button id="save-box" class="hud-box" title="保存游戏">💾</button>
           <button id="btn-lang" class="hud-box" title="中文 / English">中</button>
           <button id="btn-music" class="hud-box" title="背景音乐开关">🎵</button>
@@ -206,16 +207,18 @@
         </div>
       </div>
 
-      <!-- ============ 设施升级 ============ -->
+      <!-- ============ 设施升级（列表 → 点一个 → 升级选项） ============ -->
       <div id="upgrade-modal" class="modal hidden">
         <div class="modal-card">
           <div class="modal-head">
+            <button id="upgrade-back" class="modal-x hidden" data-i18n-title="upgBack" title="返回">←</button>
             <h2 id="upgrade-title" data-i18n="upgradeTitle">🔨 升级设施</h2>
             <button class="modal-x close-modal" data-close="upgrade-modal"
                     data-i18n-title="btnQuitHint" title="离开">✕</button>
           </div>
-          <p class="subtitle" data-i18n="upgradeHint">升级以后地方变大，能养 / 能买的东西也更多！</p>
-          <div id="upgrade-body"></div>
+          <p class="subtitle" id="upgrade-hint" data-i18n="upgPickHint">点一下想升级的东西，就能看到它现在的样子</p>
+          <div id="upgrade-list" class="upg-grid"></div>
+          <div id="upgrade-body" class="hidden"></div>
           <button class="big-btn close-modal" data-close="upgrade-modal" data-i18n="btnKnow">知道啦！</button>
         </div>
       </div>

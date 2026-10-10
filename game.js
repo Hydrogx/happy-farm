@@ -312,7 +312,7 @@ const STR = {
     help11: '📦 卖货箱可以卖掉任何东西',
     help12: '🎡 商店还能买动物和庭院装饰，自己摆放！',
     help13: '🌧️ 下雨天水会自动浇好；💾 游戏会自动存档',
-    help16: '🔨 走到棚舍 / 果园 / 水坑旁的告示牌，按 E 就能「升级」——地方变大、能养更多、能买更多',
+    help16: '🔨 点右上角的「🔨 升级」按钮，选一样东西就能升级 —— 地方变大、能养更多、能买更多',
     help17: '🐾 宠物房间要给宠物🍖喂食、🧹清理便便、🛁洗澡；升级房间能养更多只宠物',
     help18: '👗 买到的裙子 / 头饰 / 鞋子会自动挂进「衣帽间」，点一下就能换上',
     shopTitle: '🛒 牧场商店', tabSeeds: '🌱 种子', tabClothes: '👕 服装',
@@ -546,8 +546,10 @@ const STR = {
     upgNoCoin: '金币不够，升级要 {n} 金币',
     upgradeDone: '{fac} 升到 {lv} 级啦！',
     logUpgrade: '🔨 {fac} 升到 {lv} 级',
+    upgPickHint: '点一下想升级的东西，就能看到它现在的样子',
+    upgMaxShort: '已满级',
+    upgBack: '返回上一页',
     upgradeHint: '升级以后地方变大，能养 / 能买的东西也更多！',
-    prUpgrade: '🔨 和「{fac}」的木板说话（看现状 / 升级）',
     lvBadge: '⭐{lv} 级',
     pondLocked: '这个水坑还没解锁，升级「水坑」就能来这里钓鱼',
     // —— 商店 / 厨房 / 水族箱 / 衣橱 的升级入口 ——
@@ -672,7 +674,7 @@ const STR = {
     help11: '📦 The shipping bin buys anything you have',
     help12: '🎡 The shop also sells animals and yard decorations!',
     help13: '🌧️ Rain waters your crops; 💾 the game saves by itself',
-    help16: '🔨 Stand by a pen / orchard / pond sign and press E to UPGRADE — bigger area, more room, more goods',
+    help16: '🔨 Tap the 🔨 Upgrade button up top, pick something, and upgrade it — bigger area, more room, more goods',
     help17: '🐾 At the pet room you can 🍖 feed, 🧹 clean up and 🛁 bathe your pet; upgrade it to keep more pets',
     help18: '👗 Dresses, hair accessories and shoes you buy are hung up in the walk-in closet — tap to wear them',
     shopTitle: '🛒 Farm Shop', tabSeeds: '🌱 Seeds', tabClothes: '👕 Clothes',
@@ -900,8 +902,10 @@ const STR = {
     upgNoCoin: 'Not enough coins — you need {n}',
     upgradeDone: '{fac} is now level {lv}!',
     logUpgrade: '🔨 {fac} upgraded to level {lv}',
+    upgPickHint: 'Tap something to see how it is doing now',
+    upgMaxShort: 'Max',
+    upgBack: 'Back',
     upgradeHint: 'Upgrading makes the area bigger and lets you keep / buy more!',
-    prUpgrade: '🔨 Talk to the {fac} board (status / upgrade)',
     lvBadge: '⭐Lv.{lv}',
     pondLocked: 'This pond is still locked — upgrade “Ponds” to fish here',
     // —— 商店 / 厨房 / 水族箱 / 衣橱 的升级入口 ——
@@ -2033,34 +2037,6 @@ function upgradeCost(f) { if (isMaxLv(f)) return 0; return FACILITIES[f].cost[lv
 function canUpgradeFacility(f) { return !isMaxLv(f) && G.coins >= upgradeCost(f); }
 // 这个设施离下一级还差多少钱（升级面板上显示用）
 function upgradeShort(f) { return isMaxLv(f) ? 0 : Math.max(0, upgradeCost(f) - G.coins); }
-
-// 每栋建筑**正下方**都有一块「升级木板」（十个设施完全统一）。
-// 画木板和判断交互都用这一份坐标，保证「看到的牌子」就是「能按 E 的牌子」。
-// ★ 木牌一律放在**建筑外面**：围栏的底边再往下、玻璃箱/灶台/衣柜的下方，
-//   所以牌子不会落进动物活动的范围里，升级扩建之后也不会被圈进围栏。
-function maxPenRect(type) { return PEN_RECTS[type][MAX_LV - 1]; }
-function boardSpots() {
-  const orr = ORCHARD_RECTS[MAX_LV - 1];           // 果园按 3 级的大小留位
-  // 三个水坑共用一个升级板：放在大海水蓝洞**最大时**的下方，升级后也不会被水淹到
-  const lp = POND_SPEC.find(s => s.id === 'large');
-  const lpSz = lp.sizes[MAX_LV - 1];
-  const pen = (type) => {
-    const r = maxPenRect(type);
-    return { x: r.x + r.w / 2, y: r.y + r.h + 30 };   // 围栏正下方，栅栏外面
-  };
-  const cb = pen('chicken'), sb = pen('sheep'), wb = pen('cow');
-  return [
-    ['coop',     cb.x, cb.y, '🐔'],
-    ['sheep',    sb.x, sb.y, '🐑'],
-    ['cow',      wb.x, wb.y, '🐄'],
-    ['orchard',  orr.x + orr.w * 0.75, orr.y + orr.h + 30, '🍎'],
-    ['pond',     lp.x, lp.y + lpSz.h / 2 + 34, '💧'],
-    ['tank',     ZONES.tank.x, ZONES.tank.y + 44, '🐠'],
-    ['kitchen',  ZONES.kitchen.x, ZONES.kitchen.y + 48, '🍳'],
-    ['wardrobe', ZONES.wardrobe.x + 8, ZONES.wardrobe.y + 52, '👗'],
-    ['shop',     ZONES.stall.x, ZONES.stall.y + 78, '🛒'],
-  ];
-}
 
 // 容量查询：到处都用这几个函数，改等级就自动生效
 function maxHens() { return FACILITIES.coop.cap[lvOf('coop') - 1].hen; }
@@ -3644,6 +3620,12 @@ function renderHUD() {
   $('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   $('weather-box').textContent = weatherText();
   // 存档按钮：显示是谁的牧场（名字放 title，按钮本身保持小巧不越界）
+  // 🔨 升级按钮：有东西升得起就轻轻闪一下
+  const ub = $('btn-upgrade');
+  if (ub) {
+    const canAny = FACILITY_ORDER.some(f => canUpgradeFacility(f));
+    ub.classList.toggle('flash', canAny);
+  }
   const sb = $('save-box');
   if (sb) {
     sb.textContent = '💾';
@@ -3700,6 +3682,12 @@ function toggleModal(id) {
 }
 document.querySelectorAll('.close-modal').forEach(b =>
   b.addEventListener('click', () => { sfx.close(); closeModal(b.dataset.close); }));
+$('btn-upgrade').addEventListener('click', () => {
+  if (G.modalOpen === 'upgrade-modal') { closeModal('upgrade-modal'); return; }
+  if (G.modalOpen) return;
+  openUpgradePanel();
+});
+$('upgrade-back').addEventListener('click', () => { sfx.click(); showUpgradeList(); });
 $('btn-help').addEventListener('click', () => { sfx.open(); toggleModal('help-modal'); });
 $('btn-book').addEventListener('click', () => { sfx.open(); renderBook(); toggleModal('book-modal'); });
 $('touch-book').addEventListener('pointerdown', (e) => { e.preventDefault(); sfx.open(); renderBook(); toggleModal('book-modal'); });
@@ -3798,12 +3786,72 @@ function shopGoodsCount(tier) {
   return n;
 }
 
-// 「🔨 升级 X」的通用面板（点地图上的告示牌打开）
+// ============================================================
+//   🔨 升级面板：先列出所有建筑（点一个）→ 再看那个建筑的升级选项
+// ============================================================
 let upgradeTarget = 'coop';
-function openUpgrade(f) {
-  if (!FACILITIES[f]) return;
+// 列表页：九张卡片（图标 / 名字 / 现在几级 / 现在的状况 / 能不能升）
+function renderUpgradeList() {
+  const box = $('upgrade-list');
+  if (!box) return;
+  box.innerHTML = '';
+  FACILITY_ORDER.forEach(function (f) {
+    const d = FACILITIES[f];
+    const lv = lvOf(f);
+    const maxed = isMaxLv(f);
+    const afford = !maxed && G.coins >= upgradeCost(f);
+    const card = document.createElement('button');
+    card.className = 'upg-item' + (maxed ? ' maxed' : afford ? ' can' : '');
+    const main = document.createElement('span');
+    main.className = 'upg-item-main';
+    const nm = document.createElement('span');
+    nm.className = 'upg-item-name';
+    nm.innerHTML = facName(f) + ' <b>Lv.' + lv + '</b>';
+    const st = document.createElement('span');
+    st.className = 'upg-item-st';
+    st.textContent = facilityStatus(f);
+    main.appendChild(nm); main.appendChild(st);
+    const ic = document.createElement('span');
+    ic.className = 'upg-item-icon'; ic.textContent = d.icon;
+    const go = document.createElement('span');
+    go.className = 'upg-item-go';
+    go.textContent = maxed ? '✅ ' + t('upgMaxShort') : '🔨 ' + upgradeCost(f);
+    card.appendChild(ic); card.appendChild(main); card.appendChild(go);
+    card.onclick = function () { sfx.click(); showUpgradeDetail(f); };
+    box.appendChild(card);
+  });
+}
+// 切回列表页
+function showUpgradeList() {
+  renderUpgradeList();
+  const l = $('upgrade-list'), b = $('upgrade-body'), bk = $('upgrade-back'), ti = $('upgrade-title'), h = $('upgrade-hint');
+  if (l) l.classList.remove('hidden');
+  if (b) b.classList.add('hidden');
+  if (bk) bk.classList.add('hidden');
+  if (ti) ti.textContent = t('upgradeTitle');
+  if (h) h.textContent = t('upgPickHint');
+}
+// 切换到某个设施的升级选项
+function showUpgradeDetail(f) {
   upgradeTarget = f;
   renderUpgradeModal(f);
+  const l = $('upgrade-list'), b = $('upgrade-body'), bk = $('upgrade-back'), h = $('upgrade-hint');
+  if (l) l.classList.add('hidden');
+  if (b) b.classList.remove('hidden');
+  if (bk) bk.classList.remove('hidden');
+  if (h) h.textContent = t('upgradeHint');
+}
+// 点 HUD 上的「🔨 升级」打开面板
+function openUpgradePanel() {
+  showUpgradeList();
+  sfx.open();
+  openModal('upgrade-modal');
+}
+// 直接打开某个设施的升级选项（列表顺便铺好，返回时就能看到列表）
+function openUpgrade(f) {
+  if (!FACILITIES[f]) return;
+  renderUpgradeList();
+  showUpgradeDetail(f);
   sfx.open();
   openModal('upgrade-modal');
 }
@@ -4665,16 +4713,6 @@ function nearestInteract() {
     const d = Math.hypot(dx, dy);
     if (d < bestD) { bestD = d; best = { kind: 'tank', label: t('prTank') }; }
   }
-  // 6.2 十块「升级木板」：站在木板前面按 E 就能看现状 + 升级
-  //     （只有「确实离木板更近」时才抢走别的交互：站在厨房/水族箱前面先做饭、看鱼，
-  //      再往前走一步踩到木板上，才是升级）
-  for (const [f, sx, sy] of boardSpots()) {
-    const d = dist(p.x, p.y, sx, sy);
-    if (d < 60 && d < bestD + 8) {
-      bestD = Math.min(bestD, d);
-      best = { kind: 'upgrade', fac: f, label: t('prUpgrade', { fac: facName(f) }) };
-    }
-  }
   // 6.5 森林里的蜂巢（走到蜂巢下面就能拿蜂蜜）
   if (inHiveReach(p.x, p.y)) {
     const d = dist(p.x, p.y, HIVE.x, HIVE.y);
@@ -4847,9 +4885,6 @@ function doInteract() {
       say('greetVisitor', { name: custName(v) }, 2600);
       break;
     }
-    case 'upgrade':
-      openUpgrade(target.fac);
-      break;
     case 'petfood':
       withPet((p) => feedPet(p));
       break;
@@ -6042,13 +6077,6 @@ function render() {
   drawables.push({ y: PET_SPOTS.food.y + 6,  draw: () => drawPetFood(ctx, PET_SPOTS.food.x, PET_SPOTS.food.y, t, needKind === 'hungry') });
   drawables.push({ y: PET_SPOTS.clean.y + 6, draw: () => drawPetLitter(ctx, PET_SPOTS.clean.x, PET_SPOTS.clean.y, t, needKind === 'poop') });
   drawables.push({ y: PET_SPOTS.bath.y + 6,  draw: () => drawPetBath(ctx, PET_SPOTS.bath.x, PET_SPOTS.bath.y, t, needKind === 'dirty') });
-  // 十块「升级木板」：每栋建筑正下方一块，走过去按 E 就是升级对话
-  for (const [f, sx, sy, ic] of boardSpots()) {
-    drawables.push({
-      y: sy + 22,
-      draw: () => drawUpgradeBoard(ctx, sx, sy, t, ic, lvOf(f), canUpgradeFacility(f), isMaxLv(f)),
-    });
-  }
   for (const tr of G.trees) drawables.push({
     y: tr.y + 4,
     draw: () => tr.type === 'strawberry'
@@ -6780,7 +6808,7 @@ window.__farm = {
   drawPlayer, drawRider, drawVehicle, drawPet, drawChicken, drawSheep, drawCow, drawShadow, drawBikeRack, VEH_SPEC, PLAYER_FOOT_Y,
   openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
   tankRect, pointInSea, SEA_POLY, decorUnderBuilding,
-  newPet, petNeed, petName, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE, PET_SPOTS, petSpotLabel, withPet,
+  newPet, petNeed, petName, renderUpgradeModal, openUpgrade, openUpgradePanel, showUpgradeList, showUpgradeDetail, renderUpgradeList, renderClosetAvatar, tankSize, penRect, penHome, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE, PET_SPOTS, petSpotLabel, withPet,
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
   countHensLaidToday, countHens, countChicks, dailyFarmUpdate, isHen, isChick,
   newZoo, newAnimal,

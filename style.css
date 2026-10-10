@@ -489,6 +489,37 @@ body.touch #top-left { left: auto; right: 12px; }
 @keyframes bed-pulse { from { transform: scale(1); } to { transform: scale(1.07); } }
 #bed-again { font-size: 15px; }
 
+/* ---------- 🔨 升级面板（先点一个设施，再看它的升级选项） ---------- */
+#upgrade-modal .modal-card { max-height: 94%; gap: 8px; }
+#btn-upgrade { pointer-events: auto; cursor: pointer; font-family: inherit; color: #c95a1a; }
+#btn-upgrade:hover { transform: scale(1.06); }
+#btn-upgrade:active { transform: scale(.96); }
+/* 有东西能升级的时候轻轻闪一下，提醒小朋友来看 */
+#btn-upgrade.flash { animation: upg-flash .9s infinite alternate; }
+@keyframes upg-flash { from { box-shadow: 0 3px 0 #e09a2f; } to { box-shadow: 0 3px 0 #e09a2f, 0 0 0 5px rgba(255,200,90,.55); } }
+.upg-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(190px, 1fr));
+  gap: 8px; width: 100%;
+}
+.upg-item {
+  display: flex; align-items: center; gap: 7px;
+  background: #fffaf0; border: 3px solid #ffd88a; border-radius: 13px;
+  padding: 3px 9px; cursor: pointer; font-family: inherit; text-align: left;
+  box-shadow: 0 3px 0 #e8c88a; transition: transform .12s;
+}
+.upg-item:hover { transform: translateY(-2px); }
+.upg-item:active { transform: translateY(2px); box-shadow: none; }
+.upg-item.can { border-color: #7ddb6a; box-shadow: 0 3px 0 #4fb83a; }
+.upg-item.maxed { background: #f7f7f2; }
+.upg-item-icon { font-size: 23px; line-height: 1.1; }
+.upg-item-main { flex: 1 1 auto; min-width: 0; }
+.upg-item-name { font-weight: bold; color: #7a4a12; font-size: 16px; white-space: nowrap; }
+.upg-item-name b { color: #c95a1a; margin-left: 6px; font-size: 14px; }
+.upg-item-st { font-size: 12px; color: #8a7a52; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upg-item-go { font-size: 13.5px; font-weight: bold; color: #c95a1a; white-space: nowrap; }
+.upg-item.maxed .upg-item-go { color: #4fb83a; }
+@media (max-width: 620px) { .upg-grid { grid-template-columns: 1fr; } }
+
 /* ---------- 找零钱小挑战（紧凑版：复数商品也不用滚动） ---------- */
 .math-card {
   max-width: 660px; gap: 6px;
