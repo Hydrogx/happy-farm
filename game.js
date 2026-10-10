@@ -3006,11 +3006,14 @@ function newZoo(type, x, y) {
     home: { x, y, r: 230 },
   };
 }
-// 农场里「不该站上去」的大块区域（按各设施 3 级的最大范围算）。
-// 观赏动物散步时会绕开这些地方：不会站在房子、围栏、水族箱或者农田上面。
-function solidRects() {
-  const pr = PETROOM_RECTS[MAX_LV - 1], orr = ORCHARD_RECTS[MAX_LV - 1];
-  const ts = TANK_SIZE[MAX_LV - 1], k = STALL_SCALE[MAX_LV - 1], fr = FARM_RECTS[MAX_LV - 1];
+// 农场里「盖了建筑 / 不能摆东西」的大块区域（按各设施**当前等级**的占地算）。
+// 观赏动物散步时绕开它们，摆装饰时也不能摆进去。
+// ★ 用当前等级（不是 3 级最大范围），是为了让白色虚线框里的升级预留地保持「空草地」，
+//   小朋友可以先把装饰摆在那儿 —— 等扩建压上来，render() 会把装饰画在最外层。
+function solidRects(lv) {
+  const cur = (f) => Math.max(1, Math.min(MAX_LV, lv || lvOf(f)));
+  const pr = PETROOM_RECTS[cur('petroom') - 1], orr = ORCHARD_RECTS[cur('orchard') - 1];
+  const ts = TANK_SIZE[cur('tank') - 1], k = STALL_SCALE[cur('shop') - 1], fr = FARM_RECTS[cur('farm') - 1];
   const h = ZONES.house;
   return [
     { x: h.x - 12, y: h.y - 104, w: 144, h: 160 },                                  // 主角家
@@ -3027,6 +3030,15 @@ function solidRects() {
     { x: PENS.sheep.x, y: PENS.sheep.y, w: PENS.sheep.w, h: PENS.sheep.h },         // 羊棚
     { x: PENS.cow.x, y: PENS.cow.y, w: PENS.cow.w, h: PENS.cow.h },                 // 牛棚
   ];
+}
+
+// 摆好的装饰是不是正好被建筑压住了（被压住的要画在最外层，不然会看不见）
+function decorUnderBuilding(dc, solids) {
+  const list = solids || solidRects();
+  for (const s of list) {
+    if (dc.x > s.x - 4 && dc.x < s.x + s.w + 4 && dc.y > s.y - 4 && dc.y < s.y + s.h + 4) return true;
+  }
+  return false;
 }
 
 // 随机找一个能站的位置（不落水、不出界、不站到建筑上）
@@ -3420,8 +3432,10 @@ function canPlaceAt(id, x, y) {
   }
   if (pointInSea(x, y) || pointInSea(x - d.r, y) || pointInSea(x + d.r, y) ||
       pointInSea(x, y - d.r) || pointInSea(x, y + d.r)) return 'inWater';
-  // ② 建筑、围栏、农田、水族箱、摊位上面放不下
-  const pad = d.r * 0.75;
+  // ② 建筑、围栏、农田、水族箱、摊位「里面」放不下。
+  //    留一点点余量就够（以前留 0.75 倍半径，结果白色虚线框里的升级预留地几乎没法摆东西；
+  //    现在就算真的压到建筑边边，render() 也会把装饰画在最外层，所以可以贴得近一点）
+  const pad = d.r * 0.3;
   for (const s of solidRects()) {
     if (x > s.x - pad && x < s.x + s.w + pad && y > s.y - pad && y < s.y + s.h + pad) return 'noRoomHere';
   }
@@ -6137,8 +6151,10 @@ function render() {
       ? drawStrawberryBush(ctx, tr.x, tr.y, t, tr.phase, tr.fruits)
       : drawTree(ctx, tr.x, tr.y, t, tr.phase, tr.fruits, tr.type),
   });
-  // 庭院装饰
+  // 庭院装饰：压在建筑底下的那些不在这里排队，等所有实体的画完再单独画在最外层
+  const decorSolids = solidRects();
   for (const dc of G.decorations) {
+    if (decorUnderBuilding(dc, decorSolids)) continue;
     drawables.push({ y: dc.y + 4, draw: () => drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase) });
   }
   // 森林里的大树；蜂巢挂在那棵大树伸出的枝丫下 ——
@@ -6324,7 +6340,12 @@ function render() {
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
 
-  // 自己摆放的庭院装饰（已放在 drawables 里一起排序）
+  // ★ 被建筑压住的装饰画在**最外层**：升级扩建把地圈进去以后，装饰也不会被房子 / 围栏挡住
+  for (const dc of G.decorations) {
+    if (!decorUnderBuilding(dc, decorSolids)) continue;
+    drawDecor(ctx, dc.id, dc.x, dc.y, t, dc.phase);
+  }
+
   // 放置预览：跟着角色走，绿色=可以放，红色=放不下
   if (G.placing) {
     const d = DECOR_SHOP.find(v => v.id === G.placing.id);
@@ -6834,7 +6855,7 @@ window.__farm = {
   FARM_RECTS, farmRect, QUEUE_SLOTS, MAX_BUYERS, MAX_LV, WORLD_W, WORLD_H, PEN_HOME, TROUGH_OFF, DECOR_SHOP, DECOR_R,
   renderMinimap, miniCanvas, MINI_K, miniRect,
   openBedtime, bedInitStep, bedScrub, bedSyncUI, bedProgress, bedAllDone, bedRender, BED_STEPS, DECOR_PATCHES, canPlaceAt, solidRects, placeDecoration,
-  tankRect, pointInSea, SEA_POLY,
+  tankRect, pointInSea, SEA_POLY, decorUnderBuilding,
   newPet, petNeed, petName, renderPetRoom, renderUpgradeModal, openUpgrade, renderClosetAvatar, tankSize, penRect, penHome, petRoomRect, boardSpots, facName, facCapText, facilityStatus, update, TANK_SIZE, STALL_SCALE,
   attractionScore, visitorSlots, visitorFee, attractionSpots, spawnVisitor, updateVisitor, planVisit,
   countHensLaidToday, countHens, countChicks, dailyFarmUpdate, isHen, isChick,
